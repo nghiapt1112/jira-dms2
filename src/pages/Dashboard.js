@@ -8,7 +8,9 @@ import {
   CardContent,
   Button,
   Alert,
-  Skeleton
+  Skeleton,
+  CircularProgress,
+  LinearProgress
 } from '@mui/material'
 import {
   Download as DownloadIcon,
@@ -18,9 +20,10 @@ import {
   Group as GroupIcon,
   BugReport as BugReportIcon
 } from '@mui/icons-material'
-import { useJiraData } from '../features/jira-data/hooks/useJiraData'
-import DataLoadingProgress from '../features/jira-data/components/DataLoadingProgress'
+import { useJiraDataLoader } from '../features/jira-data/hooks/useJiraDataLoader'
+import { useJiraDataStore } from '../features/jira-data/store/jiraDataStore'
 import LoadingIndicator from '../components/ui/LoadingIndicator'
+import toast, { Toaster } from 'react-hot-toast'
 
 const StatCard = React.memo(({ title, value, icon, color = 'primary' }) => (
   <Card sx={{ height: '100%' }}>
@@ -56,30 +59,52 @@ const StatCard = React.memo(({ title, value, icon, color = 'primary' }) => (
 
 const Dashboard = React.memo(() => {
   const {
-    issues,
-    isLoading,
-    error,
-    snapshots,
-    downloadProgress,
-    currentDownload,
-    completedSnapshots,
-    totalSnapshots,
-    estimatedTotalRecords,
-    processedRecords,
+    // Data
+    allIssues: issues,
     hasData,
-    fetchData,
-    refreshData,
+    
+    // Loading state
+    isLoading,
+    loadingStage,
+    currentOperation,
+    overallProgress,
+    downloadStats,
+    currentDownloadingFile,
+    downloadProgress,
+    failedDownloads,
+    error,
+    
+    // Actions
+    startDataFetch,
+    retryFailed,
+    cancelDownload,
+    hasFailedDownloads,
+    
+    // Helper functions
     getDataSummary
-  } = useJiraData()
+  } = useJiraDataLoader()
   
   const summary = getDataSummary()
+  const [cacheChecked, setCacheChecked] = React.useState(false)
+  const [fetchAttempted, setFetchAttempted] = React.useState(false)
   
-  // Auto-fetch data if we don't have any
+  // First, check cache on mount
   useEffect(() => {
-    if (!hasData && !isLoading && !error) {
-      fetchData()
+    const checkCache = async () => {
+      const { loadFromCache } = useJiraDataStore.getState()
+      const loaded = await loadFromCache()
+      setCacheChecked(true)
     }
-  }, [hasData, isLoading, error, fetchData])
+    checkCache()
+  }, [])
+  
+  // Then auto-fetch data if we don't have any (after cache check)
+  useEffect(() => {
+    if (cacheChecked && !hasData && !isLoading && !error && !fetchAttempted) {
+      setFetchAttempted(true)
+      startDataFetch()
+    }
+  }, [hasData, isLoading, error, cacheChecked, fetchAttempted, startDataFetch])
   
   if (error) {
     return (
@@ -87,7 +112,7 @@ const Dashboard = React.memo(() => {
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={refreshData} startIcon={<RefreshIcon />}>
+            <Button color="inherit" size="small" onClick={() => startDataFetch()} startIcon={<RefreshIcon />}>
               Retry
             </Button>
           }
@@ -105,28 +130,74 @@ const Dashboard = React.memo(() => {
           Main Dashboard
         </Typography>
         
-        <Button
-          variant="contained"
-          startIcon={<RefreshIcon />}
-          onClick={refreshData}
-          disabled={isLoading}
-        >
-          Refresh Data
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {hasFailedDownloads && !isLoading && (
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<RefreshIcon />}
+              onClick={retryFailed}
+            >
+              Retry Failed ({failedDownloads.length})
+            </Button>
+          )}
+          
+          <Box sx={{ position: 'relative', display: 'inline-block' }}>
+            <Button
+              variant="contained"
+              startIcon={isLoading ? 
+                <CircularProgress size={16} color="inherit" /> : 
+                <RefreshIcon />
+              }
+              onClick={() => startDataFetch()}
+              disabled={isLoading}
+              sx={{ minWidth: 140 }}
+            >
+              {isLoading ? `${Math.round(overallProgress)}%` : 'Refresh Data'}
+            </Button>
+            
+            {isLoading && (
+              <LinearProgress
+                variant="determinate"
+                value={overallProgress}
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  borderRadius: 0
+                }}
+              />
+            )}
+          </Box>
+        </Box>
       </Box>
       
-      {/* Data Loading Progress */}
-      <DataLoadingProgress
-        isLoading={isLoading}
-        snapshots={snapshots}
-        downloadProgress={downloadProgress}
-        currentDownload={currentDownload}
-        completedSnapshots={completedSnapshots}
-        totalSnapshots={totalSnapshots}
-        estimatedTotalRecords={estimatedTotalRecords}
-        processedRecords={processedRecords}
-        error={error}
-        onRetry={refreshData}
+      {/* Toast Notifications */}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+          success: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#4caf50',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 8000,
+            iconTheme: {
+              primary: '#f44336',
+              secondary: '#fff',
+            },
+          },
+        }}
       />
       
       <Grid container spacing={3}>

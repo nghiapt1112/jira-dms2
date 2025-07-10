@@ -33,7 +33,8 @@ export const useJiraData = () => {
     if (allIssues.length === 0 && !isLoading && !error) {
       loadFromCache()
     }
-  }, [allIssues.length, isLoading, error, loadFromCache])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allIssues.length, isLoading, error])
   
   // Fetch data with filters
   const fetchData = useCallback(async (filterOverrides = {}) => {

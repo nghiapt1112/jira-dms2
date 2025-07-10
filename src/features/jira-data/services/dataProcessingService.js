@@ -7,7 +7,24 @@ export const dataProcessingService = {
       console.log('Processing JIRA issues...')
       const startTime = Date.now()
       
-      // Flatten all issues from multiple snapshots
+      // Check if rawData is already a flat array of issues
+      if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].key) {
+        // Data is already flattened
+        console.log(`Processing ${rawData.length} pre-flattened issues`)
+        const uniqueIssues = dataProcessingService.removeDuplicateIssues(rawData)
+        const validIssues = dataProcessingService.validateIssueData(uniqueIssues)
+        const enrichedIssues = dataProcessingService.enrichIssueData(validIssues)
+        
+        const processingTime = Date.now() - startTime
+        console.log(`Processing completed in ${processingTime}ms`)
+        
+        const stats = dataProcessingService.getProcessingStats(rawData.length, enrichedIssues.length)
+        console.log('Processing statistics:', stats)
+        
+        return enrichedIssues
+      }
+      
+      // Otherwise, flatten all issues from multiple snapshots
       const allIssues = []
       let totalRawCount = 0
       

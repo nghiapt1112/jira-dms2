@@ -1,15 +1,22 @@
 import axios from 'axios'
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 
+// Global controller for canceling downloads
+let globalDownloadController = null
+
 export const s3DownloadService = {
-  // Download single snapshot from S3
-  downloadSnapshot: async (url, onProgress = null) => {
+  // Download single snapshot from S3 with enhanced progress tracking
+  downloadSnapshot: async (url, onProgress = null, customController = null) => {
     try {
-      const controller = new AbortController()
+      const controller = customController || new AbortController()
+      globalDownloadController = controller
+      
       const timeoutId = setTimeout(
         () => controller.abort(),
         JIRA_CONSTANTS.DOWNLOAD_SETTINGS.TIMEOUT
       )
+      
+      const startTime = Date.now()
       
       const response = await axios.get(url, {
         headers: {
@@ -20,10 +27,19 @@ export const s3DownloadService = {
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             )
+            
+            const elapsed = Date.now() - startTime
+            const speed = progressEvent.loaded / (elapsed / 1000) // bytes per second
+            const remainingBytes = progressEvent.total - progressEvent.loaded
+            const eta = remainingBytes / speed // seconds remaining
+            
             onProgress({
               loaded: progressEvent.loaded,
               total: progressEvent.total,
-              percent: percentCompleted
+              percent: percentCompleted,
+              speed,
+              eta: isFinite(eta) ? eta : null,
+              elapsed: elapsed / 1000
             })
           }
         },
@@ -33,6 +49,7 @@ export const s3DownloadService = {
       })
       
       clearTimeout(timeoutId)
+      globalDownloadController = null
       
       // Validate response data
       if (!response.data) {
@@ -52,8 +69,10 @@ export const s3DownloadService = {
       }
       
     } catch (error) {
+      globalDownloadController = null
+      
       if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
-        throw new Error('Download timeout - file too large or connection slow')
+        throw new Error('Download cancelled or timeout - file too large or connection slow')
       }
       if (error.response?.status === 403) {
         throw new Error('Access denied - S3 URL may have expired')
@@ -237,6 +256,52 @@ export const s3DownloadService = {
         name: `Q${f.quarter} ${f.year}`,
         error: f.error
       }))
+    }
+  },
+  
+  // Cancel all active downloads
+  cancelAllDownloads: () => {
+    if (globalDownloadController) {
+      globalDownloadController.abort()
+      globalDownloadController = null
+      console.log('All downloads cancelled')
+    }
+  },
+  
+  // Check if downloads are active
+  isDownloading: () => {
+    return globalDownloadController !== null
+  },
+  
+  // Enhanced progress tracking utilities
+  createProgressTracker: (onProgress) => {
+    let startTime = Date.now()
+    
+    return (progressEvent) => {
+      if (!progressEvent.total) return
+      
+      const elapsed = Date.now() - startTime
+      const speed = progressEvent.loaded / (elapsed / 1000)
+      const remainingBytes = progressEvent.total - progressEvent.loaded
+      const eta = remainingBytes / speed
+      
+      const progress = {
+        loaded: progressEvent.loaded,
+        total: progressEvent.total,
+        percent: Math.round((progressEvent.loaded * 100) / progressEvent.total),
+        speed,
+        eta: isFinite(eta) && eta > 0 ? eta : null,
+        elapsed: elapsed / 1000,
+        formattedSpeed: s3DownloadService.formatFileSize(speed) + '/s',
+        formattedLoaded: s3DownloadService.formatFileSize(progressEvent.loaded),
+        formattedTotal: s3DownloadService.formatFileSize(progressEvent.total)
+      }
+      
+      if (onProgress) {
+        onProgress(progress)
+      }
+      
+      return progress
     }
   }
 }
