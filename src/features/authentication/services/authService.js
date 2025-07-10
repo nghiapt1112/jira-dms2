@@ -63,9 +63,13 @@ export const authService = {
     const token = localStorage.getItem('jwt_token')
     if (!token) return false
     
-    // Import here to avoid circular dependency
-    const { jwtService } = require('./jwtService')
-    return jwtService.isTokenValid(token)
+    // Simple token validation without importing jwtService to avoid circular dependency
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      return payload.exp > Date.now() / 1000
+    } catch {
+      return false
+    }
   },
   
   // Get current user from token
@@ -73,7 +77,16 @@ export const authService = {
     const token = localStorage.getItem('jwt_token')
     if (!token) return null
     
-    const { jwtService } = require('./jwtService')
-    return jwtService.getUserFromToken(token)
+    // Simple token parsing without importing jwtService to avoid circular dependency
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      return {
+        userId: payload.userId,
+        username: payload.username,
+        role: payload.role
+      }
+    } catch {
+      return null
+    }
   }
 }

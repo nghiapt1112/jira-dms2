@@ -11,18 +11,25 @@ const LoginPage = React.memo(() => {
   // Redirect to intended page after login or to dashboard
   const from = location.state?.from?.pathname || '/main-dashboard'
   
+  const handleLogin = React.useCallback(async (username, password) => {
+    console.log('Login attempt:', { username, password: '***' })
+    try {
+      const result = await login(username, password)
+      console.log('Login result:', result)
+      if (result.success) {
+        console.log('Login successful, should redirect')
+      } else {
+        console.log('Login failed:', result.error)
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+    }
+  }, [login])
+  
   // If already authenticated, redirect to dashboard
   if (isAuthenticated) {
     return <Navigate to={from} replace />
   }
-  
-  const handleLogin = React.useCallback(async (username, password) => {
-    const result = await login(username, password)
-    if (result.success) {
-      // Navigation will be handled by the redirect above
-      console.log('Login successful')
-    }
-  }, [login])
   
   return (
     <Box

@@ -18,7 +18,8 @@ import {
   Group as GroupIcon,
   BugReport as BugReportIcon
 } from '@mui/icons-material'
-import { useJiraData } from '../shared/hooks/useJiraData'
+import { useJiraData } from '../features/jira-data/hooks/useJiraData'
+import DataLoadingProgress from '../features/jira-data/components/DataLoadingProgress'
 import LoadingIndicator from '../components/ui/LoadingIndicator'
 
 const StatCard = React.memo(({ title, value, icon, color = 'primary' }) => (
@@ -55,24 +56,30 @@ const StatCard = React.memo(({ title, value, icon, color = 'primary' }) => (
 
 const Dashboard = React.memo(() => {
   const {
-    allIssues,
+    issues,
     isLoading,
     error,
+    snapshots,
     downloadProgress,
-    refetchData,
-    getIssueStats,
-    totalRecords
-  } = useJiraData(true)
+    currentDownload,
+    completedSnapshots,
+    totalSnapshots,
+    estimatedTotalRecords,
+    processedRecords,
+    hasData,
+    fetchData,
+    refreshData,
+    getDataSummary
+  } = useJiraData()
   
-  const stats = getIssueStats()
+  const summary = getDataSummary()
   
-  const getDownloadProgressMessage = () => {
-    const progressEntries = Object.entries(downloadProgress)
-    if (progressEntries.length === 0) return null
-    
-    const totalProgress = progressEntries.reduce((sum, [_, progress]) => sum + progress, 0) / progressEntries.length
-    return `Downloading data: ${Math.round(totalProgress)}%`
-  }
+  // Auto-fetch data if we don't have any
+  useEffect(() => {
+    if (!hasData && !isLoading && !error) {
+      fetchData()
+    }
+  }, [hasData, isLoading, error, fetchData])
   
   if (error) {
     return (
@@ -80,7 +87,7 @@ const Dashboard = React.memo(() => {
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={refetchData} startIcon={<RefreshIcon />}>
+            <Button color="inherit" size="small" onClick={refreshData} startIcon={<RefreshIcon />}>
               Retry
             </Button>
           }
@@ -101,28 +108,32 @@ const Dashboard = React.memo(() => {
         <Button
           variant="contained"
           startIcon={<RefreshIcon />}
-          onClick={refetchData}
+          onClick={refreshData}
           disabled={isLoading}
         >
           Refresh Data
         </Button>
       </Box>
       
-      {isLoading && Object.keys(downloadProgress).length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <LoadingIndicator
-            type="linear"
-            progress={Object.values(downloadProgress).reduce((a, b) => a + b, 0) / Object.keys(downloadProgress).length}
-            message={getDownloadProgressMessage()}
-          />
-        </Box>
-      )}
+      {/* Data Loading Progress */}
+      <DataLoadingProgress
+        isLoading={isLoading}
+        snapshots={snapshots}
+        downloadProgress={downloadProgress}
+        currentDownload={currentDownload}
+        completedSnapshots={completedSnapshots}
+        totalSnapshots={totalSnapshots}
+        estimatedTotalRecords={estimatedTotalRecords}
+        processedRecords={processedRecords}
+        error={error}
+        onRetry={refreshData}
+      />
       
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Issues"
-            value={isLoading && totalRecords === 0 ? null : totalRecords}
+            value={isLoading && !hasData ? null : issues.length}
             icon={<StorageIcon />}
             color="primary"
           />
@@ -130,38 +141,38 @@ const Dashboard = React.memo(() => {
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Open Issues"
-            value={isLoading && totalRecords === 0 ? null : stats.byStatus['Open'] || 0}
+            title="Resolved Issues"
+            value={isLoading && !hasData ? null : summary?.resolvedCount || 0}
             icon={<AssignmentIcon />}
+            color="success"
+          />
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Unresolved Issues"
+            value={isLoading && !hasData ? null : summary?.unresolvedCount || 0}
+            icon={<GroupIcon />}
             color="warning"
           />
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="In Progress"
-            value={isLoading && totalRecords === 0 ? null : stats.byStatus['In Progress'] || 0}
-            icon={<GroupIcon />}
-            color="info"
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Bugs"
-            value={isLoading && totalRecords === 0 ? null : stats.byType['Bug'] || 0}
+            title="Total Projects"
+            value={isLoading && !hasData ? null : summary?.projectCount || 0}
             icon={<BugReportIcon />}
-            color="error"
+            color="info"
           />
         </Grid>
         
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Project Distribution
+              Top Projects by Issue Count
             </Typography>
             
-            {isLoading && totalRecords === 0 ? (
+            {isLoading && !hasData ? (
               <Box>
                 <Skeleton height={40} />
                 <Skeleton height={40} />
@@ -169,9 +180,9 @@ const Dashboard = React.memo(() => {
               </Box>
             ) : (
               <Box>
-                {Object.entries(stats.byProject).slice(0, 10).map(([project, count]) => (
+                {summary?.projects?.slice(0, 10).map((project) => (
                   <Box
-                    key={project}
+                    key={project.key}
                     sx={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -181,12 +192,18 @@ const Dashboard = React.memo(() => {
                       borderColor: 'divider',
                     }}
                   >
-                    <Typography variant="body1">{project}</Typography>
+                    <Typography variant="body1">
+                      {project.name} ({project.key})
+                    </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {count.toLocaleString()} issues
+                      {project.issueCount.toLocaleString()} issues
                     </Typography>
                   </Box>
-                ))}
+                )) || (
+                  <Typography variant="body2" color="text.secondary">
+                    No data available
+                  </Typography>
+                )}
               </Box>
             )}
           </Paper>

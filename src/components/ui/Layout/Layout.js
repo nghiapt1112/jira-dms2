@@ -23,13 +23,14 @@ const Layout = React.memo(({ children }) => {
         flexGrow: 1,
         p: 3,
         width: '100%',
-        mt: 8,
+        mt: 8, // Account for mobile AppBar
       }
     }
     
     return {
       flexGrow: 1,
       p: 3,
+      pt: 11, // Account for desktop AppBar (64px default + 24px padding)
       width: `calc(100% - ${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px)`,
       ml: `${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px`,
       transition: theme.transitions.create(['margin', 'width'], {

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import {
+  AppBar,
+  Toolbar,
   Drawer,
   List,
   ListItemButton,
@@ -21,9 +23,12 @@ import {
   Analytics as AnalyticsIcon,
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  Notifications as NotificationsIcon
 } from '@mui/icons-material'
 import { useNavigationStore } from '../../../shared/store/navigationStore'
+import { useAuthStore } from '../../../features/authentication/store/authStore'
+import ProfileMenu from '../../../features/authentication/components/ProfileMenu'
 import { getSidebarStyles, SIDEBAR_WIDTHS } from './SidebarStyles'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -82,7 +87,14 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
     closeSidebar
   } = useNavigationStore()
   
+  const { user, logout } = useAuthStore()
+  
   const [expandedItems, setExpandedItems] = useState({})
+  
+  const handleLogout = React.useCallback(async () => {
+    await logout()
+    // Navigation to login will be handled by the auth state change
+  }, [logout])
   
   useEffect(() => {
     setMobile(isMobile)
@@ -222,16 +234,60 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
   }
   
   return (
-    <Drawer
-      variant="permanent"
-      open={isOpen}
-      sx={{
-        ...styles.drawer,
-        ...(!isOpen && styles.drawerCollapsed)
-      }}
-    >
-      {drawerContent}
-    </Drawer>
+    <>
+      {/* Desktop AppBar */}
+      <AppBar
+        position="fixed"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          zIndex: theme.zIndex.drawer + 1,
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="toggle drawer"
+            edge="start"
+            onClick={handleToggle}
+            sx={{ mr: 2 }}
+          >
+            {isOpen ? <MenuOpenIcon /> : <MenuIcon />}
+          </IconButton>
+          
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            JIRA DMS
+          </Typography>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton
+              size="large"
+              aria-label="show notifications"
+              color="inherit"
+              sx={{ mr: 1 }}
+            >
+              <NotificationsIcon />
+            </IconButton>
+            
+            <ProfileMenu
+              user={user}
+              onLogout={handleLogout}
+            />
+          </Box>
+        </Toolbar>
+      </AppBar>
+      
+      {/* Desktop Drawer */}
+      <Drawer
+        variant="permanent"
+        open={isOpen}
+        sx={{
+          ...styles.drawer,
+          ...(!isOpen && styles.drawerCollapsed)
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+    </>
   )
 })
 
