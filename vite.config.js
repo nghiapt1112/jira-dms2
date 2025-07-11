@@ -10,6 +10,11 @@ export default defineConfig({
       overlay: true
     }
   },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
@@ -24,6 +29,6 @@ export default defineConfig({
   esbuild: {
     loader: 'jsx',
     include: /\.(jsx?|tsx?)$/,
-    exclude: []
+    exclude: [/node_modules/, /doc/]
   }
 })
