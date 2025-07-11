@@ -35,7 +35,21 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "claude:init": "node .claude/scripts/create-knowledge-base.js",
+    "claude:analyze": "node .claude/scripts/init-context.js",
+    "claude:quick": "node .claude/scripts/quick-context.js",
+    "claude:update-progress": "node .claude/scripts/update-knowledge-base.js updateProgress",
+    "claude:update-context": "node .claude/scripts/update-knowledge-base.js updateContext",
+    "claude:document": "node .claude/scripts/update-knowledge-base.js documentDecision",
+    "claude:status": "node .claude/scripts/update-knowledge-base.js status",
+    "claude:setup-workflow": "node .claude/scripts/setup-workflow.js",
+    "claude:auto-scan": "node .claude/scripts/auto-context.js scan",
+    "claude:auto-inject": "node .claude/scripts/auto-context.js inject",
+    "claude:auto-analyze": "node .claude/scripts/auto-context.js analyze",
+    "claude:auto-feature": "node .claude/scripts/auto-context.js feature",
+    "claude:auto-status": "node .claude/scripts/auto-context.js status",
+    "claude:auto-help": "node .claude/scripts/auto-context.js help"
   },
   "browserslist": {
     "production": [

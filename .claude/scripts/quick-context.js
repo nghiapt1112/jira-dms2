@@ -7,7 +7,7 @@ function quickContext() {
   const featuresPath = path.join(__dirname, '../../src/features');
   
   console.log('\n🎯 QUICK PROJECT CONTEXT\n');
-  console.log('=' * 50);
+  console.log('='.repeat(50));
   
   // List features
   console.log('\n📁 FEATURES:');
@@ -54,7 +54,7 @@ function quickContext() {
     console.log('\n\n⚠️  No knowledge base found. Run init-context.js to create one.');
   }
   
-  console.log('\n' + '=' * 50);
+  console.log('\n' + '='.repeat(50));
 }
 
 quickContext();

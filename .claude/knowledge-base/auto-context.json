@@ -1,0 +1,380 @@
+{
+  "lastUpdate": "2025-07-11T16:30:32.499Z",
+  "features": {
+    "authentication": {
+      "name": "authentication",
+      "path": "src/features/authentication",
+      "type": "feature",
+      "created": "2025-07-11T16:30:32.495Z",
+      "structure": {
+        "components": [],
+        "services": [
+          "authService",
+          "authValidation",
+          "jwtService"
+        ],
+        "store": [
+          "authStore"
+        ],
+        "hooks": [
+          "useAuth",
+          "useLogin",
+          "useProfile"
+        ]
+      },
+      "components": [],
+      "services": [
+        "authService",
+        "authValidation",
+        "jwtService"
+      ],
+      "stores": [
+        "authStore"
+      ],
+      "completeness": 100
+    },
+    "dashboard": {
+      "name": "dashboard",
+      "path": "src/features/dashboard",
+      "type": "feature",
+      "created": "2025-07-11T16:30:32.495Z",
+      "structure": {
+        "components": [],
+        "services": [],
+        "store": [
+          "dashboardStore"
+        ],
+        "hooks": []
+      },
+      "components": [],
+      "services": [],
+      "stores": [
+        "dashboardStore"
+      ],
+      "completeness": 100
+    },
+    "jira-data": {
+      "name": "jira-data",
+      "path": "src/features/jira-data",
+      "type": "feature",
+      "created": "2025-07-11T16:30:32.496Z",
+      "structure": {
+        "components": [],
+        "services": [
+          "cacheService",
+          "dataProcessingService",
+          "jiraIssuesService",
+          "s3DownloadService"
+        ],
+        "store": [
+          "jiraDataStore"
+        ],
+        "hooks": [
+          "useJiraData",
+          "useJiraDataLoader"
+        ]
+      },
+      "components": [],
+      "services": [
+        "cacheService",
+        "dataProcessingService",
+        "jiraIssuesService",
+        "s3DownloadService"
+      ],
+      "stores": [
+        "jiraDataStore"
+      ],
+      "completeness": 100
+    }
+  },
+  "components": {
+    "index": {
+      "name": "index",
+      "path": "src/components/ui/LoadingSpinner/index.jsx",
+      "type": "component",
+      "created": "2025-07-11T16:30:32.499Z",
+      "props": [],
+      "hooks": [],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material"
+      ],
+      "hasTests": false,
+      "complexity": "low",
+      "purpose": "general component"
+    }
+  },
+  "services": {},
+  "stores": {},
+  "implementations": [
+    {
+      "timestamp": "2025-07-11T16:30:32.499Z",
+      "type": "component",
+      "name": "index",
+      "action": "created",
+      "details": {
+        "name": "index",
+        "path": "src/components/ui/LoadingSpinner/index.jsx",
+        "type": "component",
+        "created": "2025-07-11T16:30:32.499Z",
+        "props": [],
+        "hooks": [],
+        "dependencies": [
+          "react",
+          "prop-types",
+          "@mui/material"
+        ],
+        "hasTests": false,
+        "complexity": "low",
+        "purpose": "general component",
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.498Z",
+      "type": "component",
+      "name": "index",
+      "action": "created",
+      "details": {
+        "name": "index",
+        "path": "src/components/ui/Grid/index.jsx",
+        "type": "component",
+        "created": "2025-07-11T16:30:32.498Z",
+        "props": [],
+        "hooks": [
+          "useMemo"
+        ],
+        "dependencies": [
+          "react",
+          "prop-types",
+          "@mui/material"
+        ],
+        "hasTests": false,
+        "complexity": "medium",
+        "purpose": "general component",
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.498Z",
+      "type": "component",
+      "name": "index",
+      "action": "created",
+      "details": {
+        "name": "index",
+        "path": "src/components/ui/Card/index.jsx",
+        "type": "component",
+        "created": "2025-07-11T16:30:32.498Z",
+        "props": [],
+        "hooks": [
+          "useTheme"
+        ],
+        "dependencies": [
+          "react",
+          "prop-types",
+          "@mui/material"
+        ],
+        "hasTests": false,
+        "complexity": "low",
+        "purpose": "general component",
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.498Z",
+      "type": "component",
+      "name": "index",
+      "action": "created",
+      "details": {
+        "name": "index",
+        "path": "src/components/charts/PieChart/index.jsx",
+        "type": "component",
+        "created": "2025-07-11T16:30:32.498Z",
+        "props": [],
+        "hooks": [
+          "useMemo"
+        ],
+        "dependencies": [
+          "react",
+          "prop-types",
+          "@mui/material",
+          "@mui/x-charts/PieChart"
+        ],
+        "hasTests": false,
+        "complexity": "medium",
+        "purpose": "data visualization",
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.497Z",
+      "type": "component",
+      "name": "index",
+      "action": "created",
+      "details": {
+        "name": "index",
+        "path": "src/components/charts/LineChart/index.jsx",
+        "type": "component",
+        "created": "2025-07-11T16:30:32.497Z",
+        "props": [],
+        "hooks": [
+          "useMemo"
+        ],
+        "dependencies": [
+          "react",
+          "prop-types",
+          "@mui/material",
+          "@mui/x-charts/LineChart"
+        ],
+        "hasTests": false,
+        "complexity": "medium",
+        "purpose": "data visualization",
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.497Z",
+      "type": "component",
+      "name": "index",
+      "action": "created",
+      "details": {
+        "name": "index",
+        "path": "src/components/charts/BarChart/index.jsx",
+        "type": "component",
+        "created": "2025-07-11T16:30:32.497Z",
+        "props": [],
+        "hooks": [
+          "useMemo"
+        ],
+        "dependencies": [
+          "react",
+          "prop-types",
+          "@mui/material",
+          "@mui/x-charts/BarChart"
+        ],
+        "hasTests": false,
+        "complexity": "medium",
+        "purpose": "data visualization",
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.496Z",
+      "type": "feature",
+      "name": "jira-data",
+      "action": "analyzed",
+      "details": {
+        "name": "jira-data",
+        "path": "src/features/jira-data",
+        "type": "feature",
+        "created": "2025-07-11T16:30:32.496Z",
+        "structure": {
+          "components": [],
+          "services": [
+            "cacheService",
+            "dataProcessingService",
+            "jiraIssuesService",
+            "s3DownloadService"
+          ],
+          "store": [
+            "jiraDataStore"
+          ],
+          "hooks": [
+            "useJiraData",
+            "useJiraDataLoader"
+          ]
+        },
+        "components": [],
+        "services": [
+          "cacheService",
+          "dataProcessingService",
+          "jiraIssuesService",
+          "s3DownloadService"
+        ],
+        "stores": [
+          "jiraDataStore"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.495Z",
+      "type": "feature",
+      "name": "dashboard",
+      "action": "analyzed",
+      "details": {
+        "name": "dashboard",
+        "path": "src/features/dashboard",
+        "type": "feature",
+        "created": "2025-07-11T16:30:32.495Z",
+        "structure": {
+          "components": [],
+          "services": [],
+          "store": [
+            "dashboardStore"
+          ],
+          "hooks": []
+        },
+        "components": [],
+        "services": [],
+        "stores": [
+          "dashboardStore"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-11T16:30:32.495Z",
+      "type": "feature",
+      "name": "authentication",
+      "action": "analyzed",
+      "details": {
+        "name": "authentication",
+        "path": "src/features/authentication",
+        "type": "feature",
+        "created": "2025-07-11T16:30:32.495Z",
+        "structure": {
+          "components": [],
+          "services": [
+            "authService",
+            "authValidation",
+            "jwtService"
+          ],
+          "store": [
+            "authStore"
+          ],
+          "hooks": [
+            "useAuth",
+            "useLogin",
+            "useProfile"
+          ]
+        },
+        "components": [],
+        "services": [
+          "authService",
+          "authValidation",
+          "jwtService"
+        ],
+        "stores": [
+          "authStore"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-11T16:30:32.490Z"
+      }
+    }
+  ],
+  "patterns": {},
+  "decisions": [],
+  "todos": [],
+  "metrics": {
+    "totalComponents": 1,
+    "totalFeatures": 3,
+    "totalServices": 0,
+    "featuresCompleted": 3,
+    "codeQuality": "fair",
+    "lastScan": "2025-07-11T16:30:32.499Z"
+  }
+}

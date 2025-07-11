@@ -511,5 +511,5 @@ ${apiConsumers.map(df => `- **${df.component}** uses: ${df.services.join(', ')}`
 
 // Execute
 const initializer = new ContextInitializer();
-const projectPath = process.argv[2] || path.join(__dirname, '../../..');
+const projectPath = process.argv[2] || path.join(__dirname, '../..');
 initializer.run(projectPath);

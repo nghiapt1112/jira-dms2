@@ -1,0 +1,30 @@
+{
+  "triggers": {
+    "newComponent": {
+      "pattern": "src/**/components/**/*.jsx",
+      "action": "analyzeNewComponent",
+      "priority": "high"
+    },
+    "newFeature": {
+      "pattern": "src/features/**/index.js",
+      "action": "analyzeNewFeature",
+      "priority": "high"
+    },
+    "apiService": {
+      "pattern": "src/**/services/**/*.js",
+      "action": "analyzeAPIService",
+      "priority": "medium"
+    },
+    "storeUpdate": {
+      "pattern": "src/**/store/**/*.js",
+      "action": "analyzeStoreUpdate",
+      "priority": "medium"
+    }
+  },
+  "contextRules": {
+    "maxImplementations": 100,
+    "maxDecisions": 50,
+    "contextSummaryInterval": 10,
+    "pruneOldContext": true
+  }
+}

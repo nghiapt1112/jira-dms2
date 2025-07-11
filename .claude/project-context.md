@@ -26,3 +26,16 @@
 - All React components must use `.jsx` extension
 - Regular JavaScript files use `.js` extension
 - This is required by Vite for proper JSX parsing
+
+## Current Project State
+For real-time project status, feature completion, and implementation priorities, run:
+```bash
+npm run claude:auto-inject
+```
+This provides current context including:
+- Feature completion status
+- Component inventory and quality metrics
+- Recent implementation activity
+- Next priority recommendations
+
+Combine this dynamic context with the static conventions for optimal Claude Code prompts.

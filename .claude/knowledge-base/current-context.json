@@ -1,0 +1,165 @@
+{
+  "lastUpdated": "2025-07-11T08:18:26.749Z",
+  "features": {
+    "authentication": {
+      "name": "authentication",
+      "components": [
+        {
+          "name": "LoginForm",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/LoginForm/LoginForm.js",
+          "hasTests": true
+        },
+        {
+          "name": "index",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/LoginForm/index.js",
+          "hasTests": false
+        },
+        {
+          "name": "ProfileMenu",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProfileMenu/ProfileMenu.js",
+          "hasTests": true
+        },
+        {
+          "name": "index",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProfileMenu/index.js",
+          "hasTests": false
+        },
+        {
+          "name": "ProtectedRoute",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProtectedRoute/ProtectedRoute.js",
+          "hasTests": true
+        },
+        {
+          "name": "index",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProtectedRoute/index.js",
+          "hasTests": false
+        }
+      ],
+      "services": [
+        "authService",
+        "authValidation",
+        "jwtService"
+      ],
+      "stores": [
+        "authStore"
+      ],
+      "hooks": [
+        "useAuth",
+        "useLogin",
+        "useProfile"
+      ],
+      "utils": []
+    },
+    "dashboard": {
+      "name": "dashboard",
+      "components": [],
+      "services": [],
+      "stores": [
+        "dashboardStore"
+      ],
+      "hooks": [],
+      "utils": []
+    },
+    "jira-data": {
+      "name": "jira-data",
+      "components": [
+        {
+          "name": "DataLoadingProgress",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/components/DataLoadingProgress/DataLoadingProgress.js",
+          "hasTests": false
+        },
+        {
+          "name": "index",
+          "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/components/DataLoadingProgress/index.js",
+          "hasTests": false
+        }
+      ],
+      "services": [
+        "cacheService",
+        "dataProcessingService",
+        "jiraIssuesService",
+        "s3DownloadService"
+      ],
+      "stores": [
+        "jiraDataStore"
+      ],
+      "hooks": [
+        "useJiraData",
+        "useJiraDataLoader"
+      ],
+      "utils": []
+    }
+  },
+  "components": [
+    {
+      "name": "LoginForm",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/LoginForm/LoginForm.js",
+      "hasTests": true
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/LoginForm/index.js",
+      "hasTests": false
+    },
+    {
+      "name": "ProfileMenu",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProfileMenu/ProfileMenu.js",
+      "hasTests": true
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProfileMenu/index.js",
+      "hasTests": false
+    },
+    {
+      "name": "ProtectedRoute",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProtectedRoute/ProtectedRoute.js",
+      "hasTests": true
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProtectedRoute/index.js",
+      "hasTests": false
+    },
+    {
+      "name": "DataLoadingProgress",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/components/DataLoadingProgress/DataLoadingProgress.js",
+      "hasTests": false
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/components/DataLoadingProgress/index.js",
+      "hasTests": false
+    }
+  ],
+  "services": [
+    "authService",
+    "authValidation",
+    "jwtService",
+    "cacheService",
+    "dataProcessingService",
+    "jiraIssuesService",
+    "s3DownloadService"
+  ],
+  "stores": [
+    "authStore",
+    "dashboardStore",
+    "jiraDataStore"
+  ],
+  "hooks": [
+    "useAuth",
+    "useLogin",
+    "useProfile",
+    "useJiraData",
+    "useJiraDataLoader"
+  ],
+  "utils": [],
+  "pendingTodos": [
+    {
+      "file": "constants/jiraConstants.js",
+      "line": 63,
+      "content": "'To Do',"
+    }
+  ],
+  "recentChanges": []
+}

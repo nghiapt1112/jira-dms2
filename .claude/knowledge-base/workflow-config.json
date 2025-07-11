@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "setupDate": "2025-07-11T16:30:32.514Z",
+  "project": {
+    "name": "jira-dms2",
+    "type": "React SPA",
+    "framework": "React + MUI + Vite"
+  },
+  "workflow": {
+    "autoScanEnabled": true,
+    "gitHooksEnabled": true,
+    "contextInjectionEnabled": true,
+    "maxContextSize": "50MB",
+    "retentionDays": 30
+  },
+  "triggers": {
+    "newComponent": true,
+    "newFeature": true,
+    "apiService": true,
+    "storeUpdate": true,
+    "configChange": true
+  },
+  "notifications": {
+    "onFeatureComplete": true,
+    "onQualityChange": true,
+    "onErrorDetected": true
+  }
+}

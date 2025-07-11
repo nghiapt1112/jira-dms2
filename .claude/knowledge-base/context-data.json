@@ -1,0 +1,1542 @@
+{
+  "timestamp": "2025-07-11T15:36:13.305Z",
+  "projectStructure": {
+    "": {
+      "type": "directory",
+      "children": [
+        ".eslintrc.js",
+        "vite.config.js"
+      ]
+    },
+    "claude": {
+      "type": "directory",
+      "children": []
+    },
+    "claude/knowledge-base": {
+      "type": "directory",
+      "children": []
+    },
+    "dist": {
+      "type": "directory",
+      "children": []
+    },
+    "dist/assets": {
+      "type": "directory",
+      "children": [
+        "Alert-9bea7d1d.js",
+        "CardContent-f3342f60.js",
+        "Dashboard-e5d9db9b.js",
+        "LoginPage-dce796bb.js",
+        "MainDashboard-24f92e17.js",
+        "Select-827f6e2a.js",
+        "cacheService-8b906065.js",
+        "dataProcessingService-5cf8bc0e.js",
+        "index-526ce268.js",
+        "index-7f2e5e36.js",
+        "jiraConstants-a26fa089.js",
+        "jiraIssuesService-657dd4c7.js",
+        "s3DownloadService-e80a874b.js"
+      ]
+    },
+    "doc": {
+      "type": "directory",
+      "children": []
+    },
+    "doc/dashboard": {
+      "type": "directory",
+      "children": []
+    },
+    "doc/dashboard/main-dashboard": {
+      "type": "directory",
+      "children": []
+    },
+    "src": {
+      "type": "directory",
+      "children": [
+        "App.js",
+        "main.jsx"
+      ]
+    },
+    "src/components": {
+      "type": "directory",
+      "children": []
+    },
+    "src/components/charts": {
+      "type": "directory",
+      "children": []
+    },
+    "src/components/charts/BarChart": {
+      "type": "directory",
+      "children": [
+        "index.jsx"
+      ]
+    },
+    "src/components/charts/LineChart": {
+      "type": "directory",
+      "children": [
+        "index.jsx"
+      ]
+    },
+    "src/components/charts/PieChart": {
+      "type": "directory",
+      "children": [
+        "index.jsx"
+      ]
+    },
+    "src/components/navigation": {
+      "type": "directory",
+      "children": []
+    },
+    "src/components/navigation/MobileNav": {
+      "type": "directory",
+      "children": [
+        "MobileNav.js",
+        "MobileNav.test.js",
+        "index.js"
+      ]
+    },
+    "src/components/navigation/NavigationItem": {
+      "type": "directory",
+      "children": [
+        "NavigationItem.js",
+        "NavigationItem.test.js",
+        "index.js"
+      ]
+    },
+    "src/components/navigation/Sidebar": {
+      "type": "directory",
+      "children": [
+        "Sidebar.js",
+        "Sidebar.test.js",
+        "SidebarStyles.js",
+        "index.js"
+      ]
+    },
+    "src/components/ui": {
+      "type": "directory",
+      "children": []
+    },
+    "src/components/ui/Card": {
+      "type": "directory",
+      "children": [
+        "index.jsx"
+      ]
+    },
+    "src/components/ui/ErrorBoundary": {
+      "type": "directory",
+      "children": [
+        "ErrorBoundary.js",
+        "index.js"
+      ]
+    },
+    "src/components/ui/Grid": {
+      "type": "directory",
+      "children": [
+        "index.jsx"
+      ]
+    },
+    "src/components/ui/Layout": {
+      "type": "directory",
+      "children": [
+        "Layout.js",
+        "index.js"
+      ]
+    },
+    "src/components/ui/LoadingIndicator": {
+      "type": "directory",
+      "children": [
+        "LoadingIndicator.js",
+        "index.js"
+      ]
+    },
+    "src/components/ui/LoadingSpinner": {
+      "type": "directory",
+      "children": [
+        "index.jsx"
+      ]
+    },
+    "src/constants": {
+      "type": "directory",
+      "children": [
+        "jiraConstants.js"
+      ]
+    },
+    "src/features": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/authentication": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/authentication/components": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/authentication/components/LoginForm": {
+      "type": "directory",
+      "children": [
+        "LoginForm.js",
+        "LoginForm.test.js",
+        "index.js"
+      ]
+    },
+    "src/features/authentication/components/ProfileMenu": {
+      "type": "directory",
+      "children": [
+        "ProfileMenu.js",
+        "ProfileMenu.test.js",
+        "index.js"
+      ]
+    },
+    "src/features/authentication/components/ProtectedRoute": {
+      "type": "directory",
+      "children": [
+        "ProtectedRoute.js",
+        "ProtectedRoute.test.js",
+        "index.js"
+      ]
+    },
+    "src/features/authentication/hooks": {
+      "type": "directory",
+      "children": [
+        "useAuth.js",
+        "useLogin.js",
+        "useProfile.js"
+      ]
+    },
+    "src/features/authentication/services": {
+      "type": "directory",
+      "children": [
+        "authService.js",
+        "authValidation.js",
+        "jwtService.js"
+      ]
+    },
+    "src/features/authentication/store": {
+      "type": "directory",
+      "children": [
+        "authStore.js"
+      ]
+    },
+    "src/features/dashboard": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/dashboard/components": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/dashboard/hooks": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/dashboard/services": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/dashboard/store": {
+      "type": "directory",
+      "children": [
+        "dashboardStore.js"
+      ]
+    },
+    "src/features/jira-data": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/jira-data/components": {
+      "type": "directory",
+      "children": []
+    },
+    "src/features/jira-data/components/DataLoadingProgress": {
+      "type": "directory",
+      "children": [
+        "DataLoadingProgress.js",
+        "index.js"
+      ]
+    },
+    "src/features/jira-data/hooks": {
+      "type": "directory",
+      "children": [
+        "useJiraData.js",
+        "useJiraDataLoader.js"
+      ]
+    },
+    "src/features/jira-data/services": {
+      "type": "directory",
+      "children": [
+        "cacheService.js",
+        "dataProcessingService.js",
+        "jiraIssuesService.js",
+        "s3DownloadService.js"
+      ]
+    },
+    "src/features/jira-data/store": {
+      "type": "directory",
+      "children": [
+        "jiraDataStore.js"
+      ]
+    },
+    "src/pages": {
+      "type": "directory",
+      "children": [
+        "Dashboard.js",
+        "Layout.js",
+        "LoginPage.js"
+      ]
+    },
+    "src/shared": {
+      "type": "directory",
+      "children": []
+    },
+    "src/shared/hooks": {
+      "type": "directory",
+      "children": [
+        "useApi.js",
+        "useJiraData.js",
+        "useLocalStorage.js",
+        "useNavigation.js"
+      ]
+    },
+    "src/shared/services": {
+      "type": "directory",
+      "children": [
+        "apiService.js",
+        "apiService.test.js",
+        "authService.js",
+        "axiosConfig.js",
+        "jiraDataService.js"
+      ]
+    },
+    "src/shared/store": {
+      "type": "directory",
+      "children": [
+        "dataStore.js",
+        "globalStore.js",
+        "navigationStore.js",
+        "uiStore.js"
+      ]
+    },
+    "src/shared/utils": {
+      "type": "directory",
+      "children": [
+        "apiUtils.js",
+        "authUtils.js",
+        "downloadUtils.js",
+        "formatters.js",
+        "navigationUtils.js",
+        "progressUtils.js",
+        "progressUtils.test.js",
+        "tokenUtils.js"
+      ]
+    },
+    "src/theme": {
+      "type": "directory",
+      "children": [
+        "index.js"
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/charts/BarChart/index.jsx",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useMemo"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material",
+        "@mui/x-charts/BarChart"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/charts/LineChart/index.jsx",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useMemo"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material",
+        "@mui/x-charts/LineChart"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/charts/PieChart/index.jsx",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useMemo"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material",
+        "@mui/x-charts/PieChart"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "MobileNav",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/MobileNav/MobileNav.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useTheme",
+        "useNavigationStore",
+        "useAuthStore",
+        "useCallback"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "../../../shared/store/navigationStore",
+        "../../../features/authentication/store/authStore",
+        "../../../features/authentication/components/ProfileMenu"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/MobileNav/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "NavigationItem",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/NavigationItem/NavigationItem.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useNavigate"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "react-router-dom"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/NavigationItem/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "Sidebar",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/Sidebar/Sidebar.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useEffect",
+        "useState",
+        "useCallback",
+        "useTheme",
+        "useMediaQuery",
+        "useNavigationStore",
+        "useAuthStore",
+        "useLocation",
+        "useNavigate"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "../../../shared/store/navigationStore",
+        "../../../features/authentication/store/authStore",
+        "../../../features/authentication/components/ProfileMenu",
+        "./SidebarStyles",
+        "react-router-dom"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "SidebarStyles",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/Sidebar/SidebarStyles.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/navigation/Sidebar/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/Card/index.jsx",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useTheme"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "ErrorBoundary",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/ErrorBoundary/ErrorBoundary.js",
+      "type": "class",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/icons-material"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/ErrorBoundary/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/Grid/index.jsx",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useMemo"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "Layout",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/Layout/Layout.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useTheme",
+        "useMediaQuery",
+        "useNavigationStore"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "../../navigation/Sidebar",
+        "../../navigation/MobileNav",
+        "../../../shared/store/navigationStore",
+        "../../navigation/Sidebar"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/Layout/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "LoadingIndicator",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/LoadingIndicator/LoadingIndicator.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "react",
+        "prop-types"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/LoadingIndicator/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/components/ui/LoadingSpinner/index.jsx",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "@mui/material"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "LoginForm",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/LoginForm/LoginForm.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useState",
+        "useCallback"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/LoginForm/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "ProfileMenu",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProfileMenu/ProfileMenu.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useNavigate",
+        "useState",
+        "useCallback"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "react-router-dom"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProfileMenu/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "ProtectedRoute",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProtectedRoute/ProtectedRoute.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useLocation",
+        "useAuthStore",
+        "useState",
+        "useEffect"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "react-router-dom",
+        "@mui/material",
+        "../../store/authStore",
+        "../../services/jwtService"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/components/ProtectedRoute/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "useAuth",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/hooks/useAuth.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useAuthStore",
+        "useAuth"
+      ],
+      "dependencies": [
+        "../store/authStore",
+        "../services/authService"
+      ],
+      "exports": []
+    },
+    {
+      "name": "useLogin",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/hooks/useLogin.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useState",
+        "useCallback",
+        "useAuth",
+        "useLogin"
+      ],
+      "dependencies": [
+        "react",
+        "./useAuth"
+      ],
+      "exports": []
+    },
+    {
+      "name": "useProfile",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/hooks/useProfile.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useState",
+        "useCallback",
+        "useAuth",
+        "useProfile"
+      ],
+      "dependencies": [
+        "react",
+        "./useAuth",
+        "../services/authService"
+      ],
+      "exports": []
+    },
+    {
+      "name": "authService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/services/authService.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "../../../shared/services/axiosConfig"
+      ],
+      "exports": []
+    },
+    {
+      "name": "authValidation",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/services/authValidation.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "jwtService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/services/jwtService.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "authStore",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/store/authStore.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useAuthStore"
+      ],
+      "dependencies": [
+        "zustand",
+        "zustand/middleware",
+        "../services/authService",
+        "../services/jwtService"
+      ],
+      "exports": []
+    },
+    {
+      "name": "dashboardStore",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/dashboard/store/dashboardStore.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useDashboardStore"
+      ],
+      "dependencies": [
+        "zustand"
+      ],
+      "exports": []
+    },
+    {
+      "name": "DataLoadingProgress",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/components/DataLoadingProgress/DataLoadingProgress.js",
+      "type": "memoized-functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useState",
+        "useCallback"
+      ],
+      "dependencies": [
+        "react",
+        "prop-types",
+        "../../services/s3DownloadService"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "index",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/components/DataLoadingProgress/index.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "useJiraData",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/hooks/useJiraData.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useCallback",
+        "useEffect",
+        "useJiraDataStore",
+        "useJiraData"
+      ],
+      "dependencies": [
+        "react",
+        "../store/jiraDataStore"
+      ],
+      "exports": []
+    },
+    {
+      "name": "useJiraDataLoader",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/hooks/useJiraDataLoader.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useCallback",
+        "useRef",
+        "useJiraDataStore",
+        "useJiraDataLoader"
+      ],
+      "dependencies": [
+        "react",
+        "../store/jiraDataStore"
+      ],
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "name": "cacheService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/cacheService.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "../../../constants/jiraConstants"
+      ],
+      "exports": []
+    },
+    {
+      "name": "dataProcessingService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/dataProcessingService.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "../../../constants/jiraConstants"
+      ],
+      "exports": []
+    },
+    {
+      "name": "jiraIssuesService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/jiraIssuesService.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useSnapshots"
+      ],
+      "dependencies": [
+        "../../../shared/services/axiosConfig",
+        "../../../constants/jiraConstants"
+      ],
+      "exports": []
+    },
+    {
+      "name": "s3DownloadService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/s3DownloadService.js",
+      "type": "functional",
+      "props": [],
+      "state": [],
+      "hooks": [],
+      "dependencies": [
+        "axios",
+        "../../../constants/jiraConstants"
+      ],
+      "exports": []
+    },
+    {
+      "name": "jiraDataStore",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/store/jiraDataStore.js",
+      "type": "unknown",
+      "props": [],
+      "state": [],
+      "hooks": [
+        "useJiraDataStore",
+        "useSnapshots"
+      ],
+      "dependencies": [
+        "zustand",
+        "zustand/middleware"
+      ],
+      "exports": []
+    }
+  ],
+  "services": [
+    {
+      "name": "authService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/services/authService.js",
+      "methods": [
+        "authService",
+        "response",
+        "refreshToken",
+        "response",
+        "response",
+        "response",
+        "token",
+        "payload",
+        "token",
+        "payload"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "authValidation",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/services/authValidation.js",
+      "methods": [
+        "authValidation",
+        "errors",
+        "errors",
+        "fieldErrors",
+        "usernameValidation",
+        "passwordValidation",
+        "fieldErrors",
+        "usernameValidation",
+        "emailValidation",
+        "firstNameValidation",
+        "lastNameValidation",
+        "errors",
+        "emailRegex",
+        "errors",
+        "validRoles",
+        "errors",
+        "fieldErrors",
+        "value",
+        "rules",
+        "validation"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "jwtService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/services/jwtService.js",
+      "methods": [
+        "jwtService",
+        "base64Url",
+        "base64",
+        "jsonPayload",
+        "decoded",
+        "currentTime",
+        "decoded",
+        "decoded",
+        "decoded",
+        "decoded",
+        "currentTime"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "cacheService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/cacheService.js",
+      "methods": [
+        "cacheService",
+        "cacheKey",
+        "metadataKey",
+        "timestamp",
+        "cacheObject",
+        "dataString",
+        "dataSizeMB",
+        "essentialData",
+        "essentialData",
+        "cacheKey",
+        "metadataKey",
+        "metadataString",
+        "metadata",
+        "dataString",
+        "data",
+        "cachedTime",
+        "now",
+        "hoursDiff",
+        "keysToRemove",
+        "key",
+        "cacheKey",
+        "metadataKey",
+        "dataSize",
+        "metadataSize",
+        "totalSize",
+        "totalSizeMB",
+        "metadataKey",
+        "metadataString",
+        "metadata",
+        "metadataKey",
+        "metadataString",
+        "metadataKey",
+        "existing",
+        "updated"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "dataProcessingService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/dataProcessingService.js",
+      "methods": [
+        "dataProcessingService",
+        "startTime",
+        "uniqueIssues",
+        "validIssues",
+        "enrichedIssues",
+        "processingTime",
+        "stats",
+        "allIssues",
+        "uniqueIssues",
+        "cleanedIssues",
+        "enrichedIssues",
+        "processingTime",
+        "stats",
+        "seen",
+        "duplicates",
+        "uniqueIssues",
+        "invalidIssues",
+        "validIssues",
+        "enriched",
+        "duplicatesRemoved",
+        "duplicatePercentage",
+        "projectsMap",
+        "project",
+        "dates",
+        "earliest",
+        "latest",
+        "date",
+        "created",
+        "now",
+        "ageInMs",
+        "created",
+        "resolved",
+        "timeInMs",
+        "dueDate",
+        "now",
+        "isResolved",
+        "latestSprint",
+        "match",
+        "groups",
+        "value",
+        "projects",
+        "dateRange",
+        "issueTypes",
+        "statuses",
+        "priorities",
+        "type",
+        "status",
+        "priority"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "jiraIssuesService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/jiraIssuesService.js",
+      "methods": [
+        "jiraIssuesService",
+        "defaultPayload",
+        "response",
+        "validSnapshots",
+        "currentTime",
+        "expirationTime",
+        "response",
+        "delay",
+        "totalRecords",
+        "totalSize",
+        "conditions",
+        "dateObj",
+        "year",
+        "month",
+        "day"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "s3DownloadService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/services/s3DownloadService.js",
+      "methods": [
+        "s3DownloadService",
+        "controller",
+        "timeoutId",
+        "startTime",
+        "response",
+        "percentCompleted",
+        "elapsed",
+        "speed",
+        "remainingBytes",
+        "eta",
+        "results",
+        "totalSnapshots",
+        "snapshot",
+        "snapshotName",
+        "data",
+        "delay",
+        "k",
+        "sizes",
+        "i",
+        "sampleSize",
+        "validItems",
+        "successful",
+        "failed",
+        "totalIssues",
+        "totalSize",
+        "elapsed",
+        "speed",
+        "remainingBytes",
+        "eta",
+        "progress"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "apiService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/shared/services/apiService.js",
+      "methods": [
+        "get"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "apiService.test",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/shared/services/apiService.test.js",
+      "methods": [
+        "token",
+        "errorResponse",
+        "token",
+        "refreshResponse",
+        "result",
+        "mockData",
+        "result"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "authService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/shared/services/authService.js",
+      "methods": [
+        "response",
+        "refreshToken",
+        "response",
+        "cachedUser",
+        "response",
+        "user",
+        "login",
+        "post"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "axiosConfig",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/shared/services/axiosConfig.js",
+      "methods": [
+        "API_BASE_URL",
+        "REQUEST_TIMEOUT",
+        "JWT_TOKEN",
+        "axiosInstance",
+        "token",
+        "originalRequest",
+        "refreshToken",
+        "response",
+        "retryAfter",
+        "createAxiosInstance"
+      ],
+      "dependencies": [],
+      "exports": []
+    },
+    {
+      "name": "jiraDataService",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/shared/services/jiraDataService.js",
+      "methods": [
+        "CHUNK_SIZE",
+        "jql",
+        "payload",
+        "response",
+        "cacheKey",
+        "controller",
+        "fileId",
+        "response",
+        "progress",
+        "data",
+        "allData",
+        "downloadSnapshot",
+        "data",
+        "snapshotPromises",
+        "results",
+        "cached",
+        "mergedData",
+        "issueMap",
+        "key",
+        "existingIssue",
+        "index",
+        "serializedData",
+        "chunks",
+        "chunkSize",
+        "timestamp",
+        "age",
+        "chunks",
+        "chunk",
+        "chunks",
+        "controller",
+        "urlObj",
+        "pathParts",
+        "uniqueMap",
+        "key",
+        "existing",
+        "constructor",
+        "Map",
+        "Map"
+      ],
+      "dependencies": [],
+      "exports": []
+    }
+  ],
+  "stores": [
+    {
+      "name": "authStore",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/authentication/store/authStore.js",
+      "state": [],
+      "actions": [
+        "setUser",
+        "setToken",
+        "setLoading",
+        "setError",
+        "logout",
+        "initializeAuth",
+        "login",
+        "clearError"
+      ],
+      "selectors": []
+    },
+    {
+      "name": "dashboardStore",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/dashboard/store/dashboardStore.js",
+      "state": [
+        "chartData",
+        "lineChartData",
+        "barChartData",
+        "pieChartData",
+        "isLoading",
+        "error",
+        "dateRange",
+        "start",
+        "end"
+      ],
+      "actions": [
+        "setChartData",
+        "setLineChartData",
+        "setBarChartData",
+        "setPieChartData",
+        "setLoading",
+        "setError",
+        "clearError",
+        "setDateRange",
+        "setFilters",
+        "fetchChartData",
+        "resetData"
+      ],
+      "selectors": []
+    },
+    {
+      "name": "jiraDataStore",
+      "path": "/Users/duongthao/data/sources/ai-agent/source/jira-dms2/src/features/jira-data/store/jiraDataStore.js",
+      "state": [],
+      "actions": [
+        "setSnapshots",
+        "setCurrentQuarter",
+        "setAllIssues",
+        "setLoading",
+        "setError",
+        "setMetadata",
+        "setLoadingStage",
+        "setOverallProgress",
+        "setCurrentOperation",
+        "setDownloadProgress",
+        "setCurrentDownload",
+        "incrementCompletedSnapshots",
+        "setCurrentDownloadingFile",
+        "addFailedDownload",
+        "clearFailedDownload",
+        "setFilters",
+        "resetFilters",
+        "resetData",
+        "resetLoadingStates",
+        "clearError"
+      ],
+      "selectors": []
+    }
+  ],
+  "hooks": [],
+  "utils": [],
+  "dependencies": {},
+  "patterns": {},
+  "todos": [
+    {
+      "file": "constants/jiraConstants.js",
+      "line": 63,
+      "content": "TODO: 'To Do',"
+    }
+  ],
+  "architecture": {},
+  "dataFlow": [
+    {
+      "component": "MobileNav",
+      "stores": [
+        "useAuthStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "Sidebar",
+      "stores": [
+        "useAuthStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "ProtectedRoute",
+      "stores": [
+        "useAuthStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "ProtectedRoute",
+      "services": [
+        "../../services/jwtService"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "useAuth",
+      "stores": [
+        "useAuthStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "useAuth",
+      "services": [
+        "../services/authService"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "useProfile",
+      "services": [
+        "../services/authService"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "authService",
+      "services": [
+        "../../../shared/services/axiosConfig"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "authStore",
+      "stores": [
+        "useAuthStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "authStore",
+      "services": [
+        "../services/authService",
+        "../services/jwtService"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "dashboardStore",
+      "stores": [
+        "useDashboardStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "DataLoadingProgress",
+      "services": [
+        "../../services/s3DownloadService"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "useJiraData",
+      "stores": [
+        "useJiraDataStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "useJiraDataLoader",
+      "stores": [
+        "useJiraDataStore"
+      ],
+      "type": "state-consumer"
+    },
+    {
+      "component": "jiraIssuesService",
+      "services": [
+        "../../../shared/services/axiosConfig"
+      ],
+      "type": "api-consumer"
+    },
+    {
+      "component": "jiraDataStore",
+      "stores": [
+        "useJiraDataStore"
+      ],
+      "type": "state-consumer"
+    }
+  ]
+}
