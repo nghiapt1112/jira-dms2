@@ -368,6 +368,16 @@ export const developerQualityService = {
   },
 
   /**
+   * Get cached data (placeholder - returns null to force processing from raw data)
+   * @returns {Promise<null>} Always returns null to ensure fresh processing
+   */
+  getCachedData: async () => {
+    // For now, always return null to force processing from raw JIRA data
+    // This can be enhanced later with actual caching logic
+    return null
+  },
+
+  /**
    * Finalize metrics calculations
    */
   finalizeMetrics: (metrics) => {

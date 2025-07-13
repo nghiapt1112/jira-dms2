@@ -5,7 +5,7 @@ import { useJiraData } from '../../jira-data/hooks/useJiraData'
 export const useDeveloperQualityCache = () => {
   // Get JIRA data from existing system with S3 downloading capability
   const { 
-    allIssues: jiraData, 
+    issues: jiraData, 
     isLoading: jiraLoading, 
     error: jiraError,
     hasData,
@@ -56,7 +56,17 @@ export const useDeveloperQualityCache = () => {
 
   // Load developer quality data when JIRA data becomes available
   useEffect(() => {
+    console.log('Developer Quality Cache - JIRA data effect:', {
+      hasJiraData: !!jiraData,
+      jiraDataLength: Array.isArray(jiraData) ? jiraData.length : 'not array',
+      jiraDataType: typeof jiraData,
+      hasProcessedData: !!data,
+      isLoading,
+      shouldProcess: jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading
+    })
+    
     if (jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading) {
+      console.log('Developer Quality Cache - Processing JIRA data:', jiraData.length, 'issues')
       // Process raw JIRA issues for developer quality
       loadData(jiraData)
     }

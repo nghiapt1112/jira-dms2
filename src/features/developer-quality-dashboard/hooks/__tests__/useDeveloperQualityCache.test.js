@@ -30,7 +30,7 @@ describe('useDeveloperQualityCache', () => {
   }
 
   const mockJiraData = {
-    allIssues: null,
+    issues: null,
     isLoading: false,
     error: null,
     hasData: false,
