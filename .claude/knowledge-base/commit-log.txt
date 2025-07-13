@@ -44,3 +44,8 @@ Commit: Fix Developer Quality Dashboard data loading - correct property name
 - Fixed test mock data structure
 
 The dashboard should now properly process the 12,029 JIRA issues loaded from S3.
+Commit: Clean up debug logs and improve console output
+
+- Removed verbose debugging logs from useEffect
+- Improved console logging in store to show processing results
+- Kept essential logs for monitoring performance

@@ -108,13 +108,14 @@ export const useDeveloperQualityFilters = () => {
   }, [filters, updateFilter])
 
   // Apply filters with performance monitoring
-  const applyFiltersWithMonitoring = useCallback(() => {
-    if (!data) return null
+  const applyFiltersWithMonitoring = useCallback((cacheData) => {
+    const dataToFilter = cacheData || data
+    if (!dataToFilter) return null
     
     const startTime = performance.now()
     
     try {
-      const result = filterService.applyFilters(data, filters)
+      const result = filterService.applyFilters(filters, dataToFilter)
       const endTime = performance.now()
       
       console.log(`Filters applied in ${(endTime - startTime).toFixed(2)}ms`)
@@ -258,6 +259,7 @@ export const useDeveloperQualityFilters = () => {
     getAvailableFilterValues,
     
     // Performance monitoring
-    applyFiltersWithMonitoring
+    applyFiltersWithMonitoring,
+    applyFilters: applyFiltersWithMonitoring
   }
 } 

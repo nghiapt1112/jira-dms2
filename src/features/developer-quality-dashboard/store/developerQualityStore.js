@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { developerQualityService } from '../services/developerQualityService'
+import { filterService } from '../services/filterService'
 
 export const useDeveloperQualityStore = create(
   devtools(
@@ -160,7 +161,7 @@ export const useDeveloperQualityStore = create(
         
         // Apply filters and cache result
         try {
-          const filtered = developerQualityService.applyFilters(data, filters)
+          const filtered = filterService.applyFilters(filters, data)
           get().setFilteredData(filtered)
           return filtered
         } catch (error) {
