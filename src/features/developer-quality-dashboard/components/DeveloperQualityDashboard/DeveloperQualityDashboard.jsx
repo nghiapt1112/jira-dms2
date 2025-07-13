@@ -23,7 +23,12 @@ const DeveloperQualityDashboard = React.memo(() => {
     handleForceReload,
     handleRefresh
   } = useDeveloperQualityCache()
-  const { filters, setFilters, applyFilters } = useDeveloperQualityFilters()
+  const { 
+    filters, 
+    updateFilters, 
+    applyFilters,
+    resetFilters 
+  } = useDeveloperQualityFilters()
   
   // 2. Memoized values
   const filteredData = useMemo(() => {
@@ -149,7 +154,7 @@ const DeveloperQualityDashboard = React.memo(() => {
       >
         <FilterPanel
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={updateFilters}
           filterOptions={cacheData.filterOptions}
         />
       </Paper>

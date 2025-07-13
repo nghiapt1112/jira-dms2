@@ -49,3 +49,12 @@ Commit: Clean up debug logs and improve console output
 - Removed verbose debugging logs from useEffect
 - Improved console logging in store to show processing results
 - Kept essential logs for monitoring performance
+Commit: Fix filtering functionality in Developer Quality Dashboard
+
+- Added missing filterService import to developerQualityStore
+- Fixed incorrect service call from developerQualityService.applyFilters to filterService.applyFilters
+- Updated applyFiltersWithMonitoring to accept cacheData parameter
+- Added applyFilters alias to match component expectations
+- Fixed filter service call parameter order
+
+The dashboard should now properly apply filters without errors.

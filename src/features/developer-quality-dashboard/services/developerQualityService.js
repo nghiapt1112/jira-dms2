@@ -410,10 +410,26 @@ export const developerQualityService = {
       })
     })
     
-    // Calculate team average bug rate
-    const totalBugRate = Array.from(metrics.bugRateAnalysis.developers.values())
-      .reduce((sum, dev) => sum + dev.bugRate, 0)
-    metrics.bugRateAnalysis.teamAverage = totalBugRate / metrics.bugRateAnalysis.developers.size || 0
+    // Calculate team average bug rate and convert to array
+    if (metrics.bugRateAnalysis.developers.size > 0) {
+      const developersArray = Array.from(metrics.bugRateAnalysis.developers.values())
+      const totalBugRate = developersArray.reduce((sum, dev) => sum + dev.bugRate, 0)
+      metrics.bugRateAnalysis.teamAverage = totalBugRate / metrics.bugRateAnalysis.developers.size
+      
+      // Convert Map to sorted array for component consumption
+      metrics.bugRateAnalysis.developers = developersArray
+        .sort((a, b) => b.bugRate - a.bugRate)
+    } else {
+      metrics.bugRateAnalysis.teamAverage = 0
+      metrics.bugRateAnalysis.developers = []
+    }
+    
+    // Convert monthlyBugTrend Map to array for component consumption
+    if (metrics.bugAnalysis.monthlyBugTrend instanceof Map) {
+      metrics.bugAnalysis.monthlyBugTrend = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
+        .map(([month, data]) => ({ month, ...data }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+    }
   },
 
   /**

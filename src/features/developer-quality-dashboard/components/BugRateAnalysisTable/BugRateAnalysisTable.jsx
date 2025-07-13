@@ -296,9 +296,9 @@ const BugRateAnalysisTable = React.memo(({
                 
                 <TableCell align="right">
                   <Chip
-                    label={`${row.bugRate.toFixed(1)}%`}
+                    label={`${(row.bugRate || 0).toFixed(1)}%`}
                     size="small"
-                    color={getBugRateColor(row.bugRate, data.benchmarks)}
+                    color={getBugRateColor(row.bugRate || 0, data.benchmarks)}
                     variant="outlined"
                   />
                 </TableCell>

@@ -73,20 +73,7 @@ const BugTrendAnalysis = React.memo(({
     }
   }, [metrics?.bugTrend])
   
-  const severityData = useMemo(() => {
-    if (!metrics?.severityDistribution) return []
-    
-    const distribution = metrics.severityDistribution
-    const total = Object.values(distribution).reduce((sum, count) => sum + count, 0)
-    
-    return Object.entries(distribution).map(([severity, count]) => ({
-      severity,
-      count,
-      percentage: total > 0 ? (count / total * 100) : 0,
-      color: getSeverityColor(severity)
-    }))
-  }, [metrics?.severityDistribution])
-  
+  // Helper function for severity colors (must be declared before use)
   const getSeverityColor = (severity) => {
     switch (severity.toLowerCase()) {
       case 'critical':
@@ -101,6 +88,20 @@ const BugTrendAnalysis = React.memo(({
         return 'default'
     }
   }
+
+  const severityData = useMemo(() => {
+    if (!metrics?.severityDistribution) return []
+    
+    const distribution = metrics.severityDistribution
+    const total = Object.values(distribution).reduce((sum, count) => sum + count, 0)
+    
+    return Object.entries(distribution).map(([severity, count]) => ({
+      severity,
+      count,
+      percentage: total > 0 ? (count / total * 100) : 0,
+      color: getSeverityColor(severity)
+    }))
+  }, [metrics?.severityDistribution])
   
   // 3. Callbacks (none needed)
   
