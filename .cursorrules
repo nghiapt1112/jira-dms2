@@ -1,0 +1,376 @@
+# Cursor AI Rules - React MUI Project
+## 🤖 MANDATORY Rules for Cursor AI
+
+> **CRITICAL**: This is a **STRICT RULEBOOK**. Any violation = code rejection.
+
+## 📁 FOLDER STRUCTURE (MANDATORY)
+
+```
+src/
+├── components/ui/[Name]/         # Reusable UI only
+├── components/charts/[Name]/     # Charts only
+├── features/[name]/              # Feature code (kebab-case)
+│   ├── components/               # Feature components
+│   ├── hooks/                    # Feature hooks
+│   ├── store/                    # Feature state
+│   └── services/                 # Feature APIs
+├── shared/                       # Global shared
+│   ├── store/                    # Global state
+│   ├── hooks/                    # Global hooks
+│   └── utils/                    # Utilities
+├── theme/                        # MUI theme only
+└── pages/                        # Page components
+```
+
+**❌ FORBIDDEN**: Wrong folder placement, nested folders >3 levels
+
+## 🏷️ NAMING (MANDATORY)
+
+| Type | Rule | Example |
+|------|------|---------|
+| Components | PascalCase | `LineChart.jsx` |
+| Hooks | camelCase + "use" | `useChartData.js` |
+| Stores | camelCase + "Store" | `chartStore.js` |
+| Features | kebab-case | `user-management/` |
+| Files | NO snake_case | ❌ `user_data.js` |
+| JSX Files | .jsx extension | `Component.jsx` |
+
+## ⚛️ COMPONENT RULES (MANDATORY)
+
+```javascript
+// REQUIRED: Every component must follow this pattern
+// File name: Component.jsx (NOT .js)
+import React from 'react'
+import PropTypes from 'prop-types'
+
+const Component = React.memo(({ prop1, prop2 = 'default', ...props }) => {
+  // 1. Hooks first
+  const [state, setState] = useState()
+  
+  // 2. Memoized values
+  const memoized = useMemo(() => calculation(prop1), [prop1])
+  
+  // 3. Callbacks
+  const handleClick = useCallback(() => {}, [])
+  
+  // 4. Early returns
+  if (!prop1) return null
+  
+  // 5. Render
+  return <Box {...props}>Content</Box>
+})
+
+Component.propTypes = {
+  prop1: PropTypes.string.isRequired,
+  prop2: PropTypes.string,
+}
+
+export default Component
+```
+
+**❌ FORBIDDEN**: Class components, no React.memo, no PropTypes
+
+## 🗄️ STATE MANAGEMENT (MANDATORY)
+
+**Use Zustand Only** - Follow this pattern:
+
+```javascript
+import { create } from 'zustand'
+
+export const useStore = create((set) => ({
+  // State
+  data: [],
+  isLoading: false,
+  error: null,
+  
+  // Actions
+  setData: (data) => set({ data }),
+  setLoading: (loading) => set({ isLoading: loading }),
+  
+  // Async
+  fetchData: async () => {
+    set({ isLoading: true, error: null })
+    try {
+      const data = await fetch('/api')
+      set({ data, isLoading: false })
+    } catch (error) {
+      set({ error: error.message, isLoading: false })
+    }
+  }
+}))
+```
+
+**❌ FORBIDDEN**: Redux, Context API for changing data, direct mutations
+
+## 🎨 MUI USAGE (MANDATORY)
+
+### Component Selection Rules:
+```javascript
+// Use Box for: Layout, spacing, flexbox
+<Box sx={{ display: 'flex', gap: 2 }}>
+
+// Use Paper for: Elevated surfaces  
+<Paper elevation={1} sx={{ p: 2 }}>
+
+// Use Card for: Content with actions
+<Card>
+  <CardContent>Content</CardContent>
+  <CardActions><Button/></CardActions>
+</Card>
+
+// Use Grid for: Responsive layouts
+<Grid container spacing={2}>
+  <Grid item xs={12} md={6}>
+```
+
+### ❌ FORBIDDEN Nesting:
+- Card inside Paper ❌
+- Box inside Box without purpose ❌
+- More than 3 levels deep ❌
+- `style={}` prop ❌
+- `className={}` prop ❌
+
+### ✅ REQUIRED: Use sx prop only
+```javascript
+<Box sx={{ 
+  p: 2,                                    // Use theme spacing
+  backgroundColor: 'background.paper',      // Use theme colors
+  [theme.breakpoints.down('md')]: { p: 1 } // Use theme breakpoints
+}}>
+```
+
+## 📱 RESPONSIVE (MANDATORY)
+
+```javascript
+// REQUIRED: Mobile-first with theme breakpoints
+<Box sx={{
+  // Mobile default
+  p: 1,
+  fontSize: '0.875rem',
+  
+  // Tablet and up
+  [theme.breakpoints.up('sm')]: {
+    p: 2,
+    fontSize: '1rem',
+  },
+  
+  // Desktop and up
+  [theme.breakpoints.up('md')]: {
+    p: 3,
+    fontSize: '1.125rem',
+  },
+}}>
+
+// REQUIRED: Responsive Grid
+<Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+  <Grid item xs={12} sm={6} md={4}>
+```
+
+**❌ FORBIDDEN**: Hardcoded breakpoints, px values without theme
+
+## 📊 CHARTS (MANDATORY)
+
+**Use MUI X Charts Only:**
+
+```javascript
+import { LineChart } from '@mui/x-charts/LineChart'
+
+const Chart = React.memo(({ data, title, height = 400 }) => {
+  const chartData = useMemo(() => ({
+    series: data.series,
+    xAxis: data.xAxis,
+  }), [data])
+  
+  return (
+    <Paper elevation={1} sx={{ p: 2, width: '100%' }}>
+      <Typography variant="h6">{title}</Typography>
+      <Box sx={{ height }}>
+        <LineChart
+          series={chartData.series}
+          xAxis={chartData.xAxis}
+          height={height}
+        />
+      </Box>
+    </Paper>
+  )
+})
+```
+
+**❌ FORBIDDEN**: Other chart libraries, no memoization, hardcoded sizes
+
+## 🚀 PERFORMANCE (MANDATORY)
+
+```javascript
+// REQUIRED: Always use these
+const Component = React.memo(({ data, onClick }) => {
+  // Memoize expensive calculations
+  const processed = useMemo(() => data.map(transform), [data])
+  
+  // Memoize callbacks
+  const handleClick = useCallback((id) => onClick(id), [onClick])
+  
+  // Memoize objects
+  const config = useMemo(() => ({ option: 'value' }), [])
+  
+  return <Chart data={processed} onClick={handleClick} config={config} />
+})
+```
+
+**❌ FORBIDDEN**: No React.memo, inline objects, no memoization
+
+## 🔗 IMPORTS (MANDATORY)
+
+```javascript
+// REQUIRED: Follow this exact order
+// 1. React
+import React, { useState, useEffect } from 'react'
+
+// 2. MUI
+import { Box, Typography } from '@mui/material'
+import { LineChart } from '@mui/x-charts/LineChart'
+
+// 3. Internal (max 2 levels up)
+import { useStore } from '../../store/chartStore'
+import Button from '../ui/Button'
+
+// 4. Types (if TypeScript)
+import type { ChartData } from '../../types'
+```
+
+**❌ FORBIDDEN**: Wildcard imports, >2 levels up, wrong order
+
+## 🧪 TESTING (MANDATORY)
+
+```javascript
+// REQUIRED: Every component needs tests
+import { render, screen } from '@testing-library/react'
+import { ThemeProvider } from '@mui/material/styles'
+import theme from '../../theme'
+
+const renderWithTheme = (component) => 
+  render(<ThemeProvider theme={theme}>{component}</ThemeProvider>)
+
+describe('Component', () => {
+  it('renders without crashing', () => {
+    renderWithTheme(<Component />)
+  })
+  
+  it('displays props correctly', () => {
+    renderWithTheme(<Component title="Test" />)
+    expect(screen.getByText('Test')).toBeInTheDocument()
+  })
+})
+```
+
+**❌ FORBIDDEN**: No tests, snapshot-only tests
+
+## 🎯 THEME SETUP (MANDATORY)
+
+```javascript
+// src/theme/index.js - REQUIRED structure
+import { createTheme } from '@mui/material/styles'
+
+const theme = createTheme({
+  spacing: 4,                    // Minimal spacing
+  palette: {
+    mode: 'light',
+    primary: { main: '#1976d2' },
+    background: {
+      default: '#fafafa',
+      paper: '#ffffff',
+    },
+  },
+  components: {
+    // Full-width containers
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 8,
+          paddingRight: 8,
+          maxWidth: '100% !important',
+        },
+      },
+    },
+  },
+})
+
+export default theme
+```
+
+## ✅ QUICK VALIDATION CHECKLIST
+
+Before submitting code, verify:
+- [ ] Correct folder structure
+- [ ] PascalCase components
+- [ ] React.memo used
+- [ ] PropTypes added
+- [ ] Zustand for state
+- [ ] sx prop (no style/className)
+- [ ] Performance optimizations
+- [ ] Tests included
+- [ ] Import order correct
+- [ ] Max 3 nesting levels
+
+## 🤖 CURSOR AI SPECIFIC RULES
+
+### DO:
+- Always check folder structure first
+- Use exact patterns shown above
+- Ask if uncertain about placement
+- Follow naming conventions strictly
+- Include PropTypes always
+- Use React.memo for all components
+- Optimize for performance
+
+### DON'T:
+- Create files in wrong folders
+- Use forbidden patterns
+- Skip performance optimizations
+- Forget PropTypes
+- Use wrong naming conventions
+- Create deep nesting
+- Use non-MUI components
+
+## 🚫 IMMEDIATE REJECTION TRIGGERS
+
+- Wrong folder structure
+- Missing React.memo
+- Missing PropTypes
+- Using style/className props
+- Card inside Paper
+- More than 3 nesting levels
+- Snake_case naming
+- No tests
+- Using Redux/Context API
+- Component files with .js extension (must be .jsx)
+
+## 📋 PROJECT CONTEXT
+
+### Project Overview
+- **Type**: React SPA with MUI
+- **Purpose**: Analytics dashboard with multiple charts
+- **State Management**: Zustand
+- **UI Library**: MUI + MUI X Charts
+- **Focus**: Performance, responsive design, minimal spacing
+
+### Key Requirements
+- Full-width layouts with minimal padding/margins
+- Multiple charts for data visualization
+- High performance with optimized re-rendering
+- Mobile-first responsive design
+- Feature-based folder structure
+
+### Tech Stack
+- React 18+
+- MUI v6
+- MUI X Charts
+- Zustand for state management
+- Vite for build
+- Jest for testing
+
+### File Extension Requirements
+- All React components must use `.jsx` extension
+- Regular JavaScript files use `.js` extension
+- This is required by Vite for proper JSX parsing
+
+**Remember**: This is a **LIVING DOCUMENT**. When in doubt, ask team lead before proceeding. 
