@@ -68,3 +68,10 @@ Commit: Fix data structure issues in Developer Quality Dashboard
 - Components now receive proper array data structures as expected
 
 The dashboard should now render properly without PropType warnings or JavaScript errors.
+Commit: Fix test failures after data structure changes
+
+- Updated filterService tests to expect arrays instead of Maps for developers
+- Added safety check for bugAnalysis in finalizeFilteredMetrics
+- Fixed test assertions to use Array.find() instead of Map.get()
+
+Tests should now pass with the new array-based data structures.
