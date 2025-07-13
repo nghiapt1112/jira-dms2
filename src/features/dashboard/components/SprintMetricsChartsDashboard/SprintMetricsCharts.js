@@ -327,64 +327,7 @@ const SprintMetricsCharts = React.memo(({
         </Grid>
       </Grid>
 
-      {/* Sprint Metrics Summary */}
-      <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Sprint Performance Summary
-        </Typography>
-        
-        <Grid container spacing={2}>
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h6" color="primary">
-                {sprintMetricsData.summary.totalSprints}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Total Sprints
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography 
-                variant="h6" 
-                color={sprintMetricsData.summary.avgTimeliness >= 70 ? "success.main" : "warning.main"}
-              >
-                {sprintMetricsData.summary.avgTimeliness.toFixed(1)}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Avg Timeliness
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography 
-                variant="h6" 
-                color={sprintMetricsData.summary.avgScopeStability >= 70 ? "success.main" : "warning.main"}
-              >
-                {sprintMetricsData.summary.avgScopeStability.toFixed(1)}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Scope Stability
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h6" color="info.main">
-                {filteredData.length}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Issues Analyzed
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+
 
       {/* Details Modal */}
       <SprintMetricsDetailsPopup

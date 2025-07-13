@@ -237,46 +237,7 @@ const ProjectHealthOverview = React.memo(({
         </Grid>
       )}
 
-      {/* Insights Section */}
-      <Box sx={{ mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Key Insights
-        </Typography>
-        
-        <Grid container spacing={2}>
-          {getOverviewStats.avgQualityScore < 70 && (
-            <Grid item xs={12} sm={6}>
-              <Alert severity="warning" sx={{ mb: 1 }}>
-                Average quality score ({getOverviewStats.avgQualityScore.toFixed(1)}%) is below recommended threshold (70%)
-              </Alert>
-            </Grid>
-          )}
-          
-          {getOverviewStats.healthyProjects / getOverviewStats.totalProjects < 0.5 && (
-            <Grid item xs={12} sm={6}>
-              <Alert severity="error" sx={{ mb: 1 }}>
-                Less than 50% of projects are in healthy status
-              </Alert>
-            </Grid>
-          )}
-          
-          {getOverviewStats.totalBugs > getOverviewStats.totalIssues * 0.15 && (
-            <Grid item xs={12} sm={6}>
-              <Alert severity="warning" sx={{ mb: 1 }}>
-                Bug rate exceeds 15% across all projects
-              </Alert>
-            </Grid>
-          )}
-          
-          {getOverviewStats.avgHealthScore >= 80 && getOverviewStats.avgQualityScore >= 80 && (
-            <Grid item xs={12}>
-              <Alert severity="success" sx={{ mb: 1 }}>
-                Excellent overall performance! Both quality and health scores are above 80%
-              </Alert>
-            </Grid>
-          )}
-        </Grid>
-      </Box>
+      {/* Insights Section - Removed as requested */}
     </Box>
   )
 })

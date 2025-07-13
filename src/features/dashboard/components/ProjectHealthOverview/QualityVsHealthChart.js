@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Box, Typography, Paper, useTheme } from '@mui/material'
+import { Box, Typography, Paper, useTheme, Modal, IconButton } from '@mui/material'
+import { Close as CloseIcon } from '@mui/icons-material'
 import { ScatterChart } from '@mui/x-charts/ScatterChart'
 
 const QualityVsHealthChart = React.memo(({ 
@@ -11,22 +12,42 @@ const QualityVsHealthChart = React.memo(({
   ...props 
 }) => {
   const theme = useTheme()
+  const [selectedPoint, setSelectedPoint] = React.useState(null)
+  const [selectedSeries, setSelectedSeries] = React.useState(null)
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return []
     
-    return data.map(project => ({
-      x: project.healthScore || 0,
-      y: project.qualityScore || 0,
-      id: project.id || project.projectKey,
-      size: Math.max((project.effort || 0) / 10, 10),
-      projectName: project.name || project.projectKey,
-      health: project.health || 'Unknown',
-      qualityStatus: project.qualityStatus || 'Unknown',
-      bugRate: project.bugRate || 0,
-      progress: project.progress || 0,
-      totalIssues: project.issues?.length || 0
-    }))
+    return data.map(project => {
+      // Determine relationship pattern
+      const getRelationshipPattern = (quality, health) => {
+        const diff = Math.abs(quality - health)
+        if (diff <= 10) return 'ALIGNED'
+        if (health > quality + 10) return 'ABOVE DIAGONAL'
+        if (quality > health + 10) return 'BELOW DIAGONAL'
+        return 'MODERATE VARIANCE'
+      }
+      
+      const pattern = getRelationshipPattern(project.qualityScore || 0, project.healthScore || 0)
+      
+      return {
+        x: project.healthScore || 0,
+        y: project.qualityScore || 0,
+        id: project.id || project.projectKey,
+        size: Math.max((project.effort || 0) / 10, 10),
+        // Enhanced data for tooltip
+        label: `${project.name || project.projectKey} (${pattern})`,
+        projectName: project.name || project.projectKey,
+        health: project.health || 'Unknown',
+        qualityStatus: project.qualityStatus || 'Unknown',
+        bugRate: project.bugRate || 0,
+        progress: project.progress || 0,
+        totalIssues: project.issues?.length || 0,
+        pattern,
+        storyPoints: project.totalStoryPoints || 0,
+        highSeverityBugs: project.highSeverityBugs || 0
+      }
+    })
   }, [data])
 
   const getColorByHealth = useCallback((healthScore) => {
@@ -66,7 +87,7 @@ const QualityVsHealthChart = React.memo(({
   }, [chartData, theme])
 
   const getTooltipContent = useCallback((params) => {
-    if (!params || params.dataIndex === undefined) return null
+    if (!params || params.dataIndex === undefined || params.seriesIndex === undefined) return null
     
     const seriesData = chartSeries[params.seriesIndex]?.data
     if (!seriesData) return null
@@ -74,40 +95,83 @@ const QualityVsHealthChart = React.memo(({
     const point = seriesData[params.dataIndex]
     if (!point) return null
 
+    // Get project data for detailed info (following old source pattern)
+    const project = data.find(p => (p.id || p.projectKey) === point.id)
+    
+    // Project name resolution (matching old source logic)
+    const projectName = project?.name || point.projectName || point.id || 'Unknown Project'
+
+    // Simple styling matching old source
+    const tooltipStyles = {
+      backgroundColor: '#fff',
+      padding: '10px',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      minWidth: '200px'
+    }
+
+    const labelStyle = {
+      margin: '0 0 5px',
+      fontWeight: 'bold',
+      fontSize: '14px'
+    }
+
+    const rowStyle = {
+      margin: '3px 0',
+      fontSize: '12px'
+    }
+
+    const keyStyle = {
+      display: 'inline-block',
+      width: '80px'
+    }
+
+    const valueStyle = {
+      fontWeight: 'bold'
+    }
+
     return (
-      <Box sx={{ p: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          {point.projectName}
-        </Typography>
-        <Typography variant="body2">
-          Quality Score: {point.y.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2">
-          Health Score: {point.x.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2">
-          Health Status: {point.health}
-        </Typography>
-        <Typography variant="body2">
-          Quality Status: {point.qualityStatus}
-        </Typography>
-        <Typography variant="body2">
-          Bug Rate: {point.bugRate.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2">
-          Total Issues: {point.totalIssues}
-        </Typography>
-      </Box>
+      <div style={tooltipStyles}>
+        <p style={labelStyle}>{projectName}</p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Quality:</span>
+          <span style={valueStyle}>{point.y.toFixed(2)}%</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Health:</span>
+          <span style={valueStyle}>{point.x.toFixed(2)}%</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Effort:</span>
+          <span style={valueStyle}>{point.storyPoints.toFixed(2)} pts</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Bugs:</span>
+          <span style={valueStyle}>{project?.bugs?.length || 0}</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>High Severity:</span>
+          <span style={valueStyle}>{point.highSeverityBugs}</span>
+        </p>
+      </div>
     )
-  }, [chartSeries])
+  }, [chartSeries, data])
 
   const handlePointClick = useCallback((event, params) => {
-    if (onProjectClick && params?.dataIndex !== undefined && params?.seriesIndex !== undefined) {
+    if (params?.dataIndex !== undefined && params?.seriesIndex !== undefined) {
       const seriesData = chartSeries[params.seriesIndex]?.data
       if (seriesData) {
         const point = seriesData[params.dataIndex]
         if (point) {
-          onProjectClick(point.id, point)
+          // Set tooltip data
+          setSelectedPoint(point)
+          setSelectedSeries(params.seriesIndex)
+          
+          // Also call original click handler
+          if (onProjectClick) {
+            onProjectClick(point.id, point)
+          }
         }
       }
     }
@@ -167,9 +231,84 @@ const QualityVsHealthChart = React.memo(({
               bottom: 60
             }
           }}
-          tooltip={{
-            trigger: 'item',
-            content: getTooltipContent
+          slots={{
+            tooltip: ({ active, payload }) => {
+              if (!active || !payload || !payload.length) return null
+              
+              // Use the same approach as the working click handler
+              const dataIndex = payload[0].dataIndex
+              const seriesIndex = payload[0].seriesIndex
+              
+              if (dataIndex === undefined || seriesIndex === undefined) return null
+              
+              const seriesData = chartSeries[seriesIndex]?.data
+              if (!seriesData) return null
+              
+              const point = seriesData[dataIndex]
+              if (!point) return null
+
+              // Get project data for detailed info (same as click handler logic)
+              const project = data.find(p => (p.id || p.projectKey) === point.id)
+              
+              // Project name resolution (matching old source logic)
+              const projectName = project?.name || point.projectName || point.id || 'Unknown Project'
+
+              // Simple styling matching old source
+              const tooltipStyles = {
+                backgroundColor: '#fff',
+                padding: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                minWidth: '200px'
+              }
+
+              const labelStyle = {
+                margin: '0 0 5px',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }
+
+              const rowStyle = {
+                margin: '3px 0',
+                fontSize: '12px'
+              }
+
+              const keyStyle = {
+                display: 'inline-block',
+                width: '80px'
+              }
+
+              const valueStyle = {
+                fontWeight: 'bold'
+              }
+
+              return (
+                <div style={tooltipStyles}>
+                  <p style={labelStyle}>{projectName}</p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Quality:</span>
+                    <span style={valueStyle}>{(point.y || 0).toFixed(2)}%</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Health:</span>
+                    <span style={valueStyle}>{(point.x || 0).toFixed(2)}%</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Effort:</span>
+                    <span style={valueStyle}>{(point.storyPoints || 0).toFixed(2)} pts</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Bugs:</span>
+                    <span style={valueStyle}>{project?.bugs?.length || 0}</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>High Severity:</span>
+                    <span style={valueStyle}>{point.highSeverityBugs || 0}</span>
+                  </p>
+                </div>
+              )
+            }
           }}
           onItemClick={handlePointClick}
           grid={{ horizontal: true, vertical: true }}
@@ -235,8 +374,56 @@ const QualityVsHealthChart = React.memo(({
           }
         }}
       >
-        Bubble size represents project effort. Colors indicate health status.
+        Bubble size represents project effort. Colors indicate health status. Click on bubbles for detailed analysis.
       </Typography>
+
+      {/* Enhanced Tooltip Modal */}
+      <Modal
+        open={!!selectedPoint}
+        onClose={() => {
+          setSelectedPoint(null)
+          setSelectedSeries(null)
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: theme.zIndex.modal + 1
+        }}
+      >
+        <Paper
+          elevation={8}
+          sx={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            outline: 'none'
+          }}
+        >
+          <IconButton
+            onClick={() => {
+              setSelectedPoint(null)
+              setSelectedSeries(null)
+            }}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          
+          {selectedPoint && selectedSeries !== null && 
+            getTooltipContent({ 
+              dataIndex: chartSeries[selectedSeries]?.data.findIndex(p => p.id === selectedPoint.id),
+              seriesIndex: selectedSeries 
+            })
+          }
+        </Paper>
+      </Modal>
     </Paper>
   )
 })

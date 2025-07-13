@@ -19,7 +19,6 @@ import {
 import { useJiraData } from '../../../jira-data/hooks/useJiraData'
 import { useMainDashboardCache } from '../../hooks/useMainDashboardCache'
 import ProjectHealthOverview from '../ProjectHealthOverview'
-import ProjectDelivery from '../ProjectDelivery'
 import SprintMetricsChartsDashboard from '../SprintMetricsChartsDashboard'
 
 const MainDashboard = React.memo(({ 
@@ -346,19 +345,7 @@ const MainDashboard = React.memo(({
             </Box>
           </Grid>
           
-          <Grid item xs={6} sm={4} md={2}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography 
-                variant="h4" 
-                color={overallMetrics.avgDeliveryScore >= 70 ? 'success.main' : 'warning.main'}
-              >
-                {overallMetrics.avgDeliveryScore.toFixed(0)}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Avg Delivery
-              </Typography>
-            </Box>
-          </Grid>
+
         </Grid>
       </Paper>
 
@@ -368,18 +355,6 @@ const MainDashboard = React.memo(({
           {/* Project Health Overview */}
           <Grid item xs={12}>
             <ProjectHealthOverview
-              data={projectData}
-              onProjectClick={handleProjectClick}
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
-          </Grid>
-
-          {/* Project Delivery Dashboard */}
-          <Grid item xs={12}>
-            <ProjectDelivery
               data={projectData}
               onProjectClick={handleProjectClick}
             />

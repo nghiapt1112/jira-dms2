@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Box, Typography, Paper, Tooltip, useTheme } from '@mui/material'
+import { Box, Typography, Paper, Tooltip, useTheme, Modal, IconButton } from '@mui/material'
+import { Close as CloseIcon } from '@mui/icons-material'
 import { ScatterChart } from '@mui/x-charts/ScatterChart'
 
 const QualityVsDeliveryChart = React.memo(({ 
@@ -11,57 +12,127 @@ const QualityVsDeliveryChart = React.memo(({
   ...props 
 }) => {
   const theme = useTheme()
+  const [selectedPoint, setSelectedPoint] = React.useState(null)
+  const [tooltipPosition, setTooltipPosition] = React.useState({ x: 0, y: 0 })
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return []
     
-    return data.map(project => ({
-      x: project.delivery || 0,
-      y: project.qualityScore || 0,
-      id: project.id || project.projectKey,
-      size: Math.max((project.effort || 0) / 10, 10),
-      projectName: project.name || project.projectKey,
-      bugs: project.bugs?.length || 0,
-      highSeverityBugs: project.highSeverityBugs || 0,
-      progress: project.progress || 0
-    }))
+    return data.map(project => {
+      // Determine strategic zone for tooltip
+      const getStrategicZone = (quality, delivery) => {
+        if (quality >= 80 && delivery >= 80) return 'SUCCESS ZONE'
+        if (quality >= 80 && delivery < 60) return 'OVER-ENGINEERING ZONE'
+        if (quality < 60 && delivery >= 80) return 'TECHNICAL DEBT ZONE'
+        if (quality < 60 && delivery < 60) return 'CRISIS ZONE'
+        return 'MODERATE PERFORMANCE'
+      }
+      
+      const zone = getStrategicZone(project.qualityScore || 0, project.delivery || 0)
+      
+      return {
+        x: project.delivery || 0,
+        y: project.qualityScore || 0,
+        id: project.id || project.projectKey,
+        size: Math.max((project.effort || 0) / 10, 10),
+        // Enhanced data for tooltip
+        label: `${project.name || project.projectKey} (${zone})`,
+        projectName: project.name || project.projectKey,
+        bugs: project.bugs?.length || 0,
+        highSeverityBugs: project.highSeverityBugs || 0,
+        progress: project.progress || 0,
+        zone,
+        totalIssues: project.totalIssues || 0,
+        bugRate: project.bugRate || 0,
+        storyPoints: project.totalStoryPoints || 0
+      }
+    })
   }, [data])
 
   const getTooltipContent = useCallback((params) => {
-    if (!params || !params.dataIndex !== undefined) return null
+    if (!params || params.dataIndex === undefined) return null
     
     const point = chartData[params.dataIndex]
     if (!point) return null
 
+    // Get project data for detailed info (following old source pattern)
+    const project = data.find(p => (p.id || p.projectKey) === point.id)
+    
+    // Project name resolution (matching old source logic)
+    const projectName = project?.name || point.projectName || point.id || 'Unknown Project'
+
+    // Simple styling matching old source
+    const tooltipStyles = {
+      backgroundColor: '#fff',
+      padding: '10px',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      minWidth: '200px'
+    }
+
+    const labelStyle = {
+      margin: '0 0 5px',
+      fontWeight: 'bold',
+      fontSize: '14px'
+    }
+
+    const rowStyle = {
+      margin: '3px 0',
+      fontSize: '12px'
+    }
+
+    const keyStyle = {
+      display: 'inline-block',
+      width: '80px'
+    }
+
+    const valueStyle = {
+      fontWeight: 'bold'
+    }
+
     return (
-      <Box sx={{ p: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          {point.projectName}
-        </Typography>
-        <Typography variant="body2">
-          Quality Score: {point.y.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2">
-          Delivery Score: {point.x.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2">
-          Progress: {point.progress.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2">
-          Total Bugs: {point.bugs}
-        </Typography>
-        <Typography variant="body2" color="error">
-          High Severity: {point.highSeverityBugs}
-        </Typography>
-      </Box>
+      <div style={tooltipStyles}>
+        <p style={labelStyle}>{projectName}</p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Quality:</span>
+          <span style={valueStyle}>{(point.y || 0).toFixed(2)}%</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Delivery:</span>
+          <span style={valueStyle}>{(point.x || 0).toFixed(2)}%</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Effort:</span>
+          <span style={valueStyle}>{(point.storyPoints || 0).toFixed(2)} pts</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>Bugs:</span>
+          <span style={valueStyle}>{point.bugs || 0}</span>
+        </p>
+        <p style={rowStyle}>
+          <span style={keyStyle}>High Severity:</span>
+          <span style={valueStyle}>{point.highSeverityBugs || 0}</span>
+        </p>
+      </div>
     )
-  }, [chartData])
+  }, [chartData, data])
 
   const handlePointClick = useCallback((event, params) => {
-    if (onProjectClick && params?.dataIndex !== undefined) {
+    if (params?.dataIndex !== undefined) {
       const point = chartData[params.dataIndex]
       if (point) {
-        onProjectClick(point.id, point)
+        // Set tooltip data and position
+        setSelectedPoint(point)
+        setTooltipPosition({ 
+          x: event?.clientX || 0, 
+          y: event?.clientY || 0 
+        })
+        
+        // Also call original click handler
+        if (onProjectClick) {
+          onProjectClick(point.id, point)
+        }
       }
     }
   }, [onProjectClick, chartData])
@@ -124,9 +195,79 @@ const QualityVsDeliveryChart = React.memo(({
               bottom: 60
             }
           }}
-          tooltip={{
-            trigger: 'item',
-            content: getTooltipContent
+          slots={{
+            tooltip: ({ active, payload }) => {
+              if (!active || !payload || !payload.length) return null
+              
+              // Use the same approach as the working click handler
+              const dataIndex = payload[0].dataIndex
+              if (dataIndex === undefined) return null
+              
+              const point = chartData[dataIndex]
+              if (!point) return null
+
+              // Get project data for detailed info (same as click handler logic)
+              const project = data.find(p => (p.id || p.projectKey) === point.id)
+              
+              // Project name resolution (matching old source logic)
+              const projectName = project?.name || point.projectName || point.id || 'Unknown Project'
+
+              // Simple styling matching old source
+              const tooltipStyles = {
+                backgroundColor: '#fff',
+                padding: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                minWidth: '200px'
+              }
+
+              const labelStyle = {
+                margin: '0 0 5px',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }
+
+              const rowStyle = {
+                margin: '3px 0',
+                fontSize: '12px'
+              }
+
+              const keyStyle = {
+                display: 'inline-block',
+                width: '80px'
+              }
+
+              const valueStyle = {
+                fontWeight: 'bold'
+              }
+
+              return (
+                <div style={tooltipStyles}>
+                  <p style={labelStyle}>{projectName}</p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Quality:</span>
+                    <span style={valueStyle}>{(point.y || 0).toFixed(2)}%</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Delivery:</span>
+                    <span style={valueStyle}>{(point.x || 0).toFixed(2)}%</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Effort:</span>
+                    <span style={valueStyle}>{(point.storyPoints || 0).toFixed(2)} pts</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>Bugs:</span>
+                    <span style={valueStyle}>{point.bugs || 0}</span>
+                  </p>
+                  <p style={rowStyle}>
+                    <span style={keyStyle}>High Severity:</span>
+                    <span style={valueStyle}>{point.highSeverityBugs || 0}</span>
+                  </p>
+                </div>
+              )
+            }
           }}
           onItemClick={handlePointClick}
           grid={{ horizontal: true, vertical: true }}
@@ -197,8 +338,45 @@ const QualityVsDeliveryChart = React.memo(({
           }
         }}
       >
-        Bubble size represents project effort. Click on bubbles for project details.
+        Bubble size represents project effort. Click on bubbles for detailed information.
       </Typography>
+
+      {/* Enhanced Tooltip Modal */}
+      <Modal
+        open={!!selectedPoint}
+        onClose={() => setSelectedPoint(null)}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: theme.zIndex.modal + 1
+        }}
+      >
+        <Paper
+          elevation={8}
+          sx={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            outline: 'none'
+          }}
+        >
+          <IconButton
+            onClick={() => setSelectedPoint(null)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          
+          {selectedPoint && getTooltipContent({ dataIndex: chartData.findIndex(p => p.id === selectedPoint.id) })}
+        </Paper>
+      </Modal>
     </Paper>
   )
 })
