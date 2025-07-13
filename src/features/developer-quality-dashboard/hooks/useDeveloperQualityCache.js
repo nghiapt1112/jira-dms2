@@ -56,15 +56,6 @@ export const useDeveloperQualityCache = () => {
 
   // Load developer quality data when JIRA data becomes available
   useEffect(() => {
-    console.log('Developer Quality Cache - JIRA data effect:', {
-      hasJiraData: !!jiraData,
-      jiraDataLength: Array.isArray(jiraData) ? jiraData.length : 'not array',
-      jiraDataType: typeof jiraData,
-      hasProcessedData: !!data,
-      isLoading,
-      shouldProcess: jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading
-    })
-    
     if (jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading) {
       console.log('Developer Quality Cache - Processing JIRA data:', jiraData.length, 'issues')
       // Process raw JIRA issues for developer quality

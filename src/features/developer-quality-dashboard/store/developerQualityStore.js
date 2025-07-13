@@ -113,23 +113,15 @@ export const useDeveloperQualityStore = create(
       loadData: async (rawData) => {
         const { setLoading, setError, setData } = get()
         
-        console.log('Developer Quality Store - loadData called with:', {
-          hasRawData: !!rawData,
-          rawDataLength: Array.isArray(rawData) ? rawData.length : 'not array',
-          rawDataType: typeof rawData
-        })
-        
         setLoading(true)
         try {
           let processedData
           
           if (rawData) {
-            console.log('Developer Quality Store - Processing raw data:', rawData.length, 'issues')
+            console.log('Developer Quality Store - Processing', rawData.length, 'JIRA issues...')
             // Process provided raw data
             processedData = await developerQualityService.processJiraIssuesForDeveloperQuality(rawData)
-            console.log('Developer Quality Store - Processing completed:', !!processedData)
           } else {
-            console.log('Developer Quality Store - Loading from cache')
             // Load from cache or existing processed data
             processedData = await developerQualityService.getCachedData()
           }
@@ -138,7 +130,11 @@ export const useDeveloperQualityStore = create(
             throw new Error('No data available. Please load JIRA data first.')
           }
           
-          console.log('Developer Quality Store - Setting processed data')
+          console.log('Developer Quality data processed successfully:', {
+            totalIssues: processedData.metadata?.totalIssues || 0,
+            processingTime: processedData.metadata?.processingTime || 0,
+            cacheSize: processedData.metadata?.cacheSize || 0
+          })
           setData(processedData)
         } catch (error) {
           console.error('Failed to load developer quality data:', error)

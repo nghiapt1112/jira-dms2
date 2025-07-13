@@ -1,11 +1,11 @@
 {
-  "lastUpdate": "2025-07-13T14:22:45.967Z",
+  "lastUpdate": "2025-07-13T14:26:25.445Z",
   "features": {
     "authentication": {
       "name": "authentication",
       "path": "src/features/authentication",
       "type": "feature",
-      "created": "2025-07-13T14:22:45.964Z",
+      "created": "2025-07-13T14:26:25.442Z",
       "structure": {
         "components": [],
         "services": [
@@ -37,7 +37,7 @@
       "name": "dashboard",
       "path": "src/features/dashboard",
       "type": "feature",
-      "created": "2025-07-13T14:22:45.965Z",
+      "created": "2025-07-13T14:26:25.443Z",
       "structure": {
         "components": [],
         "services": [
@@ -79,7 +79,7 @@
       "name": "jira-data",
       "path": "src/features/jira-data",
       "type": "feature",
-      "created": "2025-07-13T14:22:45.966Z",
+      "created": "2025-07-13T14:26:25.444Z",
       "structure": {
         "components": [],
         "services": [
@@ -114,7 +114,7 @@
       "name": "developer-quality-dashboard",
       "path": "src/features/developer-quality-dashboard",
       "type": "feature",
-      "created": "2025-07-13T14:22:45.965Z",
+      "created": "2025-07-13T14:26:25.444Z",
       "structure": {
         "components": [
           "index"
@@ -175,6 +175,186 @@
   "services": {},
   "stores": {},
   "implementations": [
+    {
+      "timestamp": "2025-07-13T14:26:25.444Z",
+      "type": "feature",
+      "name": "jira-data",
+      "action": "analyzed",
+      "details": {
+        "name": "jira-data",
+        "path": "src/features/jira-data",
+        "type": "feature",
+        "created": "2025-07-13T14:26:25.444Z",
+        "structure": {
+          "components": [],
+          "services": [
+            "cacheService",
+            "dataProcessingService",
+            "indexedDBCache",
+            "jiraIssuesService",
+            "s3DownloadService"
+          ],
+          "store": [
+            "jiraDataStore"
+          ],
+          "hooks": [
+            "useJiraData",
+            "useJiraDataLoader"
+          ]
+        },
+        "components": [],
+        "services": [
+          "cacheService",
+          "dataProcessingService",
+          "indexedDBCache",
+          "jiraIssuesService",
+          "s3DownloadService"
+        ],
+        "stores": [
+          "jiraDataStore"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-13T14:22:45.967Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-13T14:26:25.444Z",
+      "type": "feature",
+      "name": "developer-quality-dashboard",
+      "action": "analyzed",
+      "details": {
+        "name": "developer-quality-dashboard",
+        "path": "src/features/developer-quality-dashboard",
+        "type": "feature",
+        "created": "2025-07-13T14:26:25.444Z",
+        "structure": {
+          "components": [
+            "index"
+          ],
+          "services": [
+            "cacheOptimizationService",
+            "developerQualityService",
+            "filterService",
+            "index"
+          ],
+          "store": [
+            "developerQualityStore",
+            "index"
+          ],
+          "hooks": [
+            "index",
+            "useDeveloperQualityCache",
+            "useDeveloperQualityFilters"
+          ],
+          "utils": [
+            "MemoryManager",
+            "PerformanceMonitor",
+            "index"
+          ]
+        },
+        "components": [],
+        "services": [
+          "cacheOptimizationService",
+          "developerQualityService",
+          "filterService",
+          "index"
+        ],
+        "stores": [
+          "developerQualityStore",
+          "index"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-13T14:22:45.967Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-13T14:26:25.444Z",
+      "type": "feature",
+      "name": "dashboard",
+      "action": "analyzed",
+      "details": {
+        "name": "dashboard",
+        "path": "src/features/dashboard",
+        "type": "feature",
+        "created": "2025-07-13T14:26:25.443Z",
+        "structure": {
+          "components": [],
+          "services": [
+            "projectDelivery.service",
+            "projectOverview.service",
+            "projectQuality.service",
+            "sprintMetricsData.service",
+            "sprintMetricsDetails.service",
+            "sprintMetricsService",
+            "transformIssuesForProjectOverview"
+          ],
+          "store": [
+            "dashboardStore"
+          ],
+          "hooks": [
+            "useMainDashboardCache"
+          ],
+          "utils": [
+            "CacheManager",
+            "CachePerformanceMonitor"
+          ]
+        },
+        "components": [],
+        "services": [
+          "projectDelivery.service",
+          "projectOverview.service",
+          "projectQuality.service",
+          "sprintMetricsData.service",
+          "sprintMetricsDetails.service",
+          "sprintMetricsService",
+          "transformIssuesForProjectOverview"
+        ],
+        "stores": [
+          "dashboardStore"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-13T14:22:45.967Z"
+      }
+    },
+    {
+      "timestamp": "2025-07-13T14:26:25.443Z",
+      "type": "feature",
+      "name": "authentication",
+      "action": "analyzed",
+      "details": {
+        "name": "authentication",
+        "path": "src/features/authentication",
+        "type": "feature",
+        "created": "2025-07-13T14:26:25.442Z",
+        "structure": {
+          "components": [],
+          "services": [
+            "authService",
+            "authValidation",
+            "jwtService"
+          ],
+          "store": [
+            "authStore"
+          ],
+          "hooks": [
+            "useAuth",
+            "useLogin",
+            "useProfile"
+          ]
+        },
+        "components": [],
+        "services": [
+          "authService",
+          "authValidation",
+          "jwtService"
+        ],
+        "stores": [
+          "authStore"
+        ],
+        "completeness": 100,
+        "contextVersion": "2025-07-13T14:22:45.967Z"
+      }
+    },
     {
       "timestamp": "2025-07-13T14:22:45.966Z",
       "type": "feature",
@@ -3310,137 +3490,6 @@
         "purpose": "data visualization",
         "contextVersion": "2025-07-11T17:26:38.692Z"
       }
-    },
-    {
-      "timestamp": "2025-07-11T17:26:55.749Z",
-      "type": "component",
-      "name": "index",
-      "action": "created",
-      "details": {
-        "name": "index",
-        "path": "src/components/charts/LineChart/index.jsx",
-        "type": "component",
-        "created": "2025-07-11T17:26:55.749Z",
-        "props": [],
-        "hooks": [
-          "useMemo"
-        ],
-        "dependencies": [
-          "react",
-          "prop-types",
-          "@mui/material",
-          "@mui/x-charts/LineChart"
-        ],
-        "hasTests": false,
-        "complexity": "medium",
-        "purpose": "data visualization",
-        "contextVersion": "2025-07-11T17:26:38.692Z"
-      }
-    },
-    {
-      "timestamp": "2025-07-11T17:26:55.749Z",
-      "type": "component",
-      "name": "index",
-      "action": "created",
-      "details": {
-        "name": "index",
-        "path": "src/components/charts/BarChart/index.jsx",
-        "type": "component",
-        "created": "2025-07-11T17:26:55.749Z",
-        "props": [],
-        "hooks": [
-          "useMemo"
-        ],
-        "dependencies": [
-          "react",
-          "prop-types",
-          "@mui/material",
-          "@mui/x-charts/BarChart"
-        ],
-        "hasTests": false,
-        "complexity": "medium",
-        "purpose": "data visualization",
-        "contextVersion": "2025-07-11T17:26:38.692Z"
-      }
-    },
-    {
-      "timestamp": "2025-07-11T17:26:55.748Z",
-      "type": "feature",
-      "name": "jira-data",
-      "action": "analyzed",
-      "details": {
-        "name": "jira-data",
-        "path": "src/features/jira-data",
-        "type": "feature",
-        "created": "2025-07-11T17:26:55.748Z",
-        "structure": {
-          "components": [],
-          "services": [
-            "cacheService",
-            "dataProcessingService",
-            "jiraIssuesService",
-            "s3DownloadService"
-          ],
-          "store": [
-            "jiraDataStore"
-          ],
-          "hooks": [
-            "useJiraData",
-            "useJiraDataLoader"
-          ]
-        },
-        "components": [],
-        "services": [
-          "cacheService",
-          "dataProcessingService",
-          "jiraIssuesService",
-          "s3DownloadService"
-        ],
-        "stores": [
-          "jiraDataStore"
-        ],
-        "completeness": 100,
-        "contextVersion": "2025-07-11T17:26:38.692Z"
-      }
-    },
-    {
-      "timestamp": "2025-07-11T17:26:55.748Z",
-      "type": "feature",
-      "name": "dashboard",
-      "action": "analyzed",
-      "details": {
-        "name": "dashboard",
-        "path": "src/features/dashboard",
-        "type": "feature",
-        "created": "2025-07-11T17:26:55.748Z",
-        "structure": {
-          "components": [],
-          "services": [
-            "projectDelivery.service",
-            "projectOverview.service",
-            "projectQuality.service",
-            "transformIssuesForProjectOverview"
-          ],
-          "store": [
-            "dashboardStore"
-          ],
-          "hooks": [
-            "useMainDashboardCache"
-          ]
-        },
-        "components": [],
-        "services": [
-          "projectDelivery.service",
-          "projectOverview.service",
-          "projectQuality.service",
-          "transformIssuesForProjectOverview"
-        ],
-        "stores": [
-          "dashboardStore"
-        ],
-        "completeness": 100,
-        "contextVersion": "2025-07-11T17:26:38.692Z"
-      }
     }
   ],
   "patterns": {},
@@ -3452,7 +3501,7 @@
     "totalServices": 0,
     "featuresCompleted": 4,
     "codeQuality": "fair",
-    "lastScan": "2025-07-13T14:22:45.967Z"
+    "lastScan": "2025-07-13T14:26:25.445Z"
   },
   "implementationPlan": {
     "planPath": "doc/dashboard/main-dashboard/implementation-plan.md",
