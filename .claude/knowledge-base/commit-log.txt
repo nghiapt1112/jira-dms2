@@ -58,3 +58,13 @@ Commit: Fix filtering functionality in Developer Quality Dashboard
 - Fixed filter service call parameter order
 
 The dashboard should now properly apply filters without errors.
+Commit: Fix data structure issues in Developer Quality Dashboard
+
+- Fixed getSeverityColor function hoisting issue in BugTrendAnalysis
+- Fixed Map to Array conversion in both developerQualityService and filterService
+- Updated bugRateAnalysis.developers and monthlyBugTrend to be arrays instead of Maps
+- Fixed missing setFilters prop by using updateFilters from hook
+- Added safety checks for undefined bugRate values in BugRateAnalysisTable
+- Components now receive proper array data structures as expected
+
+The dashboard should now render properly without PropType warnings or JavaScript errors.

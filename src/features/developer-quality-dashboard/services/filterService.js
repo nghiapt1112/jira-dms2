@@ -399,7 +399,7 @@ export const filterService = {
     }
     
     // Convert monthlyBugTrend Map to array for component consumption
-    if (metrics.bugAnalysis.monthlyBugTrend instanceof Map) {
+    if (metrics.bugAnalysis && metrics.bugAnalysis.monthlyBugTrend instanceof Map) {
       metrics.bugAnalysis.monthlyBugTrend = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
         .map(([month, data]) => ({ month, ...data }))
         .sort((a, b) => a.month.localeCompare(b.month))

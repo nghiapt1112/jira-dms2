@@ -337,13 +337,14 @@ describe('filterService', () => {
       const indices = new Set([0, 1, 2]) // Mixed issues
       const result = filterService.recalculateMetricsFromIndices(indices, mockCacheData)
       
-      expect(result.bugRateAnalysis.developers.has('John Doe')).toBe(true)
-      expect(result.bugRateAnalysis.developers.has('Jane Smith')).toBe(true)
+      // After finalizeFilteredMetrics, developers should be an array
+      expect(Array.isArray(result.bugRateAnalysis.developers)).toBe(true)
+      expect(result.bugRateAnalysis.developers.length).toBeGreaterThan(0)
       
-      const johnStats = result.bugRateAnalysis.developers.get('John Doe')
+      const johnStats = result.bugRateAnalysis.developers.find(dev => dev.developer === 'John Doe')
       expect(johnStats.bugRate).toBe(100) // 1 bug out of 1 issue
       
-      const janeStats = result.bugRateAnalysis.developers.get('Jane Smith')
+              const janeStats = result.bugRateAnalysis.developers.find(dev => dev.developer === 'Jane Smith')
       expect(janeStats.bugRate).toBe(0) // 0 bugs out of 1 issue
     })
   })
@@ -398,8 +399,9 @@ describe('filterService', () => {
       expect(metrics.teamContribution.topContributors[0].developer).toBe('John Doe')
       expect(metrics.teamContribution.topContributors[0].percentage).toBe(60)
       
-      expect(metrics.bugRateAnalysis.developers.has('John Doe')).toBe(true)
-      expect(metrics.bugRateAnalysis.developers.get('John Doe').bugRate).toBeCloseTo(66.67, 2)
+      const johnDev = metrics.bugRateAnalysis.developers.find(dev => dev.developer === 'John Doe')
+      expect(johnDev).toBeTruthy()
+      expect(johnDev.bugRate).toBeCloseTo(66.67, 2)
       expect(metrics.bugRateAnalysis.teamAverage).toBeCloseTo(33.33, 2)
     })
 
