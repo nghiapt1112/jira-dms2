@@ -18,6 +18,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'))
 
 const MainDashboard = React.lazy(() => import('./features/dashboard/components/MainDashboard'))
 const QualityDashboard = React.lazy(() => import('./pages/Dashboard'))
+const DeveloperQualityDashboard = React.lazy(() => import('./features/developer-quality-dashboard/components/DeveloperQualityDashboard'))
 
 const DeveloperMetrics = React.lazy(() => import('./pages/Dashboard'))
 const QAMetrics = React.lazy(() => import('./pages/Dashboard'))
@@ -75,6 +76,7 @@ const App = React.memo(() => {
                 
                 <Route path="main-dashboard" element={<MainDashboard />} />
                 <Route path="quality-dashboard" element={<QualityDashboard />} />
+                <Route path="developer-quality-dashboard" element={<DeveloperQualityDashboard />} />
                 
                 <Route path="analytics">
                   <Route path="developers" element={<DeveloperMetrics />} />

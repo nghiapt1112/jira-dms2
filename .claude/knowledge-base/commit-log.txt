@@ -25,3 +25,4 @@ Commit: oke
 Commit: save 2
 Commit: update Main-Dashboard, it is working with all current components
 Commit: Add cursor rule
+Commit: update plan of Developer QUality Dashboard before go

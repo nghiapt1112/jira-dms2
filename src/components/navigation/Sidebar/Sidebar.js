@@ -39,7 +39,8 @@ const NAVIGATION_MENU = [
     icon: DashboardIcon,
     children: [
       { id: 'main-dashboard', title: 'Main Dashboard', path: '/main-dashboard' },
-      { id: 'quality-dashboard', title: 'Quality Dashboard', path: '/quality-dashboard' }
+      { id: 'quality-dashboard', title: 'Quality Dashboard', path: '/quality-dashboard' },
+      { id: 'developer-quality-dashboard', title: 'Developer Quality Dashboard', path: '/developer-quality-dashboard' }
     ]
   },
   {
