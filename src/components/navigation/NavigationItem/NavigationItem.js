@@ -11,8 +11,8 @@ import { useNavigate } from 'react-router-dom'
 
 const NavigationItem = React.memo(({ 
   item, 
-  selected, 
-  collapsed, 
+  selected = false, 
+  collapsed = false, 
   onItemClick,
   level = 0 
 }) => {
@@ -97,12 +97,6 @@ NavigationItem.propTypes = {
   collapsed: PropTypes.bool,
   onItemClick: PropTypes.func,
   level: PropTypes.number,
-}
-
-NavigationItem.defaultProps = {
-  selected: false,
-  collapsed: false,
-  level: 0,
 }
 
 NavigationItem.displayName = 'NavigationItem'

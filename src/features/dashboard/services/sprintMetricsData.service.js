@@ -1,3 +1,14 @@
+import { JIRA_CONSTANTS } from '../../../constants/jiraConstants.js'
+import { 
+  createDate, 
+  getCurrentDate, 
+  daysBetween, 
+  daysAgo, 
+  getMonthKey, 
+  isAfter, 
+  TIME_CONSTANTS 
+} from '../../../shared/utils/dateUtils.js'
+
 export const sprintMetricsDataService = {
   processSprintMetrics: (issues, selectedProjects = []) => {
     if (!issues || issues.length === 0) {
@@ -61,8 +72,8 @@ export const sprintMetricsDataService = {
         return acc
       }
 
-      const due = new Date(dueDate)
-      const resolved = resolutionDate ? new Date(resolutionDate) : new Date()
+      const due = createDate(dueDate)
+      const resolved = resolutionDate ? createDate(resolutionDate) : getCurrentDate()
       const isCompleted = status === 'Done' || status === 'Closed' || status === 'Resolved'
 
       if (isCompleted) {
@@ -77,8 +88,8 @@ export const sprintMetricsDataService = {
           acc.totalDelayDays += delayDays
         }
       } else {
-        if (new Date() > due) {
-          const delayDays = Math.ceil((new Date() - due) / (1000 * 60 * 60 * 24))
+        if (isAfter(getCurrentDate(), due)) {
+          const delayDays = daysBetween(due, getCurrentDate())
           acc.late.push({
             ...issue,
             delayDays,
@@ -144,12 +155,16 @@ export const sprintMetricsDataService = {
 
     const recentlyAddedIssues = targetIssues
       .filter(issue => {
-        const created = new Date(issue.fields?.created || 0)
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        const created = createDate(issue.fields?.created)
+        const thirtyDaysAgo = daysAgo(30)
         return created >= thirtyDaysAgo
       })
-      .sort((a, b) => new Date(b.fields?.created || 0) - new Date(a.fields?.created || 0))
+      .sort((a, b) => {
+        const dateA = createDate(a.fields?.created)
+        const dateB = createDate(b.fields?.created)
+        if (!dateA || !dateB) return 0
+        return dateB.getTime() - dateA.getTime()
+      })
 
     return {
       planned: plannedIssues,
@@ -298,8 +313,8 @@ const calculateScopeCreepMetrics = (projectMetrics) => {
 
 const calculateMonthlyAggregation = (issues) => {
   const monthlyData = issues.reduce((acc, issue) => {
-    const created = new Date(issue.fields?.created || 0)
-    const monthKey = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}`
+    const created = createDate(issue.fields?.created)
+    const monthKey = getMonthKey(created)
     
     if (!acc[monthKey]) {
       acc[monthKey] = {
@@ -353,11 +368,11 @@ const calculateMonthlyAggregation = (issues) => {
 }
 
 const analyzeScope = (issues) => {
-  const creationDates = issues.map(issue => new Date(issue.fields?.created || 0))
+  const creationDates = issues.map(issue => createDate(issue.fields?.created)).filter(Boolean)
   creationDates.sort((a, b) => a - b)
   
   const quarterPoint = Math.floor(creationDates.length * 0.25)
-  const cutoffDate = creationDates[quarterPoint] || new Date(0)
+  const cutoffDate = creationDates[quarterPoint] || daysAgo(365)
   
   return {
     plannedCutoff: cutoffDate,
@@ -372,7 +387,7 @@ const calculateVelocityTrends = (issues) => {
   })
 
   const storyPoints = completedIssues.reduce((sum, issue) => {
-    return sum + (parseFloat(issue.fields?.storyPoints || issue.fields?.customfield_10004 || 0))
+    return sum + (parseFloat(issue.fields?.storyPoints || issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS] || 0))
   }, 0)
 
   const estimatedSprints = Math.max(Math.ceil(issues.length / 15), 1)

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Box, Typography, Paper } from '@mui/material'
 import { PieChart } from '@mui/x-charts/PieChart'
 
-const CustomPieChart = React.memo(({ data, title, height = 400, ...props }) => {
+const CustomPieChart = React.memo(({ data = [], title = 'Pie Chart', height = 400, ...props }) => {
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return []
     
@@ -58,10 +58,6 @@ CustomPieChart.propTypes = {
   height: PropTypes.number,
 }
 
-CustomPieChart.defaultProps = {
-  data: [],
-  title: 'Pie Chart',
-  height: 400,
-}
+CustomPieChart.displayName = 'CustomPieChart'
 
 export default CustomPieChart

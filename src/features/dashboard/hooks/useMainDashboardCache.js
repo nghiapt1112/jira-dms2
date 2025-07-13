@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { transformIssuesForProjectOverview, getProjectMetrics } from '../services/transformIssuesForProjectOverview'
 
 const CACHE_KEY_PREFIX = 'main_dashboard_cache'
@@ -7,6 +7,7 @@ const PERFORMANCE_TARGET_MS = 10
 
 export const useMainDashboardCache = (selectedProjects = []) => {
   const [cache, setCache] = useState(new Map())
+  const cacheRef = useRef(new Map())
   const [cacheStats, setCacheStats] = useState({
     hits: 0,
     misses: 0,
@@ -17,6 +18,11 @@ export const useMainDashboardCache = (selectedProjects = []) => {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [lastProcessingTime, setLastProcessingTime] = useState(null)
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    cacheRef.current = cache
+  }, [cache])
 
   const cacheKey = useMemo(() => {
     const projectsKey = selectedProjects.length > 0 
@@ -60,7 +66,8 @@ export const useMainDashboardCache = (selectedProjects = []) => {
   const processIssuesWithCache = useCallback(async (issues) => {
     const startTime = performance.now()
     
-    const cachedEntry = cache.get(cacheKey)
+    // Use ref to access current cache without causing dependency cycles
+    const cachedEntry = cacheRef.current.get(cacheKey)
     
     if (cachedEntry && isCacheValid(cachedEntry)) {
       const responseTime = performance.now() - startTime
@@ -111,7 +118,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
     } finally {
       setIsProcessing(false)
     }
-  }, [cache, cacheKey, isCacheValid, updateCacheStats, generateCacheMetadata])
+  }, [cacheKey, isCacheValid, updateCacheStats, generateCacheMetadata])
 
   const clearCache = useCallback((specificKey = null) => {
     if (specificKey) {
@@ -131,7 +138,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
   }, [])
 
   const getCacheStatus = useCallback(() => {
-    const cachedEntry = cache.get(cacheKey)
+    const cachedEntry = cacheRef.current.get(cacheKey)
     
     if (!cachedEntry) {
       return {
@@ -155,7 +162,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
       expiresIn,
       metadata: cachedEntry.metadata
     }
-  }, [cache, cacheKey, isCacheValid])
+  }, [cacheKey, isCacheValid])
 
   const preloadCache = useCallback(async (issues, projectSets = []) => {
     const preloadPromises = projectSets.map(async (projects) => {
@@ -163,7 +170,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
         ? `${CACHE_KEY_PREFIX}_${projects.sort().join(',')}`
         : `${CACHE_KEY_PREFIX}_all_projects`
       
-      if (!cache.has(key)) {
+      if (!cacheRef.current.has(key)) {
         const filteredIssues = projects.length > 0
           ? issues.filter(issue => {
               const projectKey = issue.displayFields?.projectKey || issue.fields?.project?.key
@@ -192,7 +199,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
     })
     
     await Promise.all(preloadPromises)
-  }, [cache, generateCacheMetadata])
+  }, [generateCacheMetadata])
 
   const getPerformanceMetrics = useCallback(() => {
     const hitRate = cacheStats.totalRequests > 0 
@@ -207,12 +214,12 @@ export const useMainDashboardCache = (selectedProjects = []) => {
       isPerformant,
       targetResponseTime: PERFORMANCE_TARGET_MS,
       lastProcessingTime,
-      cacheKeys: Array.from(cache.keys())
+      cacheKeys: Array.from(cacheRef.current.keys())
     }
-  }, [cacheStats, lastProcessingTime, cache])
+  }, [cacheStats, lastProcessingTime])
 
   const invalidateCacheForProjects = useCallback((projectKeys) => {
-    const keysToRemove = Array.from(cache.keys()).filter(key => {
+    const keysToRemove = Array.from(cacheRef.current.keys()).filter(key => {
       return projectKeys.some(projectKey => key.includes(projectKey))
     })
     
@@ -223,7 +230,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
         return newCache
       })
     })
-  }, [cache])
+  }, [])
 
   useEffect(() => {
     setCacheStats(prev => ({
@@ -236,7 +243,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
     const now = Date.now()
     const expiredKeys = []
     
-    cache.forEach((entry, key) => {
+    cacheRef.current.forEach((entry, key) => {
       if (!isCacheValid(entry)) {
         expiredKeys.push(key)
       }
@@ -249,7 +256,7 @@ export const useMainDashboardCache = (selectedProjects = []) => {
         return newCache
       })
     }
-  }, [cache, isCacheValid])
+  }, [isCacheValid])
 
   useEffect(() => {
     const interval = setInterval(cleanupExpiredEntries, 30 * 60 * 1000) // Every 30 minutes

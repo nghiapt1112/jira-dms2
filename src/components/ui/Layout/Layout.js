@@ -9,13 +9,17 @@ import {
 } from '@mui/material'
 import Sidebar from '../../navigation/Sidebar'
 import MobileNav from '../../navigation/MobileNav'
+import GlobalCachePopover from '../../../shared/components/GlobalCachePopover'
 import { useNavigationStore } from '../../../shared/store/navigationStore'
-import { SIDEBAR_WIDTHS } from '../../navigation/Sidebar'
+import { SIDEBAR_WIDTHS } from '../../navigation/Sidebar/SidebarStyles'
 
 const Layout = React.memo(({ children }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const { isOpen } = useNavigationStore()
+  const { isOpen, getIsOpen } = useNavigationStore()
+  
+  // Get the actual sidebar open state
+  const sidebarIsOpen = isMobile ? isOpen : true // Desktop sidebar is always open
   
   const getMainStyles = () => {
     if (isMobile) {
@@ -27,13 +31,13 @@ const Layout = React.memo(({ children }) => {
       }
     }
     
+    const sidebarWidth = sidebarIsOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED
+    
     return {
       flexGrow: 1,
       p: 3,
-      pt: 11, // Account for desktop AppBar (64px default + 24px padding)
-      width: `calc(100% - ${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px)`,
-      ml: `${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px`,
-      transition: theme.transitions.create(['margin', 'width'], {
+      ml: `${sidebarWidth}px`,
+      transition: theme.transitions.create(['margin'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.enteringScreen,
       }),
@@ -52,9 +56,14 @@ const Layout = React.memo(({ children }) => {
         component="main"
         sx={getMainStyles()}
       >
+        {/* Toolbar spacer for desktop AppBar */}
+        {!isMobile && <Toolbar />}
         {isMobile && <Toolbar />}
         {children}
       </Box>
+
+      {/* Global Cache Management Popover */}
+      <GlobalCachePopover selectedProjects={[]} />
     </Box>
   )
 })

@@ -24,6 +24,8 @@ Grid.propTypes = {
   ]),
 }
 
+Grid.displayName = 'Grid'
+
 export default Grid
 
 export const GridItem = React.memo(({ children, xs = 12, sm, md, lg, xl, ...props }) => (
@@ -48,3 +50,5 @@ GridItem.propTypes = {
   lg: PropTypes.number,
   xl: PropTypes.number,
 }
+
+GridItem.displayName = 'GridItem'

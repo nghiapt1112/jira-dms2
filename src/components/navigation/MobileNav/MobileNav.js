@@ -16,7 +16,7 @@ import { useNavigationStore } from '../../../shared/store/navigationStore'
 import { useAuthStore } from '../../../features/authentication/store/authStore'
 import ProfileMenu from '../../../features/authentication/components/ProfileMenu'
 
-const MobileNav = React.memo(({ title }) => {
+const MobileNav = React.memo(({ title = 'JIRA DMS' }) => {
   const theme = useTheme()
   const { openSidebar } = useNavigationStore()
   const { user, logout } = useAuthStore()
@@ -71,10 +71,6 @@ const MobileNav = React.memo(({ title }) => {
 
 MobileNav.propTypes = {
   title: PropTypes.string
-}
-
-MobileNav.defaultProps = {
-  title: 'JIRA DMS'
 }
 
 MobileNav.displayName = 'MobileNav'

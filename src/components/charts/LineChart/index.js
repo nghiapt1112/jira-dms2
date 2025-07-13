@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Box, Typography, Paper } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
 
-const CustomLineChart = React.memo(({ data, title, height = 400, ...props }) => {
+const CustomLineChart = React.memo(({ data = [], title = 'Line Chart', height = 400, ...props }) => {
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return { series: [], xAxis: [] }
     
@@ -59,10 +59,6 @@ CustomLineChart.propTypes = {
   height: PropTypes.number,
 }
 
-CustomLineChart.defaultProps = {
-  data: [],
-  title: 'Line Chart',
-  height: 400,
-}
+CustomLineChart.displayName = 'CustomLineChart'
 
 export default CustomLineChart

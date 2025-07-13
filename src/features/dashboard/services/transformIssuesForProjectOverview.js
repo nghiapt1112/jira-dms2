@@ -1,3 +1,108 @@
+import { JIRA_CONSTANTS } from '../../../constants/jiraConstants.js'
+
+// Bug severity weights - matches old implementation
+const SEVERITY_WEIGHTS = {
+  Critical: 1.0,
+  Major: 0.7,
+  Medium: 0.5,
+  Moderate: 0.5,
+  Low: 0.3,
+  Lowest: 0.1,
+  Minor: 0.1,
+}
+
+// Bug severity configuration matching old source analysis
+const BUG_SEVERITY_CONFIG = {
+  normalizedSeverities: {
+    // Direct severity mappings
+    'CRITICAL': 'Critical',
+    'MAJOR': 'Major', 
+    'MEDIUM': 'Medium',
+    'MODERATE': 'Medium',
+    'LOW': 'Low',
+    'LOWEST': 'Lowest',
+    'MINOR': 'Lowest',
+    'BLOCKER': 'Critical',
+    // Priority mappings
+    'P1': 'Critical',
+    'P2': 'Major',
+    'P3': 'Medium', 
+    'P4': 'Low',
+    'P5': 'Lowest',
+    'TRIVIAL': 'Low',
+    'HIGHEST': 'Critical',
+    'HIGH': 'Major'
+  },
+  priorityMapping: {
+    highest: ['CRITICAL', 'BLOCKER', 'P1', 'HIGHEST'],
+    high: ['MAJOR', 'P2', 'HIGH'],
+    medium: ['MEDIUM', 'MODERATE', 'P3'],
+    low: ['LOW', 'P4', 'TRIVIAL'],
+    lowest: ['LOWEST', 'P5', 'MINOR']
+  },
+  defaultSeverity: 'Medium'
+}
+
+// Get bug severity with sophisticated fallback logic (matches old source)
+const getBugSeverity = (issue) => {
+  const isBug = issue.fields?.issuetype?.name?.toUpperCase() === 'BUG'
+  
+  // Step 1: Check severity field first (primary source)
+  const severityField = issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_SEVERITY]
+  if (severityField?.value) {
+    const normalizedSeverity = BUG_SEVERITY_CONFIG.normalizedSeverities[severityField.value.toUpperCase()]
+    if (normalizedSeverity) {
+      return normalizedSeverity
+    }
+  }
+  
+  // Step 2: Priority field fallback
+  const priority = issue.fields?.priority?.name
+  if (priority) {
+    const upperPriority = priority.toUpperCase()
+    
+    // Direct mapping check first
+    const directMapping = BUG_SEVERITY_CONFIG.normalizedSeverities[upperPriority]
+    if (directMapping) {
+      return directMapping
+    }
+    
+    // Special bug-specific logic (matches old source)
+    if (isBug) {
+      // Check if priority is in highest group
+      if (BUG_SEVERITY_CONFIG.priorityMapping.highest.some(p => p === upperPriority)) {
+        return 'Critical'
+      }
+      // Check if priority is in high group  
+      if (BUG_SEVERITY_CONFIG.priorityMapping.high.some(p => p === upperPriority)) {
+        return 'Major'
+      }
+      // Check if priority is in lowest group
+      if (BUG_SEVERITY_CONFIG.priorityMapping.lowest.some(p => p === upperPriority)) {
+        return 'Lowest'
+      }
+    }
+  }
+  
+  // Step 3: Default severity assignment
+  if (isBug) {
+    return 'Major' // Default for bugs without severity/priority
+  }
+  
+  return BUG_SEVERITY_CONFIG.defaultSeverity // 'Medium' for non-bugs
+}
+
+// Get severity weight
+const getSeverityWeight = (severity) => {
+  return SEVERITY_WEIGHTS[severity] || 0.5
+}
+
+// Check if high severity bug
+const isHighSeverityBug = (issue) => {
+  const severity = getBugSeverity(issue)
+  return severity === 'Critical' || severity === 'Major'
+}
+
 export const transformIssuesForProjectOverview = (issues) => {
   if (!issues || !Array.isArray(issues) || issues.length === 0) {
     return []
@@ -21,9 +126,16 @@ export const transformIssuesForProjectOverview = (issues) => {
           bugs: [],
           totalStoryPoints: 0,
           completedStoryPoints: 0,
+          completedIssues: 0,
+          weightedBugCount: 0,
           highSeverityBugs: 0,
-          mediumSeverityBugs: 0,
-          lowSeverityBugs: 0,
+          severityBreakdown: {
+            Critical: 0,
+            Major: 0,
+            Medium: 0,
+            Low: 0,
+            Lowest: 0
+          },
           totalEffort: 0
         })
       }
@@ -31,26 +143,37 @@ export const transformIssuesForProjectOverview = (issues) => {
       const project = projectMap.get(projectKey)
       project.issues.push(issue)
 
-      const storyPoints = parseFloat(issue.fields?.storyPoints || issue.fields?.customfield_10004 || 0)
+      const storyPoints = parseFloat(issue.fields?.storyPoints || issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS] || 0)
       project.totalStoryPoints += storyPoints
 
       const issueType = issue.displayFields?.issueType || issue.fields?.issuetype?.name
       const status = issue.displayFields?.status || issue.fields?.status?.name
-      const priority = issue.fields?.priority?.name || 'Medium'
 
+      // Process bugs with weighted severity system
       if (issueType === 'Bug') {
         project.bugs.push(issue)
         
-        if (priority === 'Critical' || priority === 'High') {
+        // Use sophisticated severity detection
+        const severity = getBugSeverity(issue)
+        const weight = getSeverityWeight(severity)
+        
+        // Add to weighted bug count
+        project.weightedBugCount = (project.weightedBugCount || 0) + weight
+        
+        // Track severity breakdown
+        if (project.severityBreakdown[severity] !== undefined) {
+          project.severityBreakdown[severity] += 1
+        }
+        
+        // Track high severity bugs separately (Critical + Major)
+        if (isHighSeverityBug(issue)) {
           project.highSeverityBugs += 1
-        } else if (priority === 'Medium') {
-          project.mediumSeverityBugs += 1
-        } else {
-          project.lowSeverityBugs += 1
         }
       }
 
+      // Track completed issues for progress calculation (old method)
       if (status === 'Done' || status === 'Closed' || status === 'Resolved') {
+        project.completedIssues = (project.completedIssues || 0) + 1
         project.completedStoryPoints += storyPoints
       }
 
@@ -64,25 +187,43 @@ export const transformIssuesForProjectOverview = (issues) => {
   return Array.from(projectMap.values()).map(project => {
     const totalIssues = project.issues.length
     const totalBugs = project.bugs.length
-    const bugRate = totalIssues > 0 ? (totalBugs / totalIssues) * 100 : 0
-    const progress = project.totalStoryPoints > 0 
-      ? (project.completedStoryPoints / project.totalStoryPoints) * 100 
+    
+    // Calculate progress using ISSUE COUNT method (old implementation)
+    const progress = totalIssues > 0 
+      ? Math.round((project.completedIssues / totalIssues) * 100)
       : 0
-
-    const qualityScore = calculateQualityScore(project, bugRate)
-    const healthScore = calculateHealthScore(qualityScore, bugRate, progress)
+    
+    // Calculate weighted bug rate (weighted bugs per 100 issues)
+    const weightedBugRate = totalIssues > 0 
+      ? (project.weightedBugCount / totalIssues) * 100 
+      : 0
+    
+    // Calculate quality score using old formula
+    const qualityScore = Math.max(1, 100 - weightedBugRate)
+    
+    // Calculate health score using old weighted formula
+    const healthScore = (
+      qualityScore * 0.4 +           // Quality Score (40%)
+      (100 - weightedBugRate) * 0.3 + // Bug Rate (30%)
+      progress * 0.3                  // Progress (30%)
+    )
+    
     const deliveryScore = calculateDeliveryScore(project)
 
     return {
       ...project,
+      totalIssues,
       progress: Math.min(progress, 100),
-      bugRate: parseFloat(bugRate.toFixed(2)),
+      bugRate: parseFloat(weightedBugRate.toFixed(2)), // Now using weighted rate
       qualityScore: parseFloat(qualityScore.toFixed(2)),
       qualityStatus: getQualityStatus(qualityScore),
       healthScore: parseFloat(healthScore.toFixed(2)),
       health: getHealthStatus(healthScore),
       delivery: parseFloat(deliveryScore.toFixed(2)),
-      effort: project.totalEffort
+      effort: project.totalEffort,
+      // Additional fields for compatibility
+      plannedEffort: project.totalStoryPoints,
+      weightedBugCount: parseFloat(weightedBugRate.toFixed(2))
     }
   })
 }
@@ -139,9 +280,11 @@ const calculateDeliveryScore = (project) => {
 }
 
 const getQualityStatus = (score) => {
-  if (score >= 80) return 'Excellent'
-  if (score >= 60) return 'Good'
-  if (score >= 40) return 'Fair'
+  // Match old implementation thresholds exactly
+  if (score >= 90) return 'Excellent'
+  if (score >= 80) return 'Good'
+  if (score >= 70) return 'Satisfactory'
+  if (score >= 60) return 'Needs Improvement'
   return 'Poor'
 }
 

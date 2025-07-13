@@ -1,34 +1,99 @@
+import { JIRA_CONSTANTS } from '../../../constants/jiraConstants.js'
+import { createDate, isAfter } from '../../../shared/utils/dateUtils.js'
+
+const SPRINT_FIELD = JIRA_CONSTANTS.CUSTOM_FIELDS.SPRINT
+
+// SCOPE CREEP DETECTION - Same logic as main service
+const detectScopeCreep = (issue, firstSprint) => {
+  const sprintStartDate = createDate(firstSprint.startDate)
+  
+  // Layer 1: Changelog Analysis (Primary method)
+  if (issue.changelog?.histories) {
+    const sprintAddition = issue.changelog.histories.find(history => {
+      if (!history.items) return false
+      
+      return history.items.some(item => {
+        // Check multiple field variations
+        const isSprintField = item.field === 'Sprint' || 
+                             item.fieldId === SPRINT_FIELD || 
+                             item.field === 'Agile Sprint'
+        
+        if (!isSprintField) return false
+        
+        // Check if this sprint was added
+        return item.toString?.includes(firstSprint.name) || 
+               item.toString?.includes(firstSprint.id)
+      })
+    })
+    
+    if (sprintAddition) {
+      const additionDate = createDate(sprintAddition.created)
+      if (additionDate && sprintStartDate && isAfter(additionDate, sprintStartDate)) {
+        return true // Added after sprint started = scope creep
+      }
+    }
+  }
+  
+  // Layer 2: Creation Date Fallback
+  const issueCreatedDate = createDate(issue.fields?.created)
+  if (issueCreatedDate && sprintStartDate && isAfter(issueCreatedDate, sprintStartDate)) {
+    return true // Created after sprint started = likely scope creep
+  }
+  
+  // Layer 3: Multi-Sprint Analysis
+  const sprints = issue.fields[SPRINT_FIELD] || []
+  if (sprints.length >= 3) {
+    return true // Issues spanning 3+ sprints indicate planning issues
+  }
+  
+  return false // Planned issue
+}
+
 export const sprintMetricsDetailsService = {
   getLateIssuesDetails: (issues, projectKey = null, filters = {}) => {
     const targetIssues = projectKey 
       ? issues.filter(issue => {
-          const issueProject = issue.displayFields?.projectKey || issue.fields?.project?.key
+          const issueProject = issue.fields?.project?.key
           return issueProject === projectKey
         })
       : issues
 
+    // Use sprint-based logic instead of dueDate logic
     const lateIssues = targetIssues.filter(issue => {
-      const dueDate = issue.fields?.duedate
-      const resolutionDate = issue.fields?.resolutiondate
-      const status = issue.displayFields?.status || issue.fields?.status?.name
+      // Must have sprint data
+      if (!issue.fields?.[SPRINT_FIELD] || issue.fields[SPRINT_FIELD].length === 0) {
+        return false
+      }
 
-      if (!dueDate) return false
+      // Must be resolved
+      if (!issue.fields?.resolutiondate) {
+        return false
+      }
 
-      const due = new Date(dueDate)
-      const resolved = resolutionDate ? new Date(resolutionDate) : new Date()
-      const isCompleted = status === 'Done' || status === 'Closed' || status === 'Resolved'
+      // Get LAST sprint (completion point)
+      const sprints = issue.fields[SPRINT_FIELD]
+      const lastSprint = sprints[sprints.length - 1]
 
-      return isCompleted ? resolved > due : new Date() > due
+      if (!lastSprint || !lastSprint.endDate) {
+        return false
+      }
+
+      const resolutionDate = createDate(issue.fields.resolutiondate)
+      const sprintEndDate = createDate(lastSprint.endDate)
+
+      // Issue is late if resolved after sprint end date
+      return resolutionDate > sprintEndDate
     })
 
     const enrichedLateIssues = lateIssues.map(issue => {
-      const dueDate = new Date(issue.fields?.duedate)
-      const resolutionDate = issue.fields?.resolutiondate 
-        ? new Date(issue.fields.resolutiondate) 
-        : new Date()
+      // Get sprint dates for delay calculation
+      const sprints = issue.fields[SPRINT_FIELD]
+      const lastSprint = sprints[sprints.length - 1]
+      const sprintEndDate = createDate(lastSprint.endDate)
+      const resolutionDate = createDate(issue.fields.resolutiondate)
       
-      const delayDays = Math.ceil((resolutionDate - dueDate) / (1000 * 60 * 60 * 24))
-      const isStillOpen = !issue.fields?.resolutiondate
+      const delayDays = Math.ceil((resolutionDate - sprintEndDate) / (1000 * 60 * 60 * 24))
+      const isStillOpen = false // All late issues are resolved (by definition)
 
       return {
         key: issue.key,
@@ -40,14 +105,26 @@ export const sprintMetricsDetailsService = {
         projectKey: issue.displayFields?.projectKey || issue.fields?.project?.key,
         projectName: issue.displayFields?.projectName || issue.fields?.project?.name,
         created: issue.fields?.created,
-        dueDate: issue.fields?.duedate,
+        sprintEndDate: lastSprint.endDate,
         resolutionDate: issue.fields?.resolutiondate,
+        sprintName: lastSprint.name,
         delayDays,
         isStillOpen,
         labels: issue.fields?.labels || [],
         components: issue.fields?.components?.map(c => c.name) || [],
-        storyPoints: parseFloat(issue.fields?.storyPoints || issue.fields?.customfield_10004 || 0),
-        jiraUrl: `${getJiraBaseUrl()}/browse/${issue.key}`
+        storyPoints: parseFloat(issue.fields?.storyPoints || issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS] || 0),
+        // Sprint information
+        sprints: sprints.map(sprint => ({
+          id: sprint.id,
+          name: sprint.name,
+          state: sprint.state,
+          startDate: sprint.startDate,
+          endDate: sprint.endDate,
+          goal: sprint.goal || ''
+        })),
+        totalSprints: sprints.length,
+        isMultiSprint: sprints.length > 1,
+        jiraUrl: `#/browse/${issue.key}` // Simplified for now
       }
     })
 
@@ -69,21 +146,39 @@ export const sprintMetricsDetailsService = {
   getScopeCreepIssuesDetails: (issues, projectKey = null, filters = {}) => {
     const targetIssues = projectKey 
       ? issues.filter(issue => {
-          const issueProject = issue.displayFields?.projectKey || issue.fields?.project?.key
+          const issueProject = issue.fields?.project?.key
           return issueProject === projectKey
         })
       : issues
 
-    const scopeCreepThreshold = calculateScopeCreepThreshold(targetIssues)
-    
+    // Use sprint-based scope creep detection (same as main service)
     const scopeCreepIssues = targetIssues.filter(issue => {
-      const created = new Date(issue.fields?.created || 0)
-      return created >= scopeCreepThreshold
+      // Must have sprint data
+      if (!issue.fields?.[SPRINT_FIELD] || issue.fields[SPRINT_FIELD].length === 0) {
+        return false
+      }
+
+      // Get FIRST sprint (planning point)
+      const sprints = issue.fields[SPRINT_FIELD]
+      const firstSprint = sprints[0]
+
+      if (!firstSprint || !firstSprint.startDate) {
+        return false
+      }
+
+      // Use the same scope creep detection as main service
+      return detectScopeCreep(issue, firstSprint)
     })
 
     const enrichedScopeIssues = scopeCreepIssues.map(issue => {
-      const created = new Date(issue.fields?.created)
-      const daysAfterThreshold = Math.ceil((created - scopeCreepThreshold) / (1000 * 60 * 60 * 24))
+      const sprints = issue.fields[SPRINT_FIELD]
+      const firstSprint = sprints[0]
+      const created = createDate(issue.fields?.created)
+      const sprintStartDate = createDate(firstSprint.startDate)
+      
+      const daysAfterStart = sprintStartDate && created 
+        ? Math.ceil((created - sprintStartDate) / (1000 * 60 * 60 * 24))
+        : 0
 
       return {
         key: issue.key,
@@ -95,13 +190,26 @@ export const sprintMetricsDetailsService = {
         projectKey: issue.displayFields?.projectKey || issue.fields?.project?.key,
         projectName: issue.displayFields?.projectName || issue.fields?.project?.name,
         created: issue.fields?.created,
+        sprintStartDate: firstSprint.startDate,
+        sprintName: firstSprint.name,
         reporter: issue.fields?.reporter?.displayName || 'Unknown',
-        daysAfterThreshold,
+        daysAfterStart,
         labels: issue.fields?.labels || [],
         components: issue.fields?.components?.map(c => c.name) || [],
-        storyPoints: parseFloat(issue.fields?.storyPoints || issue.fields?.customfield_10004 || 0),
-        reason: categorizeScopeCreepReason(issue),
-        jiraUrl: `${getJiraBaseUrl()}/browse/${issue.key}`
+        storyPoints: parseFloat(issue.fields?.storyPoints || issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS] || 0),
+        reason: 'Added during sprint', // Simplified for now
+        // Sprint information
+        sprints: sprints.map(sprint => ({
+          id: sprint.id,
+          name: sprint.name,
+          state: sprint.state,
+          startDate: sprint.startDate,
+          endDate: sprint.endDate,
+          goal: sprint.goal || ''
+        })),
+        totalSprints: sprints.length,
+        isMultiSprint: sprints.length > 1,
+        jiraUrl: `#/browse/${issue.key}` // Simplified for now
       }
     })
 
@@ -152,7 +260,7 @@ export const sprintMetricsDetailsService = {
       dueDate: issue.fields?.duedate,
       labels: issue.fields?.labels || [],
       components: issue.fields?.components?.map(c => c.name) || [],
-      storyPoints: parseFloat(issue.fields?.storyPoints || issue.fields?.customfield_10004 || 0),
+      storyPoints: parseFloat(issue.fields?.storyPoints || issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS] || 0),
       timeInStatus: calculateTimeInStatus(issue, targetStatus),
       jiraUrl: `${getJiraBaseUrl()}/browse/${issue.key}`
     }))

@@ -6,8 +6,51 @@ export const JIRA_CONSTANTS = {
     "RAG", "ECHO", "SEK", "PMAX", "MIT", "IS", "KB", "PDS", "TS", "YUB"
   ],
   
-  // Selected fields from your curl command
-  SELECTED_FIELDS: "project,resolutiondate,status,assignee,issuetype,timespent,timeoriginalestimate,timetracking,created,priority,customfield_10028,customfield_10020,customfield_10271,customfield_10272,customfield_10049,customfield_10015,customfield_10636,reporter",
+  // Standard JIRA fields
+  STANDARD_FIELDS: {
+    PROJECT: 'project',
+    RESOLUTION_DATE: 'resolutiondate',
+    STATUS: 'status',
+    ASSIGNEE: 'assignee',
+    ISSUE_TYPE: 'issuetype',
+    TIME_SPENT: 'timespent',
+    TIME_ORIGINAL_ESTIMATE: 'timeoriginalestimate',
+    TIME_TRACKING: 'timetracking',
+    CREATED: 'created',
+    UPDATED: 'updated',
+    PRIORITY: 'priority',
+    REPORTER: 'reporter',
+    DUE_DATE: 'duedate',
+    SUMMARY: 'summary',
+    DESCRIPTION: 'description'
+  },
+
+  // Selected fields - constructed from constants for consistency
+  get SELECTED_FIELDS() {
+    const standardFields = [
+      this.STANDARD_FIELDS.PROJECT,
+      this.STANDARD_FIELDS.RESOLUTION_DATE,
+      this.STANDARD_FIELDS.STATUS,
+      this.STANDARD_FIELDS.ASSIGNEE,
+      this.STANDARD_FIELDS.ISSUE_TYPE,
+      this.STANDARD_FIELDS.TIME_SPENT,
+      this.STANDARD_FIELDS.TIME_ORIGINAL_ESTIMATE,
+      this.STANDARD_FIELDS.TIME_TRACKING,
+      this.STANDARD_FIELDS.CREATED,
+      this.STANDARD_FIELDS.PRIORITY,
+      this.STANDARD_FIELDS.REPORTER
+    ]
+    const customFields = [
+      this.CUSTOM_FIELDS.STORY_POINTS,
+      this.CUSTOM_FIELDS.SPRINT,
+      this.CUSTOM_FIELDS.BUG_TYPE,
+      this.CUSTOM_FIELDS.ROOT_CAUSE,
+      this.CUSTOM_FIELDS.BUG_SEVERITY,
+      this.CUSTOM_FIELDS.START_DATE,
+      this.CUSTOM_FIELDS.BUG_CAUSED_BY
+    ]
+    return [...standardFields, ...customFields].join(',')
+  },
   
   // Custom field mappings (from your data-structures.md)
   CUSTOM_FIELDS: {
@@ -23,7 +66,7 @@ export const JIRA_CONSTANTS = {
   // API endpoints
   API_ENDPOINTS: {
     JIRA_ISSUES_V3: '/jira/issues/v3',
-    BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://6rornklpte.execute-api.ap-southeast-1.amazonaws.com/dev/api'
+    BASE_URL: (typeof window !== 'undefined' && window.VITE_API_BASE_URL) || 'https://6rornklpte.execute-api.ap-southeast-1.amazonaws.com/dev/api'
   },
   
   // Download settings
@@ -38,7 +81,7 @@ export const JIRA_CONSTANTS = {
   // Cache settings
   CACHE_SETTINGS: {
     EXPIRY_HOURS: 24,
-    MAX_SIZE_MB: 100,
+    MAX_SIZE_MB: 500, // Increased from 100MB to 500MB
     STORAGE_KEY: 'jira_data_cache',
     METADATA_KEY: 'jira_data_metadata'
   },

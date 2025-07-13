@@ -1,3 +1,13 @@
+// Import centralized JWT utilities
+import { 
+  isJwtExpired, 
+  getJwtExpiration, 
+  getTimeUntilJwtExpiration 
+} from './dateUtils.js'
+
+// Re-export centralized JWT functions
+export { isJwtExpired as isTokenExpired, getJwtExpiration as getTokenExpiration }
+
 export const parseJwt = (token) => {
   try {
     const base64Url = token.split('.')[1]
@@ -16,27 +26,11 @@ export const parseJwt = (token) => {
   }
 }
 
-export const isTokenExpired = (token) => {
-  const decoded = parseJwt(token)
-  if (!decoded || !decoded.exp) {
-    return true
-  }
-  
-  const currentTime = Date.now() / 1000
-  return decoded.exp < currentTime
-}
-
-export const getTokenExpiration = (token) => {
-  const decoded = parseJwt(token)
-  return decoded?.exp ? new Date(decoded.exp * 1000) : null
-}
+// These functions are now handled by centralized date utilities above
 
 export const getTimeUntilExpiration = (token) => {
-  const decoded = parseJwt(token)
-  if (!decoded || !decoded.exp) return 0
-  
-  const currentTime = Date.now() / 1000
-  return Math.max(0, decoded.exp - currentTime)
+  // Returns time in minutes until expiration (centralized function returns minutes)
+  return Math.max(0, getTimeUntilJwtExpiration(token))
 }
 
 export const isTokenValid = (token) => {
@@ -45,7 +39,7 @@ export const isTokenValid = (token) => {
   const decoded = parseJwt(token)
   if (!decoded) return false
   
-  return !isTokenExpired(token)
+  return !isJwtExpired(token)
 }
 
 export const getUserFromToken = (token) => {

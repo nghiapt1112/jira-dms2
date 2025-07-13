@@ -1,7 +1,8 @@
 import axios from 'axios'
 import axiosInstance from './axiosConfig'
+import { JIRA_CONSTANTS } from '../../constants/jiraConstants.js'
 
-const CHUNK_SIZE = 1024 * 1024
+const _CHUNK_SIZE = 1024 * 1024
 
 class JiraDataService {
   constructor() {
@@ -14,7 +15,7 @@ class JiraDataService {
       projects = ["WON","YUIM","STU","DAAI","DAICO","TOUC","TG","NKR2","SG","BCP","SIP","IP","HG","CF","TIT","OOPS","JSR","RAG","ECHO","SEK","PMAX","MIT","IS","KB","PDS","TS","YUB"],
       fromDate = "2025/01/01",
       toDate = "2025/07/11",
-      selectedFields = "project,resolutiondate,status,assignee,issuetype,timespent,timeoriginalestimate,timetracking,created,priority,customfield_10028,customfield_10020,customfield_10271,customfield_10272,customfield_10049,customfield_10015,customfield_10636,reporter",
+      selectedFields = `project,resolutiondate,status,assignee,issuetype,timespent,timeoriginalestimate,timetracking,created,priority,${JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS},${JIRA_CONSTANTS.CUSTOM_FIELDS.SPRINT},${JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE},${JIRA_CONSTANTS.CUSTOM_FIELDS.ROOT_CAUSE},${JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_SEVERITY},${JIRA_CONSTANTS.CUSTOM_FIELDS.START_DATE},${JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_CAUSED_BY},reporter`,
       includeCurrentQuarter = true,
       useSnapshots = true
     } = options

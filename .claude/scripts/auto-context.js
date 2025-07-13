@@ -382,6 +382,8 @@ class AutoContextWorkflow {
         timestamp: impl.timestamp
       })),
       currentFeatures: featureStatus,
+      implementationPlan: this.context.implementationPlan || null,
+      srsRequirements: this.getSRSRequirements(),
       pendingTodos: this.context.todos.slice(0, 5),
       architecturalPatterns: this.context.patterns,
       nextPriorities: this.calculateNextPriorities(),
@@ -395,26 +397,50 @@ class AutoContextWorkflow {
   calculateNextPriorities() {
     const priorities = [];
     
-    // Check for incomplete features
-    Object.values(this.context.features).forEach(feature => {
-      if (feature.completeness < 100) {
-        priorities.push(`Complete ${feature.name} feature (${feature.completeness}% done)`);
+    // If we have implementation plan data, prioritize based on phases
+    if (this.context.implementationPlan && this.context.implementationPlan.phaseDetails) {
+      const currentPhaseId = this.context.implementationPlan.currentPhase;
+      const currentPhase = this.context.implementationPlan.phaseDetails[currentPhaseId];
+      
+      if (currentPhase && !currentPhase.completed) {
+        priorities.push(`Complete ${currentPhase.name} (${currentPhase.progress}% done - ${currentPhase.filesCompleted}/${currentPhase.totalFiles} files)`);
+        
+        if (currentPhaseId === 'phase1-infrastructure') {
+          priorities.push('Implement remaining Phase 1 services: sprintMetricsData.service.js, sprintMetricsDetails.service.js');
+          priorities.push('Add tests for Phase 1 services (transformIssuesForProjectOverview, useMainDashboardCache)');
+        }
       }
-    });
+      
+      // Show next available phases
+      const nextPhases = this.context.implementationPlan.nextPhases.slice(1, 3);
+      nextPhases.forEach(phase => {
+        if (phase.progress === 0) {
+          priorities.push(`Prepare for ${phase.name} (${phase.priority} priority)`);
+        }
+      });
+    } else {
+      // Fallback to old logic if no implementation plan
+      // Check for incomplete features
+      Object.values(this.context.features).forEach(feature => {
+        if (feature.completeness < 100) {
+          priorities.push(`Complete ${feature.name} feature (${feature.completeness}% done)`);
+        }
+      });
 
-    // Check for components without tests
-    Object.values(this.context.components).forEach(component => {
-      if (!component.hasTests) {
-        priorities.push(`Add tests for ${component.name} component`);
-      }
-    });
+      // Check for components without tests
+      Object.values(this.context.components).forEach(component => {
+        if (!component.hasTests) {
+          priorities.push(`Add tests for ${component.name} component`);
+        }
+      });
 
-    // Check for high complexity components
-    Object.values(this.context.components).forEach(component => {
-      if (component.complexity === 'high') {
-        priorities.push(`Refactor ${component.name} component (high complexity)`);
-      }
-    });
+      // Check for high complexity components
+      Object.values(this.context.components).forEach(component => {
+        if (component.complexity === 'high') {
+          priorities.push(`Refactor ${component.name} component (high complexity)`);
+        }
+      });
+    }
 
     return priorities.slice(0, 5); // Top 5 priorities
   }
@@ -423,21 +449,156 @@ class AutoContextWorkflow {
   generateRecommendations() {
     const recommendations = [];
     
-    if (this.context.metrics.codeQuality === 'needs improvement') {
-      recommendations.push('Focus on adding tests and reducing component complexity');
-    }
-    
-    const incompleteFeatures = Object.values(this.context.features).filter(f => f.completeness < 100);
-    if (incompleteFeatures.length > 0) {
-      recommendations.push(`Complete ${incompleteFeatures.length} pending features`);
-    }
-    
-    const untestedComponents = Object.values(this.context.components).filter(c => !c.hasTests);
-    if (untestedComponents.length > 0) {
-      recommendations.push(`Add tests for ${untestedComponents.length} components`);
+    // Phase-based recommendations if implementation plan exists
+    if (this.context.implementationPlan && this.context.implementationPlan.phaseDetails) {
+      const currentPhase = this.context.implementationPlan.phaseDetails[this.context.implementationPlan.currentPhase];
+      
+      if (currentPhase && !currentPhase.completed) {
+        if (currentPhase.progress < 50) {
+          recommendations.push(`Focus on ${currentPhase.name} - currently ${currentPhase.progress}% complete`);
+        } else if (currentPhase.progress >= 80) {
+          recommendations.push(`${currentPhase.name} is almost complete - finish remaining files to unlock next phases`);
+        }
+        
+        // Specific recommendations for Phase 1
+        if (this.context.implementationPlan.currentPhase === 'phase1-infrastructure') {
+          recommendations.push('Implement core dashboard services before moving to UI components');
+          recommendations.push('Add comprehensive tests for data transformation and caching logic');
+        }
+      }
+      
+      // Overall progress recommendations
+      if (this.context.implementationPlan.overallProgress < 25) {
+        recommendations.push('Focus on Phase 1 infrastructure to establish solid foundation');
+      }
+    } else {
+      // Fallback recommendations
+      if (this.context.metrics.codeQuality === 'needs improvement') {
+        recommendations.push('Focus on adding tests and reducing component complexity');
+      }
+      
+      const incompleteFeatures = Object.values(this.context.features).filter(f => f.completeness < 100);
+      if (incompleteFeatures.length > 0) {
+        recommendations.push(`Complete ${incompleteFeatures.length} pending features`);
+      }
+      
+      const untestedComponents = Object.values(this.context.components).filter(c => !c.hasTests);
+      if (untestedComponents.length > 0) {
+        recommendations.push(`Add tests for ${untestedComponents.length} components`);
+      }
     }
     
     return recommendations;
+  }
+
+  // Get relevant SRS requirements based on current phase
+  getSRSRequirements() {
+    const srsPath = path.join(this.projectRoot, 'doc/dashboard/MainDashboard-SRS.md');
+    
+    if (!fs.existsSync(srsPath)) {
+      return null;
+    }
+
+    try {
+      const srsContent = fs.readFileSync(srsPath, 'utf8');
+      
+      // Get current phase to determine relevant requirements
+      const currentPhaseId = this.context.implementationPlan?.currentPhase;
+      
+      if (!currentPhaseId) {
+        return {
+          file: 'doc/dashboard/MainDashboard-SRS.md',
+          message: 'Please review SRS requirements before implementation',
+          sections: ['Functional Requirements', 'Performance Requirements', 'Integration Requirements']
+        };
+      }
+
+      // Extract relevant requirements based on current phase
+      const relevantRequirements = this.extractPhaseRequirements(srsContent, currentPhaseId);
+      
+      return {
+        file: 'doc/dashboard/MainDashboard-SRS.md',
+        currentPhase: currentPhaseId,
+        requirements: relevantRequirements,
+        message: 'IMPORTANT: Validate implementation against these SRS requirements'
+      };
+      
+    } catch (error) {
+      return {
+        file: 'doc/dashboard/MainDashboard-SRS.md',
+        error: 'Could not read SRS file',
+        message: 'Please manually review SRS requirements'
+      };
+    }
+  }
+
+  // Extract requirements relevant to current phase
+  extractPhaseRequirements(srsContent, currentPhaseId) {
+    const requirements = [];
+    
+    // Phase-specific requirement mapping
+    const phaseRequirements = {
+      'phase1-infrastructure': [
+        'FR-MD-001', 'FR-MD-002', 'FR-MD-003', // Data processing and cache
+        'PR-MD-001', 'PR-MD-002', // Performance requirements
+        'IR-MD-002' // Service integration
+      ],
+      'phase2-project-health': [
+        'FR-MD-007', // ProjectHealthOverview
+        'PR-MD-003', // UI Performance
+        'IR-MD-001' // Chart dependencies
+      ],
+      'phase3-project-delivery': [
+        'FR-MD-008', // ProjectDelivery
+        'FR-MD-012', // Delivery metrics
+        'PR-MD-003' // UI Performance
+      ],
+      'phase4-sprint-metrics': [
+        'FR-MD-009', // SprintMetricsChartsDashboard
+        'FR-MD-011', // Sprint metrics analysis
+        'PR-MD-003' // UI Performance
+      ],
+      'phase5-cache-ui': [
+        'FR-MD-006', // Cache controls
+        'PR-MD-001', // Cache performance
+        'EH-MD-001' // Error handling
+      ],
+      'phase6-integration': [
+        'FR-MD-004', 'FR-MD-005', // Layout and loading
+        'IR-MD-003', // Context integration
+        'SR-MD-001', 'SR-MD-002' // Security
+      ]
+    };
+
+    const relevantIds = phaseRequirements[currentPhaseId] || [];
+    
+    // Extract requirement sections from SRS content
+    relevantIds.forEach(reqId => {
+      const reqMatch = srsContent.match(new RegExp(`- \\*\\*Requirement ID\\*\\*: ${reqId}[\\s\\S]*?(?=- \\*\\*Requirement ID\\*\\*|###|##|$)`, 'i'));
+      if (reqMatch) {
+        const reqText = reqMatch[0];
+        const descMatch = reqText.match(/- \*\*Description\*\*: ([^\n]*)/);
+        const description = descMatch ? descMatch[1] : 'See SRS document';
+        
+        requirements.push({
+          id: reqId,
+          description: description,
+          section: this.getRequirementSection(reqId)
+        });
+      }
+    });
+
+    return requirements;
+  }
+
+  // Get requirement section based on ID prefix
+  getRequirementSection(reqId) {
+    if (reqId.startsWith('FR-')) return 'Functional Requirements';
+    if (reqId.startsWith('PR-')) return 'Performance Requirements';
+    if (reqId.startsWith('IR-')) return 'Integration Requirements';
+    if (reqId.startsWith('EH-')) return 'Error Handling';
+    if (reqId.startsWith('SR-')) return 'Security Requirements';
+    return 'Requirements';
   }
 
   // Save context to file
@@ -475,7 +636,8 @@ class AutoContextWorkflow {
         const context = workflow.generateContextInjection();
         console.log('🧠 CLAUDE CODE CONTEXT INJECTION\n');
         console.log('='.repeat(50));
-        console.log('\n📊 PROJECT SUMMARY:');
+        console.log('\nHere\'s my current project context:\n');
+        console.log('📊 PROJECT SUMMARY:');
         Object.entries(context.projectSummary).forEach(([key, value]) => {
           console.log(`  ${key}: ${value}`);
         });
@@ -489,6 +651,41 @@ class AutoContextWorkflow {
         context.currentFeatures.forEach(feature => {
           console.log(`  - ${feature.name}: ${feature.completeness}% complete (${feature.components} components)`);
         });
+        
+        // Show implementation plan progress if available
+        if (context.implementationPlan) {
+          console.log(`\n📋 IMPLEMENTATION PLAN PROGRESS:`);
+          console.log(`  Overall Progress: ${context.implementationPlan.overallProgress}%`);
+          console.log(`  Current Phase: ${context.implementationPlan.currentPhaseName}`);
+          
+          if (context.implementationPlan.phaseDetails) {
+            console.log(`\n📊 PHASE STATUS:`);
+            Object.entries(context.implementationPlan.phaseDetails).forEach(([id, phase]) => {
+              const status = phase.completed ? '✅' : phase.canStart ? '🚧' : '⏸️';
+              console.log(`  ${status} ${phase.name}: ${phase.progress}% (${phase.filesCompleted}/${phase.totalFiles} files)`);
+            });
+          }
+        }
+
+        // Show SRS requirements validation
+        if (context.srsRequirements) {
+          console.log(`\n📋 SRS REQUIREMENTS VALIDATION:`);
+          console.log(`  ${context.srsRequirements.message}`);
+          console.log(`  📄 Reference: ${context.srsRequirements.file}`);
+          
+          if (context.srsRequirements.requirements && context.srsRequirements.requirements.length > 0) {
+            console.log(`\n🔍 RELEVANT REQUIREMENTS FOR CURRENT PHASE:`);
+            context.srsRequirements.requirements.forEach(req => {
+              console.log(`  ${req.id}: ${req.description}`);
+              console.log(`    Section: ${req.section}`);
+            });
+          } else if (context.srsRequirements.sections) {
+            console.log(`\n📚 KEY SRS SECTIONS TO REVIEW:`);
+            context.srsRequirements.sections.forEach(section => {
+              console.log(`  - ${section}`);
+            });
+          }
+        }
         
         console.log('\n📋 NEXT PRIORITIES:');
         context.nextPriorities.forEach((priority, index) => {

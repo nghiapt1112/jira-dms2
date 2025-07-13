@@ -32,4 +32,6 @@ Card.propTypes = {
   sx: PropTypes.object,
 }
 
+Card.displayName = 'Card'
+
 export default Card

@@ -175,7 +175,7 @@ export const useJiraData = () => {
     // Computed values
     hasData: allIssues.length > 0,
     progressPercentage: getProgressPercentage(),
-    isDataStale: isDataStale(),
+    isDataStale: isDataStale,
     cacheStatus: getCacheStatus(),
     
     // Actions

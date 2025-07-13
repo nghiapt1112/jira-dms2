@@ -241,6 +241,8 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
         sx={{
           display: { xs: 'none', md: 'block' },
           zIndex: theme.zIndex.drawer + 1,
+          width: `calc(100% - ${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px)`,
+          ml: `${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px`,
         }}
       >
         <Toolbar>

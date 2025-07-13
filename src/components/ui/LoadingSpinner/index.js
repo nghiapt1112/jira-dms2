@@ -30,4 +30,6 @@ LoadingSpinner.propTypes = {
   message: PropTypes.string,
 }
 
+LoadingSpinner.displayName = 'LoadingSpinner'
+
 export default LoadingSpinner

@@ -1,68 +1,36 @@
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
+import { hybridCacheService, indexedDBCache } from './indexedDBCache'
+import { getCurrentDate, isCacheExpired as isExpired } from '../../../shared/utils/dateUtils.js'
 
 export const cacheService = {
-  // Cache JIRA data to localStorage with compression
+  // Cache JIRA data using hybrid storage (IndexedDB for large data, localStorage for small)
   cacheJiraData: async (data, metadata) => {
     try {
       const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
-      const metadataKey = JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY
-      const timestamp = new Date().toISOString()
+      const timestamp = getCurrentDate().toISOString()
       
-      // Prepare cache object
-      const cacheObject = {
+      // Prepare metadata
+      const cacheMetadata = {
         timestamp,
         version: '1.0',
         dataLength: data.length,
-        metadata,
-        compressed: false
+        ...metadata
       }
       
-      // Try to store data
-      try {
-        // For large datasets, we might need to chunk the data
-        const dataString = JSON.stringify(data)
-        const dataSizeMB = new Blob([dataString]).size / (1024 * 1024)
-        
-        console.log(`Caching ${data.length} issues (${dataSizeMB.toFixed(2)} MB)...`)
-        
-        if (dataSizeMB > JIRA_CONSTANTS.CACHE_SETTINGS.MAX_SIZE_MB) {
-          console.warn(`Data size (${dataSizeMB.toFixed(2)} MB) exceeds cache limit (${JIRA_CONSTANTS.CACHE_SETTINGS.MAX_SIZE_MB} MB)`)
-          
-          // Store only essential data for large datasets
-          const essentialData = cacheService.extractEssentialData(data)
-          localStorage.setItem(cacheKey, JSON.stringify(essentialData))
-          cacheObject.compressed = true
-          cacheObject.dataLength = essentialData.length
-        } else {
-          localStorage.setItem(cacheKey, dataString)
-        }
-        
-        // Store metadata separately
-        localStorage.setItem(metadataKey, JSON.stringify(cacheObject))
-        
-        console.log('Data cached successfully')
+      const dataString = JSON.stringify(data)
+      const dataSizeMB = new Blob([dataString]).size / (1024 * 1024)
+      
+      console.log(`Caching ${data.length} issues (${dataSizeMB.toFixed(2)} MB)...`)
+      
+      // Use hybrid cache service (automatically chooses IndexedDB vs localStorage)
+      const success = await hybridCacheService.cacheData(cacheKey, data, cacheMetadata)
+      
+      if (success) {
+        console.log('✅ Data cached successfully using hybrid storage')
         return true
-        
-      } catch (storageError) {
-        if (storageError.name === 'QuotaExceededError') {
-          console.error('localStorage quota exceeded. Clearing old cache...')
-          
-          // Try to clear old cache and retry
-          cacheService.clearOldCache()
-          
-          // Try one more time with essential data only
-          const essentialData = cacheService.extractEssentialData(data)
-          localStorage.setItem(cacheKey, JSON.stringify(essentialData))
-          
-          cacheObject.compressed = true
-          cacheObject.dataLength = essentialData.length
-          localStorage.setItem(metadataKey, JSON.stringify(cacheObject))
-          
-          console.log('Cached essential data only due to storage limitations')
-          return true
-        }
-        
-        throw storageError
+      } else {
+        console.error('❌ Failed to cache data with hybrid storage')
+        return false
       }
       
     } catch (error) {
@@ -75,46 +43,29 @@ export const cacheService = {
   getCachedJiraData: async () => {
     try {
       const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
-      const metadataKey = JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY
+      const maxAgeHours = JIRA_CONSTANTS.CACHE_SETTINGS.EXPIRY_HOURS
       
-      // Check metadata first
-      const metadataString = localStorage.getItem(metadataKey)
-      if (!metadataString) {
-        console.log('No cached metadata found')
+      // Use hybrid cache service to get data
+      const result = await hybridCacheService.getCachedData(cacheKey, maxAgeHours)
+      
+      if (!result) {
+        console.log('No cached data found or cache expired')
         return null
       }
       
-      const metadata = JSON.parse(metadataString)
-      
-      // Check if cache is expired
-      if (cacheService.isCacheExpired(metadata.timestamp)) {
-        console.log('Cache is expired')
-        cacheService.clearCache()
-        return null
-      }
-      
-      // Get cached data
-      const dataString = localStorage.getItem(cacheKey)
-      if (!dataString) {
-        console.log('No cached data found')
-        return null
-      }
-      
-      const data = JSON.parse(dataString)
-      
-      console.log(`Loaded ${data.length} issues from cache (cached at ${metadata.timestamp})`)
+      console.log(`✅ Loaded ${result.data.length} issues from cache (${result.age.toFixed(1)}h old)`)
       
       return {
-        data,
-        metadata: metadata.metadata,
-        timestamp: metadata.timestamp,
-        compressed: metadata.compressed
+        data: result.data,
+        metadata: result.metadata,
+        timestamp: result.timestamp,
+        age: result.age
       }
       
     } catch (error) {
       console.error('Failed to load cached data:', error)
       // Clear corrupted cache
-      cacheService.clearCache()
+      await cacheService.clearCache()
       return null
     }
   },
@@ -124,52 +75,36 @@ export const cacheService = {
     if (!timestamp) return true
     
     try {
-      const cachedTime = new Date(timestamp)
-      const now = new Date()
-      const hoursDiff = (now - cachedTime) / (1000 * 60 * 60)
-      
-      return hoursDiff > JIRA_CONSTANTS.CACHE_SETTINGS.EXPIRY_HOURS
+      const timestampMs = new Date(timestamp).getTime()
+      return isExpired(timestampMs, JIRA_CONSTANTS.CACHE_SETTINGS.EXPIRY_HOURS)
     } catch (error) {
       return true
     }
   },
   
   // Clear cache
-  clearCache: () => {
+  clearCache: async () => {
     try {
-      localStorage.removeItem(JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY)
-      localStorage.removeItem(JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY)
-      console.log('Cache cleared')
+      // Use hybrid cache service to clear all data
+      await hybridCacheService.clearCache()
+      console.log('✅ Cache cleared')
       return true
     } catch (error) {
-      console.error('Failed to clear cache:', error)
+      console.error('❌ Failed to clear cache:', error)
       return false
     }
   },
   
-  // Clear old cache entries
-  clearOldCache: () => {
+  // Clear old cache entries (older than specified hours)
+  clearOldCache: async (olderThanHours = 48) => {
     try {
-      const keysToRemove = []
-      
-      // Find all cache-related keys
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && (key.includes('jira') || key.includes('cache'))) {
-          keysToRemove.push(key)
-        }
-      }
-      
-      // Remove old cache entries
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key)
-      })
-      
-      console.log(`Cleared ${keysToRemove.length} old cache entries`)
+      // Use hybrid cache service to clear old entries
+      await hybridCacheService.clearCache(olderThanHours)
+      console.log(`✅ Cleared cache entries older than ${olderThanHours} hours`)
       return true
       
     } catch (error) {
-      console.error('Failed to clear old cache:', error)
+      console.error('❌ Failed to clear old cache:', error)
       return false
     }
   },
@@ -209,42 +144,43 @@ export const cacheService = {
     }))
   },
   
-  // Get cache size
-  getCacheSize: () => {
+  // Get cache size (uses IndexedDB cache stats)
+  getCacheSize: async () => {
     try {
-      const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
-      const metadataKey = JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY
+      // Get stats from IndexedDB
+      const stats = await indexedDBCache.getCacheStats()
       
-      const dataSize = new Blob([localStorage.getItem(cacheKey) || '']).size
-      const metadataSize = new Blob([localStorage.getItem(metadataKey) || '']).size
-      
-      const totalSize = dataSize + metadataSize
-      const totalSizeMB = totalSize / (1024 * 1024)
+      const totalSizeMB = parseFloat(stats.totalSizeMB) || 0
       
       return {
-        dataSize,
-        metadataSize,
-        totalSize,
-        totalSizeMB: totalSizeMB.toFixed(2),
+        entries: stats.entries,
+        totalSizeBytes: stats.totalSizeBytes,
+        totalSize: stats.totalSizeBytes,
+        totalSizeMB: stats.totalSizeMB,
         percentage: ((totalSizeMB / JIRA_CONSTANTS.CACHE_SETTINGS.MAX_SIZE_MB) * 100).toFixed(1)
       }
       
     } catch (error) {
-      console.error('Failed to get cache size:', error)
-      return null
+      console.error('❌ Failed to get cache size:', error)
+      return {
+        entries: 0,
+        totalSizeBytes: 0,
+        totalSize: 0,
+        totalSizeMB: '0.00',
+        percentage: '0.0'
+      }
     }
   },
   
   // Check if cache is available
-  isCacheAvailable: () => {
+  isCacheAvailable: async () => {
     try {
-      const metadataKey = JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY
-      const metadataString = localStorage.getItem(metadataKey)
+      const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
+      const maxAgeHours = JIRA_CONSTANTS.CACHE_SETTINGS.EXPIRY_HOURS
       
-      if (!metadataString) return false
-      
-      const metadata = JSON.parse(metadataString)
-      return !cacheService.isCacheExpired(metadata.timestamp)
+      // Check using hybrid cache service
+      const result = await hybridCacheService.getCachedData(cacheKey, maxAgeHours)
+      return result !== null
       
     } catch (error) {
       return false
@@ -252,37 +188,31 @@ export const cacheService = {
   },
   
   // Get cache metadata
-  getCacheMetadata: () => {
+  getCacheMetadata: async () => {
     try {
-      const metadataKey = JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY
-      const metadataString = localStorage.getItem(metadataKey)
+      const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
+      const maxAgeHours = JIRA_CONSTANTS.CACHE_SETTINGS.EXPIRY_HOURS
       
-      if (!metadataString) return null
-      
-      return JSON.parse(metadataString)
+      // Get metadata from hybrid cache service
+      const result = await hybridCacheService.getCachedData(cacheKey, maxAgeHours)
+      return result ? result.metadata : null
       
     } catch (error) {
       return null
     }
   },
   
-  // Update cache metadata
-  updateCacheMetadata: (updates) => {
+  // Update cache metadata (Note: IndexedDB stores metadata automatically)
+  updateCacheMetadata: async (updates) => {
     try {
-      const metadataKey = JIRA_CONSTANTS.CACHE_SETTINGS.METADATA_KEY
-      const existing = cacheService.getCacheMetadata() || {}
-      
-      const updated = {
-        ...existing,
-        ...updates,
-        lastUpdated: new Date().toISOString()
-      }
-      
-      localStorage.setItem(metadataKey, JSON.stringify(updated))
+      // Note: In the hybrid storage system, metadata is stored automatically
+      // when caching data. This method is kept for compatibility but doesn't
+      // perform any action since metadata is managed by the storage layer.
+      console.log('ℹ️ Metadata updates are handled automatically by hybrid storage')
       return true
       
     } catch (error) {
-      console.error('Failed to update cache metadata:', error)
+      console.error('❌ Failed to update cache metadata:', error)
       return false
     }
   }

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Box, Typography, Paper } from '@mui/material'
 import { BarChart } from '@mui/x-charts/BarChart'
 
-const CustomBarChart = React.memo(({ data, title, height = 400, ...props }) => {
+const CustomBarChart = React.memo(({ data = [], title = 'Bar Chart', height = 400, ...props }) => {
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return { series: [], xAxis: [] }
     
@@ -59,10 +59,6 @@ CustomBarChart.propTypes = {
   height: PropTypes.number,
 }
 
-CustomBarChart.defaultProps = {
-  data: [],
-  title: 'Bar Chart',
-  height: 400,
-}
+CustomBarChart.displayName = 'CustomBarChart'
 
 export default CustomBarChart

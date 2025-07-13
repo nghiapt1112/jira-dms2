@@ -19,17 +19,16 @@ export const formatCurrency = (num, currency = 'USD') => {
   }).format(num)
 }
 
-export const formatDate = (date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(date))
-}
+// Re-export date formatting functions from centralized date utilities
+export { formatDate, formatRelativeDate, formatDateRange } from './dateUtils.js'
 
+// Enhanced time formatting using centralized utilities
 export const formatTime = (date) => {
+  const d = new Date(date)
+  if (!d || isNaN(d.getTime())) return ''
+  
   return new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(date))
+  }).format(d)
 }

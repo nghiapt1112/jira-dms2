@@ -443,9 +443,23 @@ ${result.existingFiles.map(file => `- ${file}`).join('\n')}
           priority: this.phases[id]?.priority
         })),
         nextPhases: this.phaseStatus.nextPhases,
-        lastCheck: this.phaseStatus.lastCheck
+        lastCheck: this.phaseStatus.lastCheck,
+        phaseDetails: Object.entries(this.phases).reduce((acc, [id, phase]) => {
+          const status = this.phaseStatus.phases[id] || {};
+          acc[id] = {
+            name: phase.name,
+            progress: Math.round((status.progress || 0) * 100),
+            completed: status.completed || false,
+            filesCompleted: status.filesCompleted || 0,
+            totalFiles: (phase.files?.length || 0) + (phase.routeFiles?.length || 0),
+            canStart: status.canStart !== false
+          };
+          return acc;
+        }, {})
       };
       
+      // Force context scan to include new files
+      workflow.scanCodebase();
       workflow.saveContext();
       
     } catch (error) {

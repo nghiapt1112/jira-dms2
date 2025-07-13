@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react'
+import React, { Suspense, useEffect, lazy } from 'react'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import theme from './theme'
@@ -9,11 +9,14 @@ import { useUIStore } from './shared/store/uiStore'
 import { useAuthStore } from './features/authentication/store/authStore'
 import ProtectedRoute from './features/authentication/components/ProtectedRoute'
 
+// Import the stagewise toolbar directly
+import { StagewiseToolbar } from '@stagewise/toolbar-react'
+
 // Lazy load components
 const LoginPage = React.lazy(() => import('./pages/LoginPage'))
 const Dashboard = React.lazy(() => import('./pages/Dashboard'))
 
-const MainDashboard = React.lazy(() => import('./pages/Dashboard'))
+const MainDashboard = React.lazy(() => import('./features/dashboard/components/MainDashboard'))
 const QualityDashboard = React.lazy(() => import('./pages/Dashboard'))
 
 const DeveloperMetrics = React.lazy(() => import('./pages/Dashboard'))
@@ -44,6 +47,16 @@ const App = React.memo(() => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      {/* StagewiseToolbar with enhanced connection options */}
+      <StagewiseToolbar 
+        debug={true} 
+        config={{
+          disableDiscoverEditor: false,
+          webSocketPort: 5747, // Try specific port
+          webSocketHost: 'localhost',
+          reconnectInterval: 2000
+        }} 
+      />
       <ErrorBoundary>
         <Router>
           <GlobalLoadingIndicator />
