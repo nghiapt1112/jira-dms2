@@ -413,8 +413,19 @@ class DeveloperQualityIndexedDB {
       // Check if we have sufficient data
       const hasData = Object.keys(metrics).length > 0 || Object.keys(chartData).length > 0
 
+      console.log('🔍 INDEXEDDB: Dataset validation:', {
+        metricsKeys: Object.keys(metrics),
+        chartDataKeys: Object.keys(chartData),
+        indicesKeys: Object.keys(indices),
+        filterOptionsKeys: Object.keys(filterOptions),
+        hasMinimalIssues: !!minimalIssues && Array.isArray(minimalIssues),
+        minimalIssuesCount: minimalIssues?.length || 0,
+        hasMetadata: !!metadata,
+        hasData
+      })
+
       if (!hasData) {
-        console.log('❌ No complete dataset found')
+        console.log('❌ No complete dataset found - metrics and chartData are empty')
         return null
       }
 

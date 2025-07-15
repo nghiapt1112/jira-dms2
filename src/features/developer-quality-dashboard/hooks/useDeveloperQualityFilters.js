@@ -51,7 +51,7 @@ export const useDeveloperQualityFilters = () => {
       console.error('Filter operation failed:', error)
       return null
     }
-  }, [getFilteredData, filters])
+  }, [getFilteredData, filters, data])
 
   // Update individual filter with special handling for projects
   const updateFilter = useCallback((filterType, value) => {

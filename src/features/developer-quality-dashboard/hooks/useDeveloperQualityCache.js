@@ -46,41 +46,41 @@ export const useDeveloperQualityCache = () => {
     status: cacheStatus
   }), [lastUpdated, cacheSize, processingTime, jiraData, data, cacheStatus])
 
-  // Auto-load cached data on mount if no data exists
+  // Simplified data loading logic - just process JIRA data when available
   useEffect(() => {
-    console.log('🔍 CACHE HOOK: Auto-load check:', {
-      hasData,
-      jiraLoading,
-      jiraError: !!jiraError,
-      data: !!data,
-      isLoading,
-      shouldLoad: !hasData && !jiraLoading && !jiraError && !data && !isLoading
-    })
+    // Skip if already loading or data exists
+    if (isLoading || data) return
     
-    if (!hasData && !jiraLoading && !jiraError && !data && !isLoading) {
-      console.log('🔍 CACHE HOOK: Loading cached data...')
-      // Try to load from cache first
-      loadCachedData()
-    }
-  }, [hasData, jiraLoading, jiraError, data, isLoading, loadCachedData])
-
-  // Load developer quality data when JIRA data becomes available
-  useEffect(() => {
-    console.log('🔍 CACHE HOOK: JIRA data effect check:', {
-      hasJiraData: !!jiraData,
-      isJiraDataArray: Array.isArray(jiraData),
-      jiraDataLength: jiraData?.length || 0,
+    // Skip if JIRA is still loading
+    if (jiraLoading) return
+    
+    console.log('🔍 CACHE HOOK: Checking data availability:', {
       hasData: !!data,
+      hasJiraData: !!jiraData && jiraData.length > 0,
+      jiraDataLength: jiraData?.length || 0,
       isLoading,
-      shouldProcess: jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading
+      jiraLoading
     })
     
-    if (jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading) {
+    // If we have JIRA data, just process it - don't worry about cached processed data
+    if (jiraData && Array.isArray(jiraData) && jiraData.length > 0) {
       console.log('🔍 CACHE HOOK: Processing JIRA data for developer quality:', jiraData.length, 'issues')
-      // Process raw JIRA issues for developer quality
       loadData(jiraData)
+      return
     }
-  }, [jiraData, data, isLoading, loadData])
+    
+    // If no JIRA data in memory but it should exist, load it
+    if (!jiraData && hasData) {
+      console.log('🔍 CACHE HOOK: No JIRA data in memory, loading from cache...')
+      loadCachedData()
+      return
+    }
+    
+    // If truly no data exists anywhere
+    if (!jiraData && !hasData) {
+      console.log('🔍 CACHE HOOK: No data available, user needs to load from S3')
+    }
+  }, [data, isLoading, jiraData, jiraLoading, hasData, loadData, loadCachedData])
 
   // Auto-refresh when JIRA data updates
   useEffect(() => {
@@ -140,16 +140,9 @@ export const useDeveloperQualityCache = () => {
 
   // Check if cache needs initialization
   const needsInitialization = useMemo(() => {
-    const needs = !data && !hasData && !jiraLoading && !error
-    console.log('🔍 CACHE HOOK: needsInitialization check:', {
-      data: !!data,
-      hasData,
-      jiraLoading,
-      error: !!error,
-      needsInitialization: needs
-    })
-    return needs
-  }, [data, hasData, jiraLoading, error])
+    // Show "needs initialization" only if we have no data, no cache, and no JIRA data
+    return !data && !lastUpdated && !hasData && !jiraLoading && !error && !isLoading
+  }, [data, lastUpdated, hasData, jiraLoading, error, isLoading])
 
   // Get effective error (prioritize developer quality errors, fallback to JIRA errors)
   const effectiveError = useMemo(() => {
@@ -158,8 +151,10 @@ export const useDeveloperQualityCache = () => {
 
   // Get effective loading state
   const effectiveLoading = useMemo(() => {
-    return isLoading || (jiraLoading && !hasData)
-  }, [isLoading, jiraLoading, hasData])
+    // Show loading if developer quality is loading or JIRA data is loading
+    // Also show loading if we have cache metadata but no data (loading from IndexedDB)
+    return isLoading || jiraLoading || (lastUpdated && !data && !error)
+  }, [isLoading, jiraLoading, lastUpdated, data, error])
 
   return {
     // Data

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { persist, devtools } from 'zustand/middleware'
 import { developerQualityService } from '../services/developerQualityService'
 import { filterService } from '../services/filterService'
 
@@ -37,8 +37,9 @@ const areFiltersChanged = (oldFilters, newFilters) => {
 }
 
 export const useDeveloperQualityStore = create(
-  devtools(
-    (set, get) => ({
+  persist(
+    devtools(
+      (set, get) => ({
       // State
       data: null,
       isLoading: false,
@@ -360,17 +361,18 @@ export const useDeveloperQualityStore = create(
         const filteredData = get().getFilteredData()
         return filteredData?.chartData || null
       }
-    }),
+      }),
+      {
+        name: 'developer-quality-store'
+      }
+    ),
     {
-      name: 'developer-quality-store',
-      // Only include essential state in devtools
+      name: 'developer-quality-storage',
+      // Only persist user preferences, not cache metadata
       partialize: (state) => ({
-        isLoading: state.isLoading,
-        error: state.error,
-        lastUpdated: state.lastUpdated,
         filters: state.filters,
-        cacheSize: state.cacheSize,
-        processingTime: state.processingTime
+        // Don't persist data, lastUpdated, or cache metadata
+        // We'll always process from JIRA data on load
       })
     }
   )
