@@ -8,10 +8,8 @@ import {
   useMediaQuery
 } from '@mui/material'
 import Sidebar from '../../navigation/Sidebar'
-import MobileNav from '../../navigation/MobileNav'
 import GlobalCachePopover from '../../../shared/components/GlobalCachePopover'
 import { useNavigationStore } from '../../../shared/store/navigationStore'
-import { SIDEBAR_WIDTHS } from '../../navigation/Sidebar/SidebarStyles'
 
 const Layout = React.memo(({ children }) => {
   const theme = useTheme()
@@ -19,28 +17,15 @@ const Layout = React.memo(({ children }) => {
   const { isOpen, getIsOpen } = useNavigationStore()
   
   // Get the actual sidebar open state
-  const sidebarIsOpen = isMobile ? isOpen : true // Desktop sidebar is always open
+  const sidebarIsOpen = isOpen // Use the actual state for both mobile and desktop
   
   const getMainStyles = () => {
-    if (isMobile) {
-      return {
-        flexGrow: 1,
-        p: 3,
-        width: '100%',
-        mt: 8, // Account for mobile AppBar
-      }
-    }
-    
-    const sidebarWidth = sidebarIsOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED
-    
+    // Main content always uses full width - no margin calculations
     return {
       flexGrow: 1,
-      p: 3,
-      ml: `${sidebarWidth}px`,
-      transition: theme.transitions.create(['margin'], {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
+      width: '100%', // Always full width
+      p: 2,
+      mt: 8, // Account for AppBar height
     }
   }
   
@@ -48,17 +33,14 @@ const Layout = React.memo(({ children }) => {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <CssBaseline />
       
-      {isMobile && <MobileNav />}
-      
+      {/* Sidebar with overlay behavior */}
       <Sidebar />
       
+      {/* Main content - always full width */}
       <Box
         component="main"
         sx={getMainStyles()}
       >
-        {/* Toolbar spacer for desktop AppBar */}
-        {!isMobile && <Toolbar />}
-        {isMobile && <Toolbar />}
         {children}
       </Box>
 

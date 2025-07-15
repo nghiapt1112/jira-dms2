@@ -116,16 +116,15 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
     if (item.path) {
       navigate(item.path)
       setActiveItem(item.id)
-      if (isMobile) {
-        closeSidebar()
-      }
+      // Close sidebar after navigation (overlay behavior)
+      closeSidebar()
     } else if (parentId) {
       setExpandedItems(prev => ({
         ...prev,
         [parentId]: !prev[parentId]
       }))
     }
-  }, [navigate, setActiveItem, isMobile, closeSidebar])
+  }, [navigate, setActiveItem, closeSidebar])
   
   const handleToggle = useCallback(() => {
     if (onDrawerToggle) {
@@ -154,34 +153,24 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
             <Icon />
           </ListItemIcon>
         )}
-        {isOpen && (
-          <>
-            <ListItemText primary={item.title} />
-            {hasChildren && (
-              <ChevronRightIcon
-                sx={{
-                  ...styles.collapseIcon,
-                  ...(isExpanded && styles.collapseIconOpen)
-                }}
-              />
-            )}
-          </>
+        <ListItemText primary={item.title} />
+        {hasChildren && (
+          <ChevronRightIcon
+            sx={{
+              ...styles.collapseIcon,
+              ...(isExpanded && styles.collapseIconOpen)
+            }}
+          />
         )}
       </ListItemButton>
     )
 
     return (
       <React.Fragment key={item.id}>
-        {!isOpen && !isMobile ? (
-          <Tooltip title={item.title} placement="right">
-            {listItemButton}
-          </Tooltip>
-        ) : (
-          listItemButton
-        )}
+        {listItemButton}
         
         {hasChildren && (
-          <Collapse in={isExpanded && isOpen} timeout="auto" unmountOnExit>
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
               {item.children.map(child => renderNavItem(child, level + 1))}
             </List>
@@ -195,16 +184,16 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
     <>
       <Box sx={styles.toolbar}>
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-          {isOpen ? 'JIRA DMS' : ''}
+          JIRA DMS
         </Typography>
         <IconButton
           color="inherit"
-          aria-label="toggle drawer"
-          onClick={handleToggle}
+          aria-label="close drawer"
+          onClick={closeSidebar}
           edge="end"
           sx={styles.toggleButton}
         >
-          {isOpen ? <MenuOpenIcon /> : <MenuIcon />}
+          <MenuOpenIcon />
         </IconButton>
       </Box>
       
@@ -214,36 +203,14 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
     </>
   )
   
-  if (isMobile) {
-    return (
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={isOpen}
-        onClose={closeSidebar}
-        sx={{
-          ...styles.drawer,
-          ...styles.drawerMobile
-        }}
-        ModalProps={{
-          keepMounted: true,
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-    )
-  }
-  
   return (
     <>
-      {/* Desktop AppBar */}
+      {/* Fixed AppBar for all screen sizes */}
       <AppBar
         position="fixed"
         sx={{
-          display: { xs: 'none', md: 'block' },
           zIndex: theme.zIndex.drawer + 1,
-          width: `calc(100% - ${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px)`,
-          ml: `${isOpen ? SIDEBAR_WIDTHS.EXPANDED : SIDEBAR_WIDTHS.COLLAPSED}px`,
+          width: '100%', // Always full width
         }}
       >
         <Toolbar>
@@ -254,7 +221,7 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
             onClick={handleToggle}
             sx={{ mr: 2 }}
           >
-            {isOpen ? <MenuOpenIcon /> : <MenuIcon />}
+            <MenuIcon />
           </IconButton>
           
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
@@ -279,13 +246,18 @@ const Sidebar = React.memo(({ onDrawerToggle }) => {
         </Toolbar>
       </AppBar>
       
-      {/* Desktop Drawer */}
+      {/* Overlay Drawer for all screen sizes */}
       <Drawer
-        variant="permanent"
+        variant="temporary"
+        anchor="left"
         open={isOpen}
+        onClose={closeSidebar}
         sx={{
           ...styles.drawer,
-          ...(!isOpen && styles.drawerCollapsed)
+          ...(isMobile && styles.drawerMobile)
+        }}
+        ModalProps={{
+          keepMounted: true, // Better mobile performance
         }}
       >
         {drawerContent}
