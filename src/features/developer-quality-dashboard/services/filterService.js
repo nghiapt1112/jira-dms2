@@ -14,24 +14,231 @@ export const filterService = {
   applyFilters: (filters, cacheData) => {
     const startTime = performance.now()
     
+    // Log every filter application with special focus on projects
+    console.log('FILTER SERVICE: Applying filters with projects:', filters?.projects || [])
+    
+    if (!cacheData || !cacheData.indices) {
+      return null
+    }
+    
+    // Extract timeframe and statusFilter from unified filters object
+    const { timeframe = 'month', statusFilter = ['Done', 'In Progress', 'In Review'] } = filters || {}
+    
+    // Get intersection of indices based on filters
+    const resultIndices = filterService.getFilteredIndices(filters, cacheData.indices)
+    
+    // Apply status filter if provided
+    let finalIndices = resultIndices
+    if (statusFilter && statusFilter.length > 0) {
+      const statusIndices = new Set()
+      statusFilter.forEach(status => {
+        const statusIssues = cacheData.indices.byStatus.get(status) || []
+        statusIssues.forEach(idx => statusIndices.add(idx))
+      })
+      
+      // Intersect with existing results
+      finalIndices = new Set([...resultIndices].filter(idx => statusIndices.has(idx)))
+    }
+    
+    // Get filtered issues for time-based processing
+    const filteredIssues = filterService.getFilteredIssues(finalIndices, cacheData.minimalIssues)
+    
+    // Generate time-based chart data with project filtering applied
+    const timeBasedChartData = filterService.generateTimeBasedChartData(
+      filteredIssues, 
+      timeframe, 
+      statusFilter,
+      filters // Pass the full filters object to allow project filtering
+    )
+    
+    // Recalculate metrics from filtered data
+    const filteredMetrics = filterService.recalculateMetricsFromIndices(finalIndices, cacheData)
+    
+    // Return filtered data with recalculated metrics and time-based chart data
+    const filteredData = {
+      filteredIssues,
+      filteredMetrics,
+      filteredChartData: {
+        ...filterService.recalculateChartDataFromIndices(finalIndices, cacheData),
+        teamContributionChart: {
+          type: 'stacked-bar',
+          data: timeBasedChartData,
+          config: {
+            xAxisKey: 'timePeriod',
+            yAxisKey: 'storyPoints',
+            colorScheme: 'multi',
+            timeframe,
+            statusFilter
+          }
+        }
+      },
+      appliedFilters: filters,
+      totalResults: finalIndices.size,
+      processingTime: performance.now() - startTime
+    }
+    
+    return filteredData
+  },
+
+  /**
+   * Apply filters with time period and status filtering for team contribution chart
+   * @param {Object} filters - Filter criteria
+   * @param {Object} cacheData - Pre-processed cache data with indices
+   * @param {string} timePeriodType - 'week', 'month', or 'quarter'
+   * @param {Array} statusFilter - Array of statuses to include
+   * @returns {Object} Filtered data with time-based chart data
+   */
+  applyFiltersWithTimeAndStatus: (filters, cacheData, timePeriodType = 'month', statusFilter = []) => {
+    const startTime = performance.now()
+    
     if (!cacheData || !cacheData.indices) {
       return null
     }
     
     // Get intersection of indices based on filters
-    const resultIndices = filterService.getFilteredIndices(filters, cacheData.indices)
+    let resultIndices = filterService.getFilteredIndices(filters, cacheData.indices)
     
-    // Return filtered data with recalculated metrics
+    // Apply status filter if provided
+    if (statusFilter && statusFilter.length > 0) {
+      const statusIndices = new Set()
+      statusFilter.forEach(status => {
+        const statusIssues = cacheData.indices.byStatus.get(status) || []
+        statusIssues.forEach(idx => statusIndices.add(idx))
+      })
+      
+      // Intersect with existing results
+      resultIndices = new Set([...resultIndices].filter(idx => statusIndices.has(idx)))
+    }
+    
+    // Get filtered issues for time-based processing
+    const filteredIssues = filterService.getFilteredIssues(resultIndices, cacheData.minimalIssues)
+    
+    // Generate time-based chart data
+    const timeBasedChartData = filterService.generateTimeBasedChartData(
+      filteredIssues, 
+      timePeriodType, 
+      statusFilter
+    )
+    
+    // Recalculate metrics from filtered data
+    const filteredMetrics = filterService.recalculateMetricsFromIndices(resultIndices, cacheData)
+    
+    // Return filtered data with time-based chart data
     const filteredData = {
-      filteredIssues: filterService.getFilteredIssues(resultIndices, cacheData.minimalIssues),
-      filteredMetrics: filterService.recalculateMetricsFromIndices(resultIndices, cacheData),
-      filteredChartData: filterService.recalculateChartDataFromIndices(resultIndices, cacheData),
+      filteredIssues,
+      filteredMetrics,
+      filteredChartData: {
+        ...filterService.recalculateChartDataFromIndices(resultIndices, cacheData),
+        teamContributionChart: {
+          type: 'stacked-bar',
+          data: timeBasedChartData,
+          config: {
+            xAxisKey: 'timePeriod',
+            yAxisKey: 'storyPoints',
+            colorScheme: 'multi',
+            timePeriodType,
+            statusFilter
+          }
+        }
+      },
       appliedFilters: filters,
+      timePeriodType,
+      statusFilter,
       totalResults: resultIndices.size,
       processingTime: performance.now() - startTime
     }
     
     return filteredData
+  },
+
+  /**
+   * Generate time-based chart data from filtered issues
+   * @param {Array} filteredIssues - Array of filtered issues
+   * @param {string} timePeriodType - 'week', 'month', or 'quarter'
+   * @param {Array} statusFilter - Array of statuses to include
+   * @returns {Array} Chart data for stacked bar chart
+   */
+  generateTimeBasedChartData: (filteredIssues, timePeriodType = 'month', statusFilter = [], filters = null) => {
+    const timeBasedData = new Map()
+    
+    // Apply project filter if specified
+    let issuesToProcess = filteredIssues
+    if (filters && filters.projects && filters.projects.length > 0) {
+      const projectSet = new Set(filters.projects)
+      issuesToProcess = filteredIssues.filter(issue => projectSet.has(issue.project))
+    }
+    
+    issuesToProcess.forEach(issue => {
+      const assignee = issue.assignee || 'Unassigned'
+      const storyPoints = issue.storyPoints || 0
+      const created = issue.created
+      const status = issue.status
+      
+      // Skip if no assignee or story points
+      if (assignee === 'Unassigned' || storyPoints === 0) return
+      
+      // Apply status filter if provided
+      if (statusFilter && statusFilter.length > 0 && !statusFilter.includes(status)) {
+        return
+      }
+      
+      if (created) {
+        let timePeriod
+        
+        switch (timePeriodType) {
+          case 'week':
+            timePeriod = filterService.getWeekFromDate(created)
+            break
+          case 'quarter':
+            timePeriod = filterService.getQuarterFromDate(created)
+            break
+          default: // month
+            timePeriod = created.substring(0, 7) // '2024-01'
+        }
+        
+        if (!timeBasedData.has(timePeriod)) {
+          timeBasedData.set(timePeriod, new Map())
+        }
+        
+        const periodData = timeBasedData.get(timePeriod)
+        periodData.set(assignee, (periodData.get(assignee) || 0) + storyPoints)
+      }
+    })
+    
+    // Convert to chart data format
+    return Array.from(timeBasedData.entries())
+      .map(([timePeriod, developersMap]) => {
+        const result = { timePeriod }
+        developersMap.forEach((storyPoints, developer) => {
+          result[developer] = storyPoints
+        })
+        return result
+      })
+      .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
+  },
+
+  /**
+   * Get week from date string
+   * @param {string} dateString - ISO date string
+   * @returns {string} Week identifier (e.g., '2024-W12')
+   */
+  getWeekFromDate: (dateString) => {
+    const date = new Date(dateString)
+    const year = date.getFullYear()
+    const weekNum = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
+    return `${year}-W${weekNum.toString().padStart(2, '0')}`
+  },
+
+  /**
+   * Get quarter from date string
+   * @param {string} dateString - ISO date string
+   * @returns {string} Quarter identifier (e.g., '2024-Q1')
+   */
+  getQuarterFromDate: (dateString) => {
+    const date = new Date(dateString)
+    const year = date.getFullYear()
+    const quarter = Math.ceil((date.getMonth() + 1) / 3)
+    return `${year}-Q${quarter}`
   },
 
   /**
@@ -414,6 +621,15 @@ export const filterService = {
   areFiltersEmpty: (filters) => {
     if (!filters) return true
     
+    // Check for default values of timeframe and statusFilter
+    const isDefaultTimeframe = !filters.timeframe || filters.timeframe === 'month'
+    const isDefaultStatusFilter = 
+      !filters.statusFilter || 
+      (filters.statusFilter.length === 3 && 
+       filters.statusFilter.includes('Done') && 
+       filters.statusFilter.includes('In Progress') && 
+       filters.statusFilter.includes('In Review'))
+    
     return (
       (!filters.developers || filters.developers.length === 0) &&
       (!filters.projects || filters.projects.length === 0) &&
@@ -421,7 +637,9 @@ export const filterService = {
       (!filters.statuses || filters.statuses.length === 0) &&
       (!filters.severities || filters.severities.length === 0) &&
       (!filters.rootCauses || filters.rootCauses.length === 0) &&
-      (!filters.dateRange || !filters.dateRange.values || filters.dateRange.values.length === 0)
+      (!filters.dateRange || (!filters.dateRange.startDate && !filters.dateRange.endDate)) &&
+      isDefaultTimeframe &&
+      isDefaultStatusFilter
     )
   },
 

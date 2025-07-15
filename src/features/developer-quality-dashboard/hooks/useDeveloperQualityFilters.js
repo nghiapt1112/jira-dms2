@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useEffect } from 'react'
 import { useDeveloperQualityStore } from '../store/developerQualityStore'
 import { filterService } from '../services/filterService'
 import { performanceMonitor } from '../utils/PerformanceMonitor'
@@ -14,6 +14,16 @@ export const useDeveloperQualityFilters = () => {
     hasActiveFilters,
     data
   } = useDeveloperQualityStore()
+  
+  // Debug logging for store state
+  useEffect(() => {
+    console.log('🔍 FILTER HOOK: Store state changed:', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      filters,
+      timestamp: new Date().toISOString()
+    })
+  }, [data, filters])
 
   // Memoized filter options
   const filterOptions = useMemo(() => {
@@ -24,9 +34,16 @@ export const useDeveloperQualityFilters = () => {
   const filteredData = useMemo(() => {
     const timer = performanceMonitor.startTimer('filterResponse')
     try {
+      console.log('🔄 HOOK: Recalculating filtered data due to dependency change')
       const result = getFilteredData()
       timer?.end()
       performanceMonitor.recordMetric('cacheHit', 1)
+      console.log('🔄 HOOK: Filtered data calculated:', {
+        hasResult: !!result,
+        hasChartData: !!result?.filteredChartData,
+        hasTeamChart: !!result?.filteredChartData?.teamContributionChart,
+        currentFilters: filters
+      })
       return result
     } catch (error) {
       timer?.end()
@@ -34,15 +51,39 @@ export const useDeveloperQualityFilters = () => {
       console.error('Filter operation failed:', error)
       return null
     }
-  }, [getFilteredData])
+  }, [getFilteredData, filters])
 
-  // Update individual filter
+  // Update individual filter with special handling for projects
   const updateFilter = useCallback((filterType, value) => {
+    console.log(`useDeveloperQualityFilters: Updating ${filterType} filter:`, value)
+    
+    // Direct manipulation for projects to ensure changes are detected
+    if (filterType === 'projects') {
+      // Create a completely new copy to ensure reference changes
+      const projectsValue = Array.isArray(value) ? [...value] : value
+      console.log('Setting projects filter with forced reference change:', projectsValue)
+      
+      // Force direct state update without using previous state
+      // This bypasses potential reference comparison issues
+      const newFilters = {
+        ...filters,
+        projects: projectsValue
+      }
+      
+      // Debug before setting
+      console.log('Before setFilters:', { oldFilters: filters, newFilters })
+      
+      // Force cache invalidation regardless of comparison
+      setFilters(newFilters)
+      return
+    }
+    
+    // Normal handling for other filters
     setFilters(prevFilters => ({
       ...prevFilters,
       [filterType]: value
     }))
-  }, [setFilters])
+  }, [setFilters, filters])
 
   // Update multiple filters at once
   const updateFilters = useCallback((newFilters) => {
@@ -119,10 +160,12 @@ export const useDeveloperQualityFilters = () => {
       const endTime = performance.now()
       
       console.log(`Filters applied in ${(endTime - startTime).toFixed(2)}ms`)
+      performanceMonitor.recordMetric('filterTime', endTime - startTime)
       
       return result
     } catch (error) {
       console.error('Failed to apply filters:', error)
+      performanceMonitor.recordMetric('filterErrors', 1)
       return null
     }
   }, [data, filters])
@@ -145,6 +188,10 @@ export const useDeveloperQualityFilters = () => {
     
     if (filters.issueTypes.length > 0) {
       summary.push(`${filters.issueTypes.length} issue type${filters.issueTypes.length > 1 ? 's' : ''}`)
+    }
+    
+    if (filters.statuses.length > 0) {
+      summary.push(`${filters.statuses.length} status${filters.statuses.length > 1 ? 'es' : ''}`)
     }
     
     if (filters.severities.length > 0) {
@@ -230,6 +277,16 @@ export const useDeveloperQualityFilters = () => {
     return filterOptions[filterType]
   }, [filterOptions, filters])
 
+  // Update timeframe specifically (for compatibility with existing components)
+  const updateTimeframe = useCallback((newTimeframe) => {
+    updateFilter('timeframe', newTimeframe)
+  }, [updateFilter])
+  
+  // Update status filter specifically (for compatibility with existing components)
+  const updateStatusFilter = useCallback((newStatusFilter) => {
+    updateFilter('statusFilter', newStatusFilter)
+  }, [updateFilter])
+  
   return {
     // Current filters
     filters,
@@ -249,6 +306,10 @@ export const useDeveloperQualityFilters = () => {
     setDateRange,
     clearFilter,
     resetFilters,
+    
+    // Specific filter updaters (for backward compatibility)
+    updateTimeframe,
+    updateStatusFilter,
     
     // Filter utilities
     hasActiveFilters: hasActiveFilters(),

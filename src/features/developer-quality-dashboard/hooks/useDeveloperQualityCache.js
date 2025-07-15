@@ -48,7 +48,17 @@ export const useDeveloperQualityCache = () => {
 
   // Auto-load cached data on mount if no data exists
   useEffect(() => {
+    console.log('🔍 CACHE HOOK: Auto-load check:', {
+      hasData,
+      jiraLoading,
+      jiraError: !!jiraError,
+      data: !!data,
+      isLoading,
+      shouldLoad: !hasData && !jiraLoading && !jiraError && !data && !isLoading
+    })
+    
     if (!hasData && !jiraLoading && !jiraError && !data && !isLoading) {
+      console.log('🔍 CACHE HOOK: Loading cached data...')
       // Try to load from cache first
       loadCachedData()
     }
@@ -56,8 +66,17 @@ export const useDeveloperQualityCache = () => {
 
   // Load developer quality data when JIRA data becomes available
   useEffect(() => {
+    console.log('🔍 CACHE HOOK: JIRA data effect check:', {
+      hasJiraData: !!jiraData,
+      isJiraDataArray: Array.isArray(jiraData),
+      jiraDataLength: jiraData?.length || 0,
+      hasData: !!data,
+      isLoading,
+      shouldProcess: jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading
+    })
+    
     if (jiraData && Array.isArray(jiraData) && jiraData.length > 0 && !data && !isLoading) {
-      console.log('Developer Quality Cache - Processing JIRA data:', jiraData.length, 'issues')
+      console.log('🔍 CACHE HOOK: Processing JIRA data for developer quality:', jiraData.length, 'issues')
       // Process raw JIRA issues for developer quality
       loadData(jiraData)
     }
@@ -98,9 +117,19 @@ export const useDeveloperQualityCache = () => {
   }, [reset, fetchData])
 
   // Clear cache callback
-  const handleClearCache = useCallback(() => {
-    reset()
-  }, [reset])
+  const handleClearCache = useCallback(async () => {
+    try {
+      // Clear both the store and the IndexedDB cache
+      await loadData(null) // This will try to load from cache and fail, then clear
+      const { developerQualityService } = await import('../services/developerQualityService')
+      await developerQualityService.clearCachedData()
+      reset()
+      console.log('🔍 CACHE HOOK: Cache cleared successfully')
+    } catch (error) {
+      console.error('Failed to clear cache:', error)
+      reset() // Fallback to just clearing the store
+    }
+  }, [reset, loadData])
 
   // Check if cache is stale (older than 1 hour)
   const isCacheStale = useMemo(() => {
@@ -111,7 +140,15 @@ export const useDeveloperQualityCache = () => {
 
   // Check if cache needs initialization
   const needsInitialization = useMemo(() => {
-    return !data && !hasData && !jiraLoading && !error
+    const needs = !data && !hasData && !jiraLoading && !error
+    console.log('🔍 CACHE HOOK: needsInitialization check:', {
+      data: !!data,
+      hasData,
+      jiraLoading,
+      error: !!error,
+      needsInitialization: needs
+    })
+    return needs
   }, [data, hasData, jiraLoading, error])
 
   // Get effective error (prioritize developer quality errors, fallback to JIRA errors)

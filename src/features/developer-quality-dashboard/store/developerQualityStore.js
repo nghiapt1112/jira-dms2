@@ -3,6 +3,39 @@ import { devtools } from 'zustand/middleware'
 import { developerQualityService } from '../services/developerQualityService'
 import { filterService } from '../services/filterService'
 
+// Deep comparison utility for detecting actual filter changes
+const areFiltersChanged = (oldFilters, newFilters) => {
+  // Compare primitive filters
+  if (oldFilters.timeframe !== newFilters.timeframe) return true
+  
+  // Compare array filters
+  const arrayFilters = ['developers', 'projects', 'issueTypes', 'statuses', 'severities', 'rootCauses', 'statusFilter']
+  for (const filter of arrayFilters) {
+    const oldArray = oldFilters[filter] || []
+    const newArray = newFilters[filter] || []
+    
+    // Handle empty array vs non-empty array case
+    if (oldArray.length === 0 && newArray.length > 0) return true
+    if (oldArray.length > 0 && newArray.length === 0) return true
+    
+    // Length check
+    if (oldArray.length !== newArray.length) return true
+    
+    // Content check - sort arrays to ensure consistent comparison
+    const sortedOld = [...oldArray].sort()
+    const sortedNew = [...newArray].sort()
+    for (let i = 0; i < sortedOld.length; i++) {
+      if (sortedOld[i] !== sortedNew[i]) return true
+    }
+  }
+  
+  // Compare date range
+  if (oldFilters.dateRange?.startDate !== newFilters.dateRange?.startDate) return true
+  if (oldFilters.dateRange?.endDate !== newFilters.dateRange?.endDate) return true
+  
+  return false
+}
+
 export const useDeveloperQualityStore = create(
   devtools(
     (set, get) => ({
@@ -25,7 +58,10 @@ export const useDeveloperQualityStore = create(
         dateRange: {
           startDate: null,
           endDate: null
-        }
+        },
+        // Moved from component state to store
+        timeframe: 'month', // Previously timePeriodType
+        statusFilter: ['Done', 'In Progress', 'In Review']
       },
       
       // Filtered data cache
@@ -35,6 +71,13 @@ export const useDeveloperQualityStore = create(
       // Actions
       setData: (data) => {
         const now = new Date().toISOString()
+        console.log('🔍 STORE: setData called with:', {
+          hasData: !!data,
+          hasMetrics: !!data?.metrics,
+          hasChartData: !!data?.chartData,
+          hasIndices: !!data?.indices,
+          timestamp: now
+        })
         set({ 
           data, 
           lastUpdated: now,
@@ -51,14 +94,80 @@ export const useDeveloperQualityStore = create(
         isLoading: false 
       }),
       
+      // Dedicated setter for project filters - always forces update
+      setProjectFilters: (projects) => {
+        console.log(' DIRECT PROJECT FILTER UPDATE:', projects)
+        
+        const currentState = get()
+        const currentFilters = currentState.filters
+        
+        // Always force cache invalidation and update
+        set({
+          filters: {
+            ...currentFilters,
+            projects: Array.isArray(projects) ? [...projects] : [] // Create fresh array
+          },
+          filteredData: null,
+          filterAppliedAt: null
+        })
+        
+        // Force data recalculation
+        const getFilteredData = get().getFilteredData
+        if (getFilteredData) {
+          console.log('Forcing recalculation of filtered data after project filter change')
+          setTimeout(() => getFilteredData(), 0)
+        }
+      },
+      
+      // General filters management
       setFilters: (filters) => {
         const currentFilters = get().filters
         const newFilters = typeof filters === 'function' ? filters(currentFilters) : filters
-        set({ 
-          filters: newFilters,
-          filteredData: null, // Clear cached filtered data
-          filterAppliedAt: null
+        
+        // Direct reference to projects filter for logging
+        const currentProjects = currentFilters.projects || []
+        const newProjects = newFilters.projects || []
+        
+        console.log('Projects filter change check:', {
+          currentProjects,
+          newProjects,
+          currentLength: currentProjects.length,
+          newLength: newProjects.length,
+          isEqual: JSON.stringify(currentProjects) === JSON.stringify(newProjects)
         })
+        
+        // SPECIAL HANDLING: Force update if projects array has changed
+        const projectsChanged = Array.isArray(newProjects) && 
+          JSON.stringify(currentProjects) !== JSON.stringify(newProjects)
+        
+        // Always force an update if projects have changed
+        if (projectsChanged) {
+          console.log('🔥 Projects filter changed! Forcing cache invalidation')
+          set({ 
+            filters: {
+              ...currentFilters,
+              projects: [...newProjects] // Create a fresh array to ensure reference changes
+            },
+            filteredData: null,
+            filterAppliedAt: null
+          })
+          return
+        }
+        
+        // Normal handling for other filters
+        console.log('Regular filter update - checking for changes')
+        const hasChanged = areFiltersChanged(currentFilters, newFilters)
+        
+        if (hasChanged) {
+          console.log('Filters changed - clearing data cache')
+          set({ 
+            filters: newFilters,
+            filteredData: null,
+            filterAppliedAt: null
+          })
+        } else {
+          console.log('No actual filter changes detected')
+        }
       },
       
       setFilteredData: (filteredData) => {
@@ -81,7 +190,9 @@ export const useDeveloperQualityStore = create(
           dateRange: {
             startDate: null,
             endDate: null
-          }
+          },
+          timeframe: 'month',
+          statusFilter: ['Done', 'In Progress', 'In Review']
         },
         filteredData: null,
         filterAppliedAt: null
@@ -104,7 +215,9 @@ export const useDeveloperQualityStore = create(
           dateRange: {
             startDate: null,
             endDate: null
-          }
+          },
+          timeframe: 'month',
+          statusFilter: ['Done', 'In Progress', 'In Review']
         },
         filteredData: null,
         filterAppliedAt: null
@@ -114,31 +227,40 @@ export const useDeveloperQualityStore = create(
       loadData: async (rawData) => {
         const { setLoading, setError, setData } = get()
         
+        console.log('🔍 STORE: loadData called with:', {
+          hasRawData: !!rawData,
+          rawDataLength: rawData?.length || 0
+        })
+        
         setLoading(true)
         try {
           let processedData
           
           if (rawData) {
-            console.log('Developer Quality Store - Processing', rawData.length, 'JIRA issues...')
-            // Process provided raw data
+            console.log('🔍 STORE: Processing', rawData.length, 'JIRA issues...')
+            // Process provided raw data (now async)
             processedData = await developerQualityService.processJiraIssuesForDeveloperQuality(rawData)
           } else {
+            console.log('🔍 STORE: Loading from cache...')
             // Load from cache or existing processed data
             processedData = await developerQualityService.getCachedData()
           }
           
           if (!processedData) {
+            console.log('🔍 STORE: No processed data available')
             throw new Error('No data available. Please load JIRA data first.')
           }
           
-          console.log('Developer Quality data processed successfully:', {
+          console.log('🔍 STORE: Developer Quality data processed successfully:', {
             totalIssues: processedData.metadata?.totalIssues || 0,
             processingTime: processedData.metadata?.processingTime || 0,
-            cacheSize: processedData.metadata?.cacheSize || 0
+            cacheSize: processedData.metadata?.cacheSize || 0,
+            hasMetrics: !!processedData.metrics,
+            hasChartData: !!processedData.chartData
           })
           setData(processedData)
         } catch (error) {
-          console.error('Failed to load developer quality data:', error)
+          console.error('🔍 STORE: Failed to load developer quality data:', error)
           setError(error)
         } finally {
           setLoading(false)
@@ -154,14 +276,32 @@ export const useDeveloperQualityStore = create(
       getFilteredData: () => {
         const { data, filteredData, filters } = get()
         
-        if (!data) return null
+        console.log('🔍 STORE: getFilteredData called:', {
+          hasData: !!data,
+          hasFilters: !!filters,
+          filtersKeys: filters ? Object.keys(filters) : []
+        })
         
-        // Return cached filtered data if available and filters haven't changed
-        if (filteredData) return filteredData
+        if (!data) {
+          console.log('🔍 STORE: No data available for filtering')
+          return null
+        }
         
-        // Apply filters and cache result
+        // Force recalculation of filtered data every time to ensure filters are applied correctly
+        // This ensures project filters and other changes are immediately reflected in charts
         try {
+          const timer = performance.now()
+          // Pass all filter parameters in one call
           const filtered = filterService.applyFilters(filters, data)
+          
+          console.log(`🔍 STORE: Filters applied in ${(performance.now() - timer).toFixed(2)}ms`)
+          console.log('🔍 STORE: Applied filters:', filters)
+          console.log('🔍 STORE: Filtered data result:', {
+            hasChartData: !!filtered?.filteredChartData,
+            hasTeamChart: !!filtered?.filteredChartData?.teamContributionChart,
+            chartDataLength: filtered?.filteredChartData?.teamContributionChart?.data?.length || 0
+          })
+          
           get().setFilteredData(filtered)
           return filtered
         } catch (error) {
@@ -191,6 +331,13 @@ export const useDeveloperQualityStore = create(
       hasActiveFilters: () => {
         const { filters } = get()
         if (!filters) return false
+        
+        // Default filters don't count as "active"
+        const isDefaultTimeframe = filters.timeframe === 'month'
+        const isDefaultStatusFilter = 
+          JSON.stringify(filters.statusFilter.sort()) === 
+          JSON.stringify(['Done', 'In Progress', 'In Review'].sort())
+        
         return Boolean(
           (filters.developers && filters.developers.length > 0) ||
           (filters.projects && filters.projects.length > 0) ||
@@ -198,7 +345,9 @@ export const useDeveloperQualityStore = create(
           (filters.statuses && filters.statuses.length > 0) ||
           (filters.severities && filters.severities.length > 0) ||
           (filters.rootCauses && filters.rootCauses.length > 0) ||
-          (filters.dateRange && (filters.dateRange.startDate || filters.dateRange.endDate))
+          (filters.dateRange && (filters.dateRange.startDate || filters.dateRange.endDate)) ||
+          (!isDefaultTimeframe) ||
+          (!isDefaultStatusFilter)
         )
       },
       

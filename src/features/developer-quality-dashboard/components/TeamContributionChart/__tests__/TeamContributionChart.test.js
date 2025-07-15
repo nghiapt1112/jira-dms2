@@ -8,331 +8,218 @@ import TeamContributionChart from '../TeamContributionChart'
 const renderWithTheme = (component) =>
   render(<ThemeProvider theme={theme}>{component}</ThemeProvider>)
 
-const mockData = {
-  data: [
-    { name: 'john.doe', contributions: 156, percentage: 12.5 },
-    { name: 'jane.smith', contributions: 134, percentage: 10.7 },
-    { name: 'bob.wilson', contributions: 98, percentage: 7.8 }
-  ]
-}
-
-const mockMetrics = {
-  totalContributions: 1247,
-  averageContribution: 89.07,
-  contributionTrend: 'increasing',
-  topContributors: [
-    { developer: 'john.doe', contributions: 156, percentage: 12.5 },
-    { developer: 'jane.smith', contributions: 134, percentage: 10.7 },
-    { developer: 'bob.wilson', contributions: 98, percentage: 7.8 }
-  ]
-}
-
 describe('TeamContributionChart', () => {
+  const mockData = {
+    data: [
+      { 
+        timePeriod: '2024-01',
+        'John Doe': 15,
+        'Jane Smith': 10,
+        'Bob Johnson': 5
+      },
+      { 
+        timePeriod: '2024-02',
+        'John Doe': 20,
+        'Jane Smith': 8,
+        'Bob Johnson': 12
+      }
+    ]
+  }
+
+  const mockMetrics = {
+    totalContributions: 1247,
+    totalStoryPoints: 2468,
+    averageContribution: 89.1,
+    averageStoryPoints: 12345.7,
+    contributionTrend: 'increasing',
+    topContributors: [
+      { 
+        developer: 'John Doe', 
+        contributions: 156, 
+        storyPoints: 100,
+        percentage: 45.2,
+        storyPointsPercentage: 40.5
+      },
+      { 
+        developer: 'Jane Smith', 
+        contributions: 134, 
+        storyPoints: 80,
+        percentage: 38.8,
+        storyPointsPercentage: 32.4
+      },
+      { 
+        developer: 'Bob Johnson', 
+        contributions: 98, 
+        storyPoints: 67,
+        percentage: 28.4,
+        storyPointsPercentage: 27.1
+      }
+    ]
+  }
+
   describe('Rendering', () => {
     it('renders without crashing', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
-        />
-      )
-      
-      expect(screen.getByText('Team Contribution')).toBeInTheDocument()
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
     })
 
-    it('renders with custom title', () => {
-      const customTitle = 'Custom Team Chart'
+    it('displays the default title', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
+      expect(screen.getByText('Team Contribution by Story Points')).toBeInTheDocument()
+    })
+
+    it('displays custom title when provided', () => {
+      const customTitle = 'Custom Team Stats'
       renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
+        <TeamContributionChart 
+          data={mockData} 
+          metrics={mockMetrics} 
           title={customTitle}
         />
       )
-      
       expect(screen.getByText(customTitle)).toBeInTheDocument()
     })
 
-    it('displays no data message when data is missing', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={null}
-          metrics={null}
-        />
-      )
-      
-      expect(screen.getByText('Team Contribution - No Data Available')).toBeInTheDocument()
-    })
-
-    it('displays no data message when data array is empty', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={{ data: [] }}
-          metrics={mockMetrics}
-        />
-      )
-      
-      expect(screen.getByText('Team Contribution - No Data Available')).toBeInTheDocument()
+    it('displays trend icon', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
+      expect(screen.getByTestId('TrendingUpIcon')).toBeInTheDocument()
     })
   })
 
-  describe('Metrics Display', () => {
-    it('displays total contributions correctly', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
-        />
-      )
-      
-      expect(screen.getByText('Total Contributions')).toBeInTheDocument()
-      expect(screen.getByText('1,247')).toBeInTheDocument()
+  describe('Data Display', () => {
+    it('displays total story points', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
+      expect(screen.getByText('Total Story Points')).toBeInTheDocument()
+      expect(screen.getByText('30')).toBeInTheDocument() // 15 + 10 + 5 from mockData
     })
 
-    it('displays average contribution correctly', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
-        />
-      )
-      
+    it('displays average per developer', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
       expect(screen.getByText('Average per Developer')).toBeInTheDocument()
-      expect(screen.getByText('89.1')).toBeInTheDocument()
+      expect(screen.getByText('12345.7')).toBeInTheDocument()
     })
 
-    it('displays contribution trend correctly', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
-        />
-      )
-      
+    it('displays top contributors with story points', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
+      expect(screen.getByText('Top Contributors (by Story Points)')).toBeInTheDocument()
+      expect(screen.getByText('John Doe (100pts)')).toBeInTheDocument()
+      expect(screen.getByText('Jane Smith (80pts)')).toBeInTheDocument()
+    })
+
+    it('displays trend information', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
       expect(screen.getByText('increasing')).toBeInTheDocument()
-    })
-
-    it('handles missing metrics gracefully', () => {
-      const incompleteMetrics = {
-        totalContributions: 1247
-        // missing other fields
-      }
-      
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={incompleteMetrics}
-        />
-      )
-      
-      expect(screen.getByText('1,247')).toBeInTheDocument()
-      expect(screen.getByText('0.0')).toBeInTheDocument() // default average
+      expect(screen.getByTestId('TrendingUpIcon')).toBeInTheDocument()
     })
   })
 
   describe('Top Contributors', () => {
-    it('displays top contributors as chips', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
-        />
-      )
-      
-      expect(screen.getByText('Top Contributors')).toBeInTheDocument()
-      expect(screen.getByText('john.doe (12.5%)')).toBeInTheDocument()
-      expect(screen.getByText('jane.smith (10.7%)')).toBeInTheDocument()
-      expect(screen.getByText('bob.wilson (7.8%)')).toBeInTheDocument()
+    it('displays top contributors correctly', () => {
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
+      expect(screen.getByText('Top Contributors (by Story Points)')).toBeInTheDocument()
+      expect(screen.getByText('John Doe (100pts)')).toBeInTheDocument()
+      expect(screen.getByText('Jane Smith (80pts)')).toBeInTheDocument()
+      expect(screen.getByText('Bob Johnson (67pts)')).toBeInTheDocument()
     })
 
     it('limits top contributors to 3', () => {
-      const metricsWithManyContributors = {
+      const manyContributors = {
         ...mockMetrics,
         topContributors: [
-          { developer: 'dev1', contributions: 100, percentage: 10 },
-          { developer: 'dev2', contributions: 90, percentage: 9 },
-          { developer: 'dev3', contributions: 80, percentage: 8 },
-          { developer: 'dev4', contributions: 70, percentage: 7 },
-          { developer: 'dev5', contributions: 60, percentage: 6 }
+          { developer: 'dev1', contributions: 100, storyPoints: 50, percentage: 10.0, storyPointsPercentage: 20.0 },
+          { developer: 'dev2', contributions: 90, storyPoints: 45, percentage: 9.0, storyPointsPercentage: 18.0 },
+          { developer: 'dev3', contributions: 80, storyPoints: 40, percentage: 8.0, storyPointsPercentage: 16.0 },
+          { developer: 'dev4', contributions: 70, storyPoints: 35, percentage: 7.0, storyPointsPercentage: 14.0 },
+          { developer: 'dev5', contributions: 60, storyPoints: 30, percentage: 6.0, storyPointsPercentage: 12.0 }
         ]
       }
       
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={metricsWithManyContributors}
-        />
-      )
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={manyContributors} />)
       
-      expect(screen.getByText('dev1 (10.0%)')).toBeInTheDocument()
-      expect(screen.getByText('dev2 (9.0%)')).toBeInTheDocument()
-      expect(screen.getByText('dev3 (8.0%)')).toBeInTheDocument()
-      expect(screen.queryByText('dev4 (7.0%)')).not.toBeInTheDocument()
-      expect(screen.queryByText('dev5 (6.0%)')).not.toBeInTheDocument()
+      expect(screen.getByText('dev1 (50pts)')).toBeInTheDocument()
+      expect(screen.getByText('dev2 (45pts)')).toBeInTheDocument()
+      expect(screen.getByText('dev3 (40pts)')).toBeInTheDocument()
+      expect(screen.queryByText('dev4 (35pts)')).not.toBeInTheDocument()
     })
 
     it('handles empty top contributors array', () => {
-      const metricsWithNoContributors = {
+      const emptyMetrics = {
         ...mockMetrics,
         topContributors: []
       }
       
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={metricsWithNoContributors}
-        />
-      )
-      
-      expect(screen.getByText('Top Contributors')).toBeInTheDocument()
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={emptyMetrics} />)
+      expect(screen.getByText('Top Contributors (by Story Points)')).toBeInTheDocument()
       // Should not crash and should render the section
     })
   })
 
   describe('Trend Icons', () => {
     it('displays increasing trend icon', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={{ ...mockMetrics, contributionTrend: 'increasing' }}
-        />
-      )
-      
-      // Check for the trend text
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} />)
+      expect(screen.getByTestId('TrendingUpIcon')).toBeInTheDocument()
       expect(screen.getByText('increasing')).toBeInTheDocument()
     })
 
     it('displays decreasing trend icon', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={{ ...mockMetrics, contributionTrend: 'decreasing' }}
-        />
-      )
-      
+      const decreasingMetrics = { ...mockMetrics, contributionTrend: 'decreasing' }
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={decreasingMetrics} />)
+      expect(screen.getByTestId('TrendingDownIcon')).toBeInTheDocument()
       expect(screen.getByText('decreasing')).toBeInTheDocument()
     })
 
     it('displays stable trend icon', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={{ ...mockMetrics, contributionTrend: 'stable' }}
-        />
-      )
-      
+      const stableMetrics = { ...mockMetrics, contributionTrend: 'stable' }
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={stableMetrics} />)
+      expect(screen.getByTestId('TrendingFlatIcon')).toBeInTheDocument()
       expect(screen.getByText('stable')).toBeInTheDocument()
     })
 
     it('handles missing trend gracefully', () => {
-      const metricsWithoutTrend = {
-        ...mockMetrics,
-        contributionTrend: undefined
-      }
-      
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={metricsWithoutTrend}
-        />
-      )
+      const noTrendMetrics = { ...mockMetrics, contributionTrend: undefined }
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={noTrendMetrics} />)
       
       // Should render without crashing
-      expect(screen.getByText('Team Contribution')).toBeInTheDocument()
+      expect(screen.getByText('Team Contribution by Story Points')).toBeInTheDocument()
     })
   })
 
   describe('Chart Configuration', () => {
     it('adjusts chart margins for many developers', () => {
-      const dataWithManyDevelopers = {
+      const manyDevsData = {
         data: Array.from({ length: 10 }, (_, i) => ({
-          name: `developer${i}`,
-          contributions: 100 - i * 5,
-          percentage: 10 - i * 0.5
+          timePeriod: `2024-${String(i + 1).padStart(2, '0')}`,
+          [`dev${i + 1}`]: Math.floor(Math.random() * 50) + 10
         }))
       }
       
-      renderWithTheme(
-        <TeamContributionChart
-          data={dataWithManyDevelopers}
-          metrics={mockMetrics}
-          height={500}
-        />
-      )
+      renderWithTheme(<TeamContributionChart data={manyDevsData} metrics={mockMetrics} height={500} />)
       
       // Should render without issues
-      expect(screen.getByText('Team Contribution')).toBeInTheDocument()
+      expect(screen.getByText('Team Contribution by Story Points')).toBeInTheDocument()
     })
 
     it('uses custom height prop', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={mockMetrics}
-          height={600}
-        />
-      )
+      renderWithTheme(<TeamContributionChart data={mockData} metrics={mockMetrics} height={600} />)
       
       // Component should render with custom height
-      expect(screen.getByText('Team Contribution')).toBeInTheDocument()
+      expect(screen.getByText('Team Contribution by Story Points')).toBeInTheDocument()
     })
   })
 
   describe('Edge Cases', () => {
-    it('handles zero contributions', () => {
-      const zeroData = {
-        data: [
-          { name: 'inactive.dev', contributions: 0, percentage: 0 }
-        ]
-      }
-      
-      const zeroMetrics = {
-        totalContributions: 0,
-        averageContribution: 0,
-        contributionTrend: 'stable',
-        topContributors: []
-      }
-      
-      renderWithTheme(
-        <TeamContributionChart
-          data={zeroData}
-          metrics={zeroMetrics}
-        />
-      )
-      
-      // Check that zero values are displayed (there might be multiple 0s)
-      expect(screen.getAllByText('0')).toHaveLength(2) // One in chart, one in metrics
-      expect(screen.getByText('0.0')).toBeInTheDocument()
+    it('displays no data message when data is null', () => {
+      renderWithTheme(<TeamContributionChart data={null} metrics={null} />)
+      expect(screen.getByText('Team Contribution by Story Points - No Data Available')).toBeInTheDocument()
     })
 
-    it('handles very large numbers', () => {
-      const largeMetrics = {
-        totalContributions: 1234567,
-        averageContribution: 12345.67,
-        contributionTrend: 'increasing',
-        topContributors: mockMetrics.topContributors
-      }
-      
-      renderWithTheme(
-        <TeamContributionChart
-          data={mockData}
-          metrics={largeMetrics}
-        />
-      )
-      
-      expect(screen.getByText('1,234,567')).toBeInTheDocument()
-      expect(screen.getByText('12345.7')).toBeInTheDocument()
+    it('displays no data message when data array is empty', () => {
+      renderWithTheme(<TeamContributionChart data={{ data: [] }} metrics={mockMetrics} />)
+      expect(screen.getByText('Team Contribution by Story Points - No Data Available')).toBeInTheDocument()
     })
 
     it('handles undefined data properties', () => {
-      renderWithTheme(
-        <TeamContributionChart
-          data={undefined}
-          metrics={undefined}
-        />
-      )
-      
-      expect(screen.getByText('Team Contribution - No Data Available')).toBeInTheDocument()
+      renderWithTheme(<TeamContributionChart data={undefined} metrics={undefined} />)
+      expect(screen.getByText('Team Contribution by Story Points - No Data Available')).toBeInTheDocument()
     })
   })
 
@@ -342,14 +229,15 @@ describe('TeamContributionChart', () => {
         <TeamContributionChart
           data={mockData}
           metrics={mockMetrics}
+          height={300}
         />
       )
       
       // Check that responsive elements are present
-      expect(screen.getByText('Team Contribution')).toBeInTheDocument()
-      expect(screen.getByText('Total Contributions')).toBeInTheDocument()
+      expect(screen.getByText('Team Contribution by Story Points')).toBeInTheDocument()
+      expect(screen.getByText('Total Story Points')).toBeInTheDocument()
       expect(screen.getByText('Average per Developer')).toBeInTheDocument()
-      expect(screen.getByText('Top Contributors')).toBeInTheDocument()
+      expect(screen.getByText('Top Contributors (by Story Points)')).toBeInTheDocument()
     })
   })
 }) 

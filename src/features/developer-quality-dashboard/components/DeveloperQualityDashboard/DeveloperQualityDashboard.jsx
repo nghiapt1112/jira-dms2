@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useCallback, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Grid, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
 import { Refresh as RefreshIcon, CloudDownload as DownloadIcon } from '@mui/icons-material'
@@ -24,19 +24,67 @@ const DeveloperQualityDashboard = React.memo(() => {
     handleRefresh
   } = useDeveloperQualityCache()
   const { 
-    filters, 
-    updateFilters, 
+    filters,
+    filterOptions,
+    isLoading: isFiltersLoading, 
+    error: filtersError,
+    clearFilters,
+    updateFilters,
     applyFilters,
-    resetFilters 
+    updateTimeframe,
+    updateStatusFilter,
+    filteredData
   } = useDeveloperQualityFilters()
   
-  // 2. Memoized values
-  const filteredData = useMemo(() => {
-    if (!cacheData) return null
-    return applyFilters(cacheData)
-  }, [cacheData, applyFilters])
+  // Debug logging for filter changes
+  useEffect(() => {
+    console.log('🔍 DASHBOARD: Filter state changed:', {
+      filters,
+      filteredDataExists: !!filteredData,
+      chartDataExists: !!filteredData?.filteredChartData,
+      teamContributionExists: !!filteredData?.filteredChartData?.teamContributionChart,
+      timestamp: new Date().toISOString()
+    })
+  }, [filters, filteredData])
   
-  // 3. Early returns
+  // Debug logging for cache state
+  useEffect(() => {
+    console.log('🔍 DASHBOARD: Cache state:', {
+      hasCache: !!cacheData,
+      isLoading,
+      error: !!error,
+      needsInitialization,
+      filteredDataExists: !!filteredData,
+      cacheKeys: cacheData ? Object.keys(cacheData) : []
+    })
+  }, [cacheData, isLoading, error, needsInitialization, filteredData])
+  
+  // 2. Memoized values
+  const handleFiltersChange = useCallback((newFilters) => {
+    console.log('🔧 DASHBOARD: handleFiltersChange called with:', newFilters)
+    
+    // Support both function and direct object calls
+    if (typeof newFilters === 'function') {
+      // If it's a function, call it with current filters
+      const updatedFilters = newFilters(filters)
+      console.log('🔧 DASHBOARD: Function-based filter update:', updatedFilters)
+      updateFilters(updatedFilters)
+    } else {
+      // If it's a direct object, use it
+      console.log('🔧 DASHBOARD: Direct filter update:', newFilters)
+      updateFilters(newFilters)
+    }
+  }, [updateFilters, filters])
+  
+  const handleTimePeriodChange = useCallback((newTimePeriod) => {
+    updateTimeframe(newTimePeriod)
+  }, [updateTimeframe])
+  
+  const handleStatusFilterChange = useCallback((newStatusFilter) => {
+    updateStatusFilter(newStatusFilter)
+  }, [updateStatusFilter])
+  
+  // 4. Early returns
   if (isLoading) {
     return (
       <Box sx={{ 
@@ -77,6 +125,14 @@ const DeveloperQualityDashboard = React.memo(() => {
     )
   }
   
+  // Debug the condition check
+  console.log('🔍 DASHBOARD: Condition check:', {
+    needsInitialization,
+    filteredData: !!filteredData,
+    cacheData: !!cacheData,
+    shouldShowNoData: needsInitialization || !filteredData
+  })
+
   if (needsInitialization || !filteredData) {
     return (
       <Box sx={{ p: 3 }}>
@@ -152,19 +208,28 @@ const DeveloperQualityDashboard = React.memo(() => {
           backgroundColor: 'background.paper'
         }}
       >
-        <FilterPanel
-          filters={filters}
-          onFiltersChange={updateFilters}
-          filterOptions={cacheData.filterOptions}
+        {/* Filter Panel - Using consolidated filter state */}
+        <FilterPanel 
+          filters={filters} 
+          onFiltersChange={handleFiltersChange} 
+          filterOptions={filterOptions}
+          isLoading={isFiltersLoading}
+          onTimePeriodChange={handleTimePeriodChange}
+          onStatusFilterChange={handleStatusFilterChange}
         />
       </Paper>
       
       <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Team Contribution Chart */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <TeamContributionChart
             data={filteredData.filteredChartData.teamContributionChart}
             metrics={filteredData.filteredMetrics.teamContribution}
+            timePeriodType={filters.timeframe}
+            onTimePeriodChange={handleTimePeriodChange}
+            statusFilter={filters.statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            filters={filters} // Pass complete filters object including projects
           />
         </Grid>
         

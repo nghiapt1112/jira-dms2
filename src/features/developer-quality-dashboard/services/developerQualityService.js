@@ -5,14 +5,15 @@
  */
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
+import { shouldIncludeMember, memberConfiguration } from '../../../constants/memberConfiguration'
 
 export const developerQualityService = {
   /**
    * Process JIRA issues for developer quality metrics during the main processing loop
    * @param {Array} issues - Array of JIRA issues
-   * @returns {Object} Pre-processed developer quality data with metrics, chartData, and indices
+   * @returns {Promise<Object>} Pre-processed developer quality data with metrics, chartData, and indices
    */
-  processJiraIssuesForDeveloperQuality: (issues) => {
+  processJiraIssuesForDeveloperQuality: async (issues) => {
     const startTime = performance.now()
     
     // Initialize data structures
@@ -44,7 +45,8 @@ export const developerQualityService = {
         project: issue.fields?.project?.key || 'Unknown',
         rootCause: developerQualityService.extractRootCause(issue),
         created: issue.fields?.created || null,
-        resolved: issue.fields?.resolutiondate || null
+        resolved: issue.fields?.resolutiondate || null,
+        storyPoints: issue.fields?.customfield_10028 || 0
       })
     })
     
@@ -53,10 +55,21 @@ export const developerQualityService = {
     developerQualityService.finalizeChartData(developerQualityData.chartData, developerQualityData.metrics)
     developerQualityService.finalizeFilterOptions(developerQualityData.filterOptions, developerQualityData.indices)
     
+    // Console log all current assignees/users in JSON format
+    developerQualityService.logCurrentUsers(developerQualityData)
+    
+    // Also log all users found in raw data for initial configuration setup
+    developerQualityService.logAllUsersForSetup(issues)
+    
+    // Also verify IndexedDB contents immediately after processing
+    setTimeout(() => {
+      developerQualityService.verifyIndexedDBContents()
+    }, 1000)
+    
     const processingTime = performance.now() - startTime
     console.log(`Developer Quality processing completed in ${processingTime}ms`)
     
-    return {
+    const finalData = {
       ...developerQualityData,
       metadata: {
         processingTime,
@@ -64,6 +77,16 @@ export const developerQualityService = {
         cacheSize: developerQualityService.calculateCacheSize(developerQualityData)
       }
     }
+    
+    // Cache the processed data for future use
+    try {
+      await developerQualityService.cacheProcessedData(finalData)
+    } catch (error) {
+      console.error('Failed to cache processed developer quality data:', error)
+      // Don't fail the entire operation if caching fails
+    }
+    
+    return finalData
   },
 
   /**
@@ -72,10 +95,18 @@ export const developerQualityService = {
   initializeMetrics: () => ({
     teamContribution: {
       totalContributions: 0,
+      totalStoryPoints: 0,
       averageContribution: 0,
+      averageStoryPoints: 0,
       contributionTrend: 'stable',
       topContributors: [],
-      developerStats: new Map()
+      developerStats: new Map(),
+      // Time-based story points aggregation
+      timeBasedStoryPoints: {
+        byWeek: new Map(),
+        byMonth: new Map(),
+        byQuarter: new Map()
+      }
     },
     bugAnalysis: {
       totalBugs: 0,
@@ -112,12 +143,14 @@ export const developerQualityService = {
    */
   initializeChartData: () => ({
     teamContributionChart: {
-      type: 'bar',
+      type: 'stacked-bar',
       data: [],
       config: {
-        xAxisKey: 'name',
-        yAxisKey: 'contributions',
-        colorScheme: 'blue'
+        xAxisKey: 'timePeriod',
+        yAxisKey: 'storyPoints',
+        colorScheme: 'multi',
+        timePeriodType: 'month', // week, month, quarter
+        statusFilter: ['Done', 'In Progress', 'In Review'] // Dynamic status filter
       }
     },
     bugTrendChart: {
@@ -183,6 +216,7 @@ export const developerQualityService = {
    */
   processDeveloperQualityMetrics: (issue, index, data) => {
     const assignee = issue.fields?.assignee?.displayName || 'Unassigned'
+    const assigneeAccountId = issue.fields?.assignee?.accountId || null
     const project = issue.fields?.project?.key || 'Unknown'
     const issueType = issue.fields?.issuetype?.name || 'Unknown'
     const status = issue.fields?.status?.name || 'Unknown'
@@ -190,30 +224,52 @@ export const developerQualityService = {
     const rootCause = developerQualityService.extractRootCause(issue)
     const created = issue.fields?.created
     const resolved = issue.fields?.resolutiondate
+    
+    // Extract story points from customfield_10028
+    const storyPoints = issue.fields?.customfield_10028 || 0
 
-    // Team contribution metrics
-    if (assignee !== 'Unassigned') {
+    // Check if member should be included based on configuration (by name or jiraId)
+    const memberStatus = shouldIncludeMember(assignee, assigneeAccountId)
+    
+    // Debug logging for member filtering (only log first few times to avoid spam)
+    if (index < 5) {
+      console.log(`🔍 MEMBER FILTER: ${assignee} (${assigneeAccountId}) -> ${memberStatus.isIncluded ? 'INCLUDED' : 'EXCLUDED'} (${memberStatus.role || 'no role'})`)
+    }
+    
+    // Team contribution metrics - now using story points and member filtering
+    if (assignee !== 'Unassigned' && memberStatus.isIncluded) {
       if (!data.metrics.teamContribution.developerStats.has(assignee)) {
         data.metrics.teamContribution.developerStats.set(assignee, {
           contributions: 0,
+          storyPoints: 0,
           bugs: 0,
-          projects: new Set()
+          projects: new Set(),
+          statusBreakdown: new Map(), // Track story points by status
+          role: memberStatus.role // Track member role (developer/qa)
         })
       }
       
       const devStats = data.metrics.teamContribution.developerStats.get(assignee)
       devStats.contributions += 1
+      devStats.storyPoints += storyPoints
       devStats.projects.add(project)
+      
+      // Track story points by status for dynamic filtering
+      if (!devStats.statusBreakdown.has(status)) {
+        devStats.statusBreakdown.set(status, 0)
+      }
+      devStats.statusBreakdown.set(status, devStats.statusBreakdown.get(status) + storyPoints)
       
       if (issueType === 'Bug') {
         devStats.bugs += 1
       }
       
       data.metrics.teamContribution.totalContributions += 1
+      data.metrics.teamContribution.totalStoryPoints = (data.metrics.teamContribution.totalStoryPoints || 0) + storyPoints
     }
 
-    // Bug analysis metrics
-    if (issueType === 'Bug') {
+    // Bug analysis metrics - only include bugs from configured members
+    if (issueType === 'Bug' && memberStatus.isIncluded) {
       data.metrics.bugAnalysis.totalBugs += 1
       data.metrics.bugAnalysis.severityDistribution[severity] = 
         (data.metrics.bugAnalysis.severityDistribution[severity] || 0) + 1
@@ -235,8 +291,8 @@ export const developerQualityService = {
       }
     }
 
-    // Root cause analysis
-    if (rootCause && rootCause !== 'Unknown') {
+    // Root cause analysis - only include issues from configured members
+    if (rootCause && rootCause !== 'Unknown' && memberStatus.isIncluded) {
       data.metrics.rootCauseAnalysis.categories.set(
         rootCause,
         (data.metrics.rootCauseAnalysis.categories.get(rootCause) || 0) + 1
@@ -252,8 +308,10 @@ export const developerQualityService = {
       }
     }
 
-    // Add to filter options
-    data.filterOptions.developers.add(assignee)
+    // Add to filter options - only include configured members in developer filter
+    if (memberStatus.isIncluded) {
+      data.filterOptions.developers.add(assignee)
+    }
     data.filterOptions.projects.add(project)
     data.filterOptions.issueTypes.add(issueType)
     data.filterOptions.statuses.add(status)
@@ -268,6 +326,30 @@ export const developerQualityService = {
       data.filterOptions.dateRanges.months.add(month)
       data.filterOptions.dateRanges.weeks.add(week)
       data.filterOptions.dateRanges.quarters.add(quarter)
+      
+      // Time-based story points aggregation - only for configured members
+      if (assignee !== 'Unassigned' && storyPoints > 0 && memberStatus.isIncluded) {
+        // Weekly aggregation
+        if (!data.metrics.teamContribution.timeBasedStoryPoints.byWeek.has(week)) {
+          data.metrics.teamContribution.timeBasedStoryPoints.byWeek.set(week, new Map())
+        }
+        const weekData = data.metrics.teamContribution.timeBasedStoryPoints.byWeek.get(week)
+        weekData.set(assignee, (weekData.get(assignee) || 0) + storyPoints)
+        
+        // Monthly aggregation
+        if (!data.metrics.teamContribution.timeBasedStoryPoints.byMonth.has(month)) {
+          data.metrics.teamContribution.timeBasedStoryPoints.byMonth.set(month, new Map())
+        }
+        const monthData = data.metrics.teamContribution.timeBasedStoryPoints.byMonth.get(month)
+        monthData.set(assignee, (monthData.get(assignee) || 0) + storyPoints)
+        
+        // Quarterly aggregation
+        if (!data.metrics.teamContribution.timeBasedStoryPoints.byQuarter.has(quarter)) {
+          data.metrics.teamContribution.timeBasedStoryPoints.byQuarter.set(quarter, new Map())
+        }
+        const quarterData = data.metrics.teamContribution.timeBasedStoryPoints.byQuarter.get(quarter)
+        quarterData.set(assignee, (quarterData.get(assignee) || 0) + storyPoints)
+      }
     }
   },
 
@@ -276,6 +358,7 @@ export const developerQualityService = {
    */
   buildFilterIndices: (issue, index, indices) => {
     const developer = issue.fields?.assignee?.displayName || 'Unassigned'
+    const developerAccountId = issue.fields?.assignee?.accountId || null
     const project = issue.fields?.project?.key || 'Unknown'
     const issueType = issue.fields?.issuetype?.name || 'Unknown'
     const status = issue.fields?.status?.name || 'Unknown'
@@ -283,8 +366,13 @@ export const developerQualityService = {
     const rootCause = developerQualityService.extractRootCause(issue)
     const created = issue.fields?.created
     
-    // Primary indices
-    developerQualityService.addToIndex(indices.byDeveloper, developer, index)
+    // Check if member should be included based on configuration
+    const memberStatus = shouldIncludeMember(developer, developerAccountId)
+    
+    // Primary indices - only include configured members in developer index
+    if (memberStatus.isIncluded) {
+      developerQualityService.addToIndex(indices.byDeveloper, developer, index)
+    }
     developerQualityService.addToIndex(indices.byProject, project, index)
     developerQualityService.addToIndex(indices.byIssueType, issueType, index)
     developerQualityService.addToIndex(indices.byStatus, status, index)
@@ -301,10 +389,12 @@ export const developerQualityService = {
       developerQualityService.addToIndex(indices.byWeek, week, index)
       developerQualityService.addToIndex(indices.byQuarter, quarter, index)
       
-      // Composite indices
-      developerQualityService.addToIndex(indices.byDeveloperAndProject, `${developer}:${project}`, index)
+      // Composite indices - only include configured members
+      if (memberStatus.isIncluded) {
+        developerQualityService.addToIndex(indices.byDeveloperAndProject, `${developer}:${project}`, index)
+        developerQualityService.addToIndex(indices.byDeveloperAndSeverity, `${developer}:${severity}`, index)
+      }
       developerQualityService.addToIndex(indices.byProjectAndMonth, `${project}:${month}`, index)
-      developerQualityService.addToIndex(indices.byDeveloperAndSeverity, `${developer}:${severity}`, index)
     }
   },
 
@@ -312,7 +402,7 @@ export const developerQualityService = {
    * Helper function to add to index
    */
   addToIndex: (indexMap, key, value) => {
-    if (!key || key === 'Unknown') return
+    if (!key) return
     if (!indexMap.has(key)) {
       indexMap.set(key, [])
     }
@@ -368,13 +458,38 @@ export const developerQualityService = {
   },
 
   /**
-   * Get cached data (placeholder - returns null to force processing from raw data)
-   * @returns {Promise<null>} Always returns null to ensure fresh processing
+   * Get cached processed developer quality data from granular IndexedDB structure
+   * @returns {Promise<Object|null>} Cached data or null if not available/expired
    */
   getCachedData: async () => {
-    // For now, always return null to force processing from raw JIRA data
-    // This can be enhanced later with actual caching logic
-    return null
+    try {
+      // Use dedicated IndexedDB to get processed data for scalability
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      
+      console.log('🔍 SERVICE: Attempting to load cached developer quality data from dedicated IndexedDB...')
+      const cachedData = await developerQualityIndexedDB.getCompleteDataset()
+      
+      if (cachedData) {
+        console.log('🔍 SERVICE: Found cached developer quality data in dedicated IndexedDB:', {
+          hasMetrics: !!cachedData.metrics,
+          hasChartData: !!cachedData.chartData,
+          hasIndices: !!cachedData.indices,
+          hasFilterOptions: !!cachedData.filterOptions,
+          totalIssues: cachedData.metadata?.totalIssues || 0,
+          metricsKeys: cachedData.metrics ? Object.keys(cachedData.metrics) : [],
+          chartDataKeys: cachedData.chartData ? Object.keys(cachedData.chartData) : [],
+          indicesKeys: cachedData.indices ? Object.keys(cachedData.indices) : [],
+          filterOptionsKeys: cachedData.filterOptions ? Object.keys(cachedData.filterOptions) : []
+        })
+        return cachedData
+      } else {
+        console.log('🔍 SERVICE: No cached developer quality data found in dedicated IndexedDB')
+        return null
+      }
+    } catch (error) {
+      console.error('🔍 SERVICE: Failed to load cached developer quality data from dedicated IndexedDB:', error)
+      return null
+    }
   },
 
   /**
@@ -386,6 +501,8 @@ export const developerQualityService = {
     if (totalDevs > 0) {
       metrics.teamContribution.averageContribution = 
         metrics.teamContribution.totalContributions / totalDevs
+      metrics.teamContribution.averageStoryPoints = 
+        (metrics.teamContribution.totalStoryPoints || 0) / totalDevs
     }
     
     // Convert developer stats to sorted array
@@ -394,8 +511,11 @@ export const developerQualityService = {
     ).map(([developer, stats]) => ({
       developer,
       contributions: stats.contributions,
-      percentage: (stats.contributions / metrics.teamContribution.totalContributions) * 100
-    })).sort((a, b) => b.contributions - a.contributions)
+      storyPoints: stats.storyPoints,
+      percentage: (stats.contributions / metrics.teamContribution.totalContributions) * 100,
+      storyPointsPercentage: ((stats.storyPoints || 0) / (metrics.teamContribution.totalStoryPoints || 1)) * 100,
+      statusBreakdown: Object.fromEntries(stats.statusBreakdown)
+    })).sort((a, b) => b.storyPoints - a.storyPoints) // Sort by story points instead of contributions
     
     // Calculate bug rate analysis
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
@@ -433,11 +553,59 @@ export const developerQualityService = {
   },
 
   /**
+   * Generate time-based chart data with dynamic status filtering
+   * @param {Object} metrics - Processed metrics
+   * @param {string} timePeriodType - 'week', 'month', or 'quarter'
+   * @param {Array} statusFilter - Array of statuses to include
+   * @returns {Array} Chart data for stacked bar chart
+   */
+  generateTimeBasedChartData: (metrics, timePeriodType = 'month', statusFilter = []) => {
+    const timeBasedData = metrics.teamContribution.timeBasedStoryPoints[`by${timePeriodType.charAt(0).toUpperCase() + timePeriodType.slice(1)}`]
+    
+    if (!timeBasedData || timeBasedData.size === 0) {
+      return []
+    }
+    
+    // If no status filter provided, use all data
+    if (!statusFilter || statusFilter.length === 0) {
+      return Array.from(timeBasedData.entries())
+        .map(([timePeriod, developersMap]) => {
+          const result = { timePeriod }
+          developersMap.forEach((storyPoints, developer) => {
+            result[developer] = storyPoints
+          })
+          return result
+        })
+        .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
+    }
+    
+    // Apply status filtering - need to recalculate from raw data
+    // This would require access to the minimalIssues array for filtering
+    // For now, return the basic time-based data
+    return Array.from(timeBasedData.entries())
+      .map(([timePeriod, developersMap]) => {
+        const result = { timePeriod }
+        developersMap.forEach((storyPoints, developer) => {
+          result[developer] = storyPoints
+        })
+        return result
+      })
+      .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
+  },
+
+  /**
    * Finalize chart data
    */
   finalizeChartData: (chartData, metrics) => {
-    // Team contribution chart
-    chartData.teamContributionChart.data = metrics.teamContribution.topContributors.slice(0, 10)
+    // Team contribution chart - time-based stacked bar chart
+    const timePeriodType = chartData.teamContributionChart.config.timePeriodType || 'month'
+    const statusFilter = chartData.teamContributionChart.config.statusFilter || []
+    
+    chartData.teamContributionChart.data = developerQualityService.generateTimeBasedChartData(
+      metrics, 
+      timePeriodType, 
+      statusFilter
+    )
     
     // Bug trend chart
     chartData.bugTrendChart.data = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
@@ -503,5 +671,364 @@ export const developerQualityService = {
       return value
     })
     return jsonString.length
+  },
+
+  /**
+   * Cache processed developer quality data using granular IndexedDB structure
+   * @param {Object} processedData - The processed developer quality data
+   * @returns {Promise<boolean>} Success status
+   */
+  cacheProcessedData: async (processedData) => {
+    try {
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      const { getCurrentTimestamp } = await import('../../../shared/utils/dateUtils')
+      
+      const cacheMetadata = {
+        timestamp: getCurrentTimestamp(),
+        version: '1.0',
+        dataType: 'developer_quality_processed',
+        totalIssues: processedData.metadata?.totalIssues || 0,
+        processingTime: processedData.metadata?.processingTime || 0,
+        cacheSize: processedData.metadata?.cacheSize || 0,
+        memberConfiguration: {
+          totalDevelopers: processedData.filterOptions?.developers?.length || 0,
+          totalProjects: processedData.filterOptions?.projects?.length || 0
+        }
+      }
+      
+      console.log('💾 CACHING: About to cache processed developer quality data to dedicated IndexedDB:', {
+        totalIssues: cacheMetadata.totalIssues,
+        processingTime: cacheMetadata.processingTime,
+        cacheSize: cacheMetadata.cacheSize,
+        hasMetrics: !!processedData.metrics,
+        hasChartData: !!processedData.chartData,
+        hasIndices: !!processedData.indices,
+        metricsKeys: processedData.metrics ? Object.keys(processedData.metrics) : [],
+        chartDataKeys: processedData.chartData ? Object.keys(processedData.chartData) : []
+      })
+      
+      // Sample some data to verify
+      if (processedData.metrics?.teamContribution?.developerStats) {
+        const devStats = Array.from(processedData.metrics.teamContribution.developerStats.entries()).slice(0, 3)
+        console.log('💾 CACHING: Sample developer stats:', devStats)
+      }
+      
+      // Store data using new granular IndexedDB structure
+      // This splits the data across multiple stores for better scalability
+      await developerQualityIndexedDB.storeCompleteDataset(processedData)
+      console.log('💾 CACHING: Successfully cached processed developer quality data to dedicated IndexedDB')
+      
+      // Verify the data was actually cached
+      await developerQualityService.verifyIndexedDBContents()
+      
+      return true
+    } catch (error) {
+      console.error('💾 CACHING: Failed to cache processed developer quality data:', error)
+      return false
+    }
+  },
+
+  /**
+   * Clear cached processed developer quality data from dedicated IndexedDB
+   * @returns {Promise<boolean>} Success status
+   */
+  clearCachedData: async () => {
+    try {
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      
+      // Clear all data from the dedicated IndexedDB
+      await developerQualityIndexedDB.clearAllData()
+      console.log('🔍 SERVICE: Cleared cached developer quality data from dedicated IndexedDB')
+      return true
+    } catch (error) {
+      console.error('🔍 SERVICE: Failed to clear cached developer quality data from dedicated IndexedDB:', error)
+      return false
+    }
+  },
+
+  /**
+   * Verify IndexedDB contents - log all databases and their contents
+   */
+  verifyIndexedDBContents: async () => {
+    try {
+      console.log('🔍 INDEXEDDB: Verifying IndexedDB contents...')
+      
+      // Get all databases
+      const databases = await indexedDB.databases()
+      console.log('🔍 INDEXEDDB: Available databases:', databases.map(db => ({ name: db.name, version: db.version })))
+      
+      // Check each database
+      for (const dbInfo of databases) {
+        if (dbInfo.name) {
+          try {
+            const db = await new Promise((resolve, reject) => {
+              const request = indexedDB.open(dbInfo.name, dbInfo.version)
+              request.onsuccess = () => resolve(request.result)
+              request.onerror = () => reject(request.error)
+            })
+            
+            console.log(`🔍 INDEXEDDB: Database "${dbInfo.name}" contains object stores:`, Array.from(db.objectStoreNames))
+            
+            // Check our dedicated developer quality dashboard database
+            if (dbInfo.name === 'developer_quality_dashboard') {
+              const transaction = db.transaction(Array.from(db.objectStoreNames), 'readonly')
+              
+              for (const storeName of db.objectStoreNames) {
+                const store = transaction.objectStore(storeName)
+                const keys = await new Promise((resolve) => {
+                  const request = store.getAllKeys()
+                  request.onsuccess = () => resolve(request.result)
+                  request.onerror = () => resolve([])
+                })
+                
+                console.log(`🔍 INDEXEDDB: Object store "${storeName}" has keys:`, keys)
+                
+                // Sample some data from each store
+                if (keys.length > 0) {
+                  const sampleKey = keys[0]
+                  const sampleData = await new Promise((resolve) => {
+                    const request = store.get(sampleKey)
+                    request.onsuccess = () => resolve(request.result)
+                    request.onerror = () => resolve(null)
+                  })
+                  
+                  console.log(`🔍 INDEXEDDB: Sample data from "${storeName}" (key: ${sampleKey}):`, {
+                    hasData: !!sampleData,
+                    dataKeys: sampleData ? Object.keys(sampleData) : [],
+                    timestamp: sampleData?.timestamp,
+                    size: sampleData?.size
+                  })
+                }
+              }
+            }
+            
+            // Also check legacy jira_data_cache database for migration reference
+            if (dbInfo.name === 'jira_data_cache') {
+              const transaction = db.transaction(Array.from(db.objectStoreNames), 'readonly')
+              
+              for (const storeName of db.objectStoreNames) {
+                const store = transaction.objectStore(storeName)
+                const keys = await new Promise((resolve) => {
+                  const request = store.getAllKeys()
+                  request.onsuccess = () => resolve(request.result)
+                  request.onerror = () => resolve([])
+                })
+                
+                console.log(`🔍 INDEXEDDB: Legacy store "${storeName}" has keys:`, keys)
+                
+                // Check for legacy developer quality data
+                if (keys.includes('developer_quality_processed_data')) {
+                  const data = await new Promise((resolve) => {
+                    const request = store.get('developer_quality_processed_data')
+                    request.onsuccess = () => resolve(request.result)
+                    request.onerror = () => resolve(null)
+                  })
+                  
+                  console.log('🔍 INDEXEDDB: Found legacy developer_quality_processed_data:', {
+                    hasData: !!data,
+                    dataKeys: data ? Object.keys(data) : [],
+                    hasMetrics: !!data?.data?.metrics,
+                    hasChartData: !!data?.data?.chartData,
+                    timestamp: data?.timestamp,
+                    size: data?.size
+                  })
+                }
+              }
+            }
+            
+            db.close()
+          } catch (error) {
+            console.error(`🔍 INDEXEDDB: Error checking database "${dbInfo.name}":`, error)
+          }
+        }
+      }
+      
+      // Check cache statistics from dedicated database
+      try {
+        const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+        const cacheStats = await developerQualityIndexedDB.getCacheStats()
+        console.log('🔍 INDEXEDDB: Dedicated database cache stats:', cacheStats)
+      } catch (error) {
+        console.error('🔍 INDEXEDDB: Error getting cache stats:', error)
+      }
+      
+      // Also check localStorage for any cached data
+      console.log('🔍 LOCALSTORAGE: Checking localStorage for cached data...')
+      const localStorageKeys = Object.keys(localStorage).filter(key => key.includes('cache') || key.includes('developer') || key.includes('quality'))
+      console.log('🔍 LOCALSTORAGE: Relevant keys:', localStorageKeys)
+      
+      for (const key of localStorageKeys) {
+        const value = localStorage.getItem(key)
+        if (value) {
+          try {
+            const parsed = JSON.parse(value)
+            console.log(`🔍 LOCALSTORAGE: ${key}:`, {
+              hasData: !!parsed,
+              keys: typeof parsed === 'object' ? Object.keys(parsed) : [],
+              size: value.length
+            })
+          } catch (e) {
+            console.log(`🔍 LOCALSTORAGE: ${key} (not JSON):`, { size: value.length })
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('🔍 INDEXEDDB: Error verifying IndexedDB contents:', error)
+    }
+  },
+
+  /**
+   * Get specific metric data from IndexedDB (for partial loading)
+   * @param {string} metricType - The type of metric to load
+   * @returns {Promise<Object|null>} Metric data or null
+   */
+  getCachedMetric: async (metricType) => {
+    try {
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      return await developerQualityIndexedDB.getMetric(metricType)
+    } catch (error) {
+      console.error(`Failed to get cached metric ${metricType}:`, error)
+      return null
+    }
+  },
+
+  /**
+   * Get specific chart data from IndexedDB (for partial loading)
+   * @param {string} chartType - The type of chart data to load
+   * @returns {Promise<Object|null>} Chart data or null
+   */
+  getCachedChartData: async (chartType) => {
+    try {
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      return await developerQualityIndexedDB.getChartData(chartType)
+    } catch (error) {
+      console.error(`Failed to get cached chart data ${chartType}:`, error)
+      return null
+    }
+  },
+
+  /**
+   * Get specific index data from IndexedDB (for partial loading)
+   * @param {string} indexType - The type of index to load
+   * @returns {Promise<Map|null>} Index data or null
+   */
+  getCachedIndex: async (indexType) => {
+    try {
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      return await developerQualityIndexedDB.getIndex(indexType)
+    } catch (error) {
+      console.error(`Failed to get cached index ${indexType}:`, error)
+      return null
+    }
+  },
+
+  /**
+   * Get specific filter options from IndexedDB (for partial loading)
+   * @param {string} filterType - The type of filter options to load
+   * @returns {Promise<Array|null>} Filter options or null
+   */
+  getCachedFilterOptions: async (filterType) => {
+    try {
+      const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+      return await developerQualityIndexedDB.getFilterOptions(filterType)
+    } catch (error) {
+      console.error(`Failed to get cached filter options ${filterType}:`, error)
+      return null
+    }
+  },
+
+  /**
+   * Log current users/assignees in JSON format for configuration
+   */
+  logCurrentUsers: (data) => {
+    // Extract all unique assignees with their stats
+    const allUsers = []
+    
+    if (data.metrics.teamContribution.developerStats) {
+      data.metrics.teamContribution.developerStats.forEach((stats, assignee) => {
+        if (assignee !== 'Unassigned') {
+          allUsers.push({
+            name: assignee,
+            totalContributions: stats.contributions,
+            totalStoryPoints: stats.storyPoints,
+            totalBugs: stats.bugs,
+            projects: Array.from(stats.projects || []),
+            role: stats.role || 'developer',
+            isConfigured: true // These are only configured members now
+          })
+        }
+      })
+    }
+    
+    // Sort by story points (descending)
+    allUsers.sort((a, b) => b.totalStoryPoints - a.totalStoryPoints)
+  },
+
+  /**
+   * Log all users found in raw data for initial configuration setup
+   */
+  logAllUsersForSetup: (issues) => {
+    const allUsersMap = new Map()
+    
+    // Process all issues to get complete user list
+    issues.forEach(issue => {
+      const assignee = issue.fields?.assignee?.displayName || 'Unassigned'
+      const assigneeAccountId = issue.fields?.assignee?.accountId || null
+      const storyPoints = issue.fields?.customfield_10028 || 0
+      const issueType = issue.fields?.issuetype?.name || 'Unknown'
+      const project = issue.fields?.project?.key || 'Unknown'
+      
+      if (assignee !== 'Unassigned') {
+        if (!allUsersMap.has(assignee)) {
+          allUsersMap.set(assignee, {
+            jiraId: assigneeAccountId || assignee.toLowerCase().replace(/\s+/g, '.'),
+            name: assignee,
+            totalContributions: 0,
+            totalStoryPoints: 0,
+            totalBugs: 0,
+            projects: new Set()
+          })
+        }
+        
+        const userStats = allUsersMap.get(assignee)
+        userStats.totalContributions += 1
+        userStats.totalStoryPoints += storyPoints
+        userStats.projects.add(project)
+        
+        if (issueType === 'Bug') {
+          userStats.totalBugs += 1
+        }
+      }
+    })
+    
+    // Convert to array and sort
+    const allUsers = Array.from(allUsersMap.values())
+      .map(user => ({
+        ...user,
+        projects: Array.from(user.projects)
+      }))
+      .sort((a, b) => b.totalStoryPoints - a.totalStoryPoints)
+    
+    // Generate suggested configuration structure with new object format
+    const suggestedConfig = {
+      memberConfiguration: {
+        developers: allUsers.map(user => ({
+          jiraId: user.jiraId,
+          name: user.name
+        })),
+        qa: []
+      },
+      kpiSettings: {
+        onlyCalculateForConfiguredMembers: true,
+        minimumStoryPointsThreshold: 0,
+        excludeUnassigned: true
+      }
+    }
   }
+}
+
+// Make the service available globally for debugging
+if (typeof window !== 'undefined') {
+  window.developerQualityService = developerQualityService
 } 
