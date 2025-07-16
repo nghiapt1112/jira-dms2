@@ -72,13 +72,6 @@ export const useDeveloperQualityStore = create(
       // Actions
       setData: (data) => {
         const now = new Date().toISOString()
-        console.log('🔍 STORE: setData called with:', {
-          hasData: !!data,
-          hasMetrics: !!data?.metrics,
-          hasChartData: !!data?.chartData,
-          hasIndices: !!data?.indices,
-          timestamp: now
-        })
         set({ 
           data, 
           lastUpdated: now,
@@ -97,7 +90,6 @@ export const useDeveloperQualityStore = create(
       
       // Dedicated setter for project filters - always forces update
       setProjectFilters: (projects) => {
-        console.log(' DIRECT PROJECT FILTER UPDATE:', projects)
         
         const currentState = get()
         const currentFilters = currentState.filters
@@ -115,7 +107,6 @@ export const useDeveloperQualityStore = create(
         // Force data recalculation
         const getFilteredData = get().getFilteredData
         if (getFilteredData) {
-          console.log('Forcing recalculation of filtered data after project filter change')
           setTimeout(() => getFilteredData(), 0)
         }
       },
@@ -129,13 +120,6 @@ export const useDeveloperQualityStore = create(
         const currentProjects = currentFilters.projects || []
         const newProjects = newFilters.projects || []
         
-        console.log('Projects filter change check:', {
-          currentProjects,
-          newProjects,
-          currentLength: currentProjects.length,
-          newLength: newProjects.length,
-          isEqual: JSON.stringify(currentProjects) === JSON.stringify(newProjects)
-        })
         
         // SPECIAL HANDLING: Force update if projects array has changed
         const projectsChanged = Array.isArray(newProjects) && 
@@ -143,7 +127,6 @@ export const useDeveloperQualityStore = create(
         
         // Always force an update if projects have changed
         if (projectsChanged) {
-          console.log('🔥 Projects filter changed! Forcing cache invalidation')
           set({ 
             filters: {
               ...currentFilters,
@@ -156,18 +139,14 @@ export const useDeveloperQualityStore = create(
         }
         
         // Normal handling for other filters
-        console.log('Regular filter update - checking for changes')
         const hasChanged = areFiltersChanged(currentFilters, newFilters)
         
         if (hasChanged) {
-          console.log('Filters changed - clearing data cache')
           set({ 
             filters: newFilters,
             filteredData: null,
             filterAppliedAt: null
           })
-        } else {
-          console.log('No actual filter changes detected')
         }
       },
       
@@ -228,37 +207,23 @@ export const useDeveloperQualityStore = create(
       loadData: async (rawData) => {
         const { setLoading, setError, setData } = get()
         
-        console.log('🔍 STORE: loadData called with:', {
-          hasRawData: !!rawData,
-          rawDataLength: rawData?.length || 0
-        })
         
         setLoading(true)
         try {
           let processedData
           
           if (rawData) {
-            console.log('🔍 STORE: Processing', rawData.length, 'JIRA issues...')
             // Process provided raw data (now async)
             processedData = await developerQualityService.processJiraIssuesForDeveloperQuality(rawData)
           } else {
-            console.log('🔍 STORE: Loading from cache...')
             // Load from cache or existing processed data
             processedData = await developerQualityService.getCachedData()
           }
           
           if (!processedData) {
-            console.log('🔍 STORE: No processed data available')
             throw new Error('No data available. Please load JIRA data first.')
           }
           
-          console.log('🔍 STORE: Developer Quality data processed successfully:', {
-            totalIssues: processedData.metadata?.totalIssues || 0,
-            processingTime: processedData.metadata?.processingTime || 0,
-            cacheSize: processedData.metadata?.cacheSize || 0,
-            hasMetrics: !!processedData.metrics,
-            hasChartData: !!processedData.chartData
-          })
           setData(processedData)
         } catch (error) {
           console.error('🔍 STORE: Failed to load developer quality data:', error)
@@ -277,14 +242,8 @@ export const useDeveloperQualityStore = create(
       getFilteredData: () => {
         const { data, filteredData, filters } = get()
         
-        console.log('🔍 STORE: getFilteredData called:', {
-          hasData: !!data,
-          hasFilters: !!filters,
-          filtersKeys: filters ? Object.keys(filters) : []
-        })
         
         if (!data) {
-          console.log('🔍 STORE: No data available for filtering')
           return null
         }
         
@@ -295,13 +254,6 @@ export const useDeveloperQualityStore = create(
           // Pass all filter parameters in one call
           const filtered = filterService.applyFilters(filters, data)
           
-          console.log(`🔍 STORE: Filters applied in ${(performance.now() - timer).toFixed(2)}ms`)
-          console.log('🔍 STORE: Applied filters:', filters)
-          console.log('🔍 STORE: Filtered data result:', {
-            hasChartData: !!filtered?.filteredChartData,
-            hasTeamChart: !!filtered?.filteredChartData?.teamContributionChart,
-            chartDataLength: filtered?.filteredChartData?.teamContributionChart?.data?.length || 0
-          })
           
           get().setFilteredData(filtered)
           return filtered

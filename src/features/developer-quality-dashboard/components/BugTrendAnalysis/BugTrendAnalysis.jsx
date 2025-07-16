@@ -331,7 +331,7 @@ BugTrendAnalysis.propTypes = {
   }),
   metrics: PropTypes.shape({
     totalBugs: PropTypes.number,
-    bugTrend: PropTypes.string,
+    bugTrend: PropTypes.oneOf(['increasing', 'decreasing', 'stable']),
     severityDistribution: PropTypes.shape({
       critical: PropTypes.number,
       high: PropTypes.number,

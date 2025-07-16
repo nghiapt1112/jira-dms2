@@ -14,8 +14,6 @@ export const filterService = {
   applyFilters: (filters, cacheData) => {
     const startTime = performance.now()
     
-    // Log every filter application with special focus on projects
-    console.log('FILTER SERVICE: Applying filters with projects:', filters?.projects || [])
     
     if (!cacheData || !cacheData.indices) {
       return null

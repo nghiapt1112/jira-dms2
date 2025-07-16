@@ -405,11 +405,15 @@ BugRateAnalysisTable.propTypes = {
       totalIssues: PropTypes.number.isRequired,
       bugs: PropTypes.number.isRequired,
       bugRate: PropTypes.number.isRequired,
-      trend: PropTypes.string,
+      trend: PropTypes.oneOf(['improving', 'stable', 'declining']),
       projects: PropTypes.arrayOf(PropTypes.string)
     })),
     teamAverage: PropTypes.number,
-    benchmarks: PropTypes.object
+    benchmarks: PropTypes.shape({
+      excellent: PropTypes.string,
+      good: PropTypes.string,
+      needsImprovement: PropTypes.string
+    })
   }),
   onRowClick: PropTypes.func,
   title: PropTypes.string,

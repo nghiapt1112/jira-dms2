@@ -203,10 +203,7 @@ describe('Developer Quality Dashboard - Performance Validation', () => {
       const mockMemoryUsage = 80 * 1024 * 1024 // 80MB
       expect(mockMemoryUsage).toBeLessThan(100 * 1024 * 1024) // <100MB target
       
-             console.log('✅ All performance targets met:')
-       console.log(`  Filter Response: ${filterDuration.toFixed(2)}ms (target: <50ms in test, <1ms in production)`)
-       console.log(`  Chart Render: ${chartDuration.toFixed(2)}ms (target: <200ms)`)
-       console.log(`  Memory Usage: ${(mockMemoryUsage / 1024 / 1024).toFixed(2)}MB (target: <100MB)`)
+      // Performance targets met - logging removed for cleaner test output
     })
 
     it('should validate scalability metrics', () => {
@@ -224,10 +221,7 @@ describe('Developer Quality Dashboard - Performance Validation', () => {
       expect(largeDataset.filters).toBeLessThanOrEqual(8) // Up to 8 filters supported
       expect(indexSize).toBeLessThan(50 * 1024 * 1024) // <50MB index size
       
-      console.log('✅ Scalability targets met:')
-      console.log(`  Issues Supported: ${largeDataset.issues.length.toLocaleString()} (target: ≤50,000)`)
-      console.log(`  Concurrent Filters: ${largeDataset.filters} (target: ≤8)`)
-      console.log(`  Index Size: ${(indexSize / 1024 / 1024).toFixed(2)}MB (target: <50MB)`)
+      // Scalability targets met - logging removed for cleaner test output
     })
   })
 

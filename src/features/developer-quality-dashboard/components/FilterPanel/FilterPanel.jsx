@@ -418,18 +418,21 @@ FilterPanel.propTypes = {
     statuses: PropTypes.arrayOf(PropTypes.string),
     severities: PropTypes.arrayOf(PropTypes.string),
     rootCauses: PropTypes.arrayOf(PropTypes.string),
-    dateRange: PropTypes.object,
-    timeframe: PropTypes.string,
+    dateRange: PropTypes.shape({
+      startDate: PropTypes.instanceOf(Date),
+      endDate: PropTypes.instanceOf(Date)
+    }),
+    timeframe: PropTypes.oneOf(['week', 'month', 'quarter']),
     statusFilter: PropTypes.arrayOf(PropTypes.string)
   }).isRequired,
   onFiltersChange: PropTypes.func.isRequired,
   filterOptions: PropTypes.shape({
-    developers: PropTypes.arrayOf(PropTypes.string),
-    projects: PropTypes.arrayOf(PropTypes.string),
-    issueTypes: PropTypes.arrayOf(PropTypes.string),
-    severities: PropTypes.arrayOf(PropTypes.string),
-    rootCauses: PropTypes.arrayOf(PropTypes.string),
-    statuses: PropTypes.arrayOf(PropTypes.string)
+    developers: PropTypes.arrayOf(PropTypes.string).isRequired,
+    projects: PropTypes.arrayOf(PropTypes.string).isRequired,
+    issueTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
+    severities: PropTypes.arrayOf(PropTypes.string).isRequired,
+    rootCauses: PropTypes.arrayOf(PropTypes.string).isRequired,
+    statuses: PropTypes.arrayOf(PropTypes.string).isRequired
   }).isRequired,
   isLoading: PropTypes.bool,
   // Backward compatibility props

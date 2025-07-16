@@ -273,7 +273,6 @@ const DeveloperQualityDashboard = React.memo(() => {
   )
 })
 
-// ✅ REQUIRED: PropTypes (none needed for this component)
-DeveloperQualityDashboard.propTypes = {}
+// ✅ This component doesn't accept props - using hooks for data management
 
 export default DeveloperQualityDashboard 

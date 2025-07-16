@@ -151,7 +151,6 @@ class DeveloperQualityIndexedDB {
     return new Promise((resolve, reject) => {
       const request = store.put(entry)
       request.onsuccess = () => {
-        console.log(`✅ Stored ${key} in ${storeName} (${(entry.size / 1024).toFixed(2)} KB)`)
         resolve(true)
       }
       request.onerror = () => {
@@ -183,12 +182,10 @@ class DeveloperQualityIndexedDB {
         // Check if data is still fresh
         const ageHours = (Date.now() - result.timestamp) / (1000 * 60 * 60)
         if (ageHours > maxAgeHours) {
-          console.log(`⏰ Data ${key} is ${ageHours.toFixed(1)}h old, treating as stale`)
           resolve(null)
           return
         }
 
-        console.log(`✅ Retrieved ${key} from ${storeName} (${ageHours.toFixed(1)}h old)`)
         resolve(result.data)
       }
       request.onerror = () => {
@@ -265,7 +262,6 @@ class DeveloperQualityIndexedDB {
     })
 
     const results = await Promise.all(promises)
-    console.log(`✅ Stored ${results.length} minimal issues`)
     return results
   }
 
@@ -297,7 +293,6 @@ class DeveloperQualityIndexedDB {
           })
         }
 
-        console.log(`✅ Retrieved ${results.length} minimal issues`)
         resolve(results)
       }
       request.onerror = () => {
@@ -320,8 +315,6 @@ class DeveloperQualityIndexedDB {
   // Store complete dataset (splits into appropriate stores)
   async storeCompleteDataset(processedData) {
     try {
-      console.log('🔄 Storing complete dataset across multiple stores...')
-      
       const promises = []
 
       // Store metrics
@@ -363,7 +356,6 @@ class DeveloperQualityIndexedDB {
       }
 
       await Promise.all(promises)
-      console.log('✅ Complete dataset stored successfully across multiple stores')
       return true
     } catch (error) {
       console.error('❌ Failed to store complete dataset:', error)
@@ -374,8 +366,6 @@ class DeveloperQualityIndexedDB {
   // Get complete dataset (reconstructs from all stores)
   async getCompleteDataset() {
     try {
-      console.log('🔄 Retrieving complete dataset from multiple stores...')
-      
       // Get all metrics
       const metrics = {}
       for (const key of Object.values(CACHE_KEYS.METRICS)) {
@@ -413,19 +403,7 @@ class DeveloperQualityIndexedDB {
       // Check if we have sufficient data
       const hasData = Object.keys(metrics).length > 0 || Object.keys(chartData).length > 0
 
-      console.log('🔍 INDEXEDDB: Dataset validation:', {
-        metricsKeys: Object.keys(metrics),
-        chartDataKeys: Object.keys(chartData),
-        indicesKeys: Object.keys(indices),
-        filterOptionsKeys: Object.keys(filterOptions),
-        hasMinimalIssues: !!minimalIssues && Array.isArray(minimalIssues),
-        minimalIssuesCount: minimalIssues?.length || 0,
-        hasMetadata: !!metadata,
-        hasData
-      })
-
       if (!hasData) {
-        console.log('❌ No complete dataset found - metrics and chartData are empty')
         return null
       }
 
@@ -438,7 +416,6 @@ class DeveloperQualityIndexedDB {
         metadata
       }
 
-      console.log('✅ Complete dataset retrieved successfully')
       return completeDataset
     } catch (error) {
       console.error('❌ Failed to retrieve complete dataset:', error)
@@ -465,7 +442,6 @@ class DeveloperQualityIndexedDB {
 
     try {
       await Promise.all(clearPromises)
-      console.log('✅ All data cleared from developer quality dashboard')
       return true
     } catch (error) {
       console.error('❌ Failed to clear data:', error)

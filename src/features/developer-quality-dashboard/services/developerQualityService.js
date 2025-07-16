@@ -55,19 +55,7 @@ export const developerQualityService = {
     developerQualityService.finalizeChartData(developerQualityData.chartData, developerQualityData.metrics)
     developerQualityService.finalizeFilterOptions(developerQualityData.filterOptions, developerQualityData.indices)
     
-    // Console log all current assignees/users in JSON format
-    developerQualityService.logCurrentUsers(developerQualityData)
-    
-    // Also log all users found in raw data for initial configuration setup
-    developerQualityService.logAllUsersForSetup(issues)
-    
-    // Also verify IndexedDB contents immediately after processing
-    setTimeout(() => {
-      developerQualityService.verifyIndexedDBContents()
-    }, 1000)
-    
     const processingTime = performance.now() - startTime
-    console.log(`Developer Quality processing completed in ${processingTime}ms`)
     
     const finalData = {
       ...developerQualityData,
@@ -231,10 +219,6 @@ export const developerQualityService = {
     // Check if member should be included based on configuration (by name or jiraId)
     const memberStatus = shouldIncludeMember(assignee, assigneeAccountId)
     
-    // Debug logging for member filtering (only log first few times to avoid spam)
-    if (index < 5) {
-      console.log(`🔍 MEMBER FILTER: ${assignee} (${assigneeAccountId}) -> ${memberStatus.isIncluded ? 'INCLUDED' : 'EXCLUDED'} (${memberStatus.role || 'no role'})`)
-    }
     
     // Team contribution metrics - now using story points and member filtering
     if (assignee !== 'Unassigned' && memberStatus.isIncluded) {
@@ -466,24 +450,11 @@ export const developerQualityService = {
       // Use dedicated IndexedDB to get processed data for scalability
       const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
       
-      console.log('🔍 SERVICE: Attempting to load cached developer quality data from dedicated IndexedDB...')
       const cachedData = await developerQualityIndexedDB.getCompleteDataset()
       
       if (cachedData) {
-        console.log('🔍 SERVICE: Found cached developer quality data in dedicated IndexedDB:', {
-          hasMetrics: !!cachedData.metrics,
-          hasChartData: !!cachedData.chartData,
-          hasIndices: !!cachedData.indices,
-          hasFilterOptions: !!cachedData.filterOptions,
-          totalIssues: cachedData.metadata?.totalIssues || 0,
-          metricsKeys: cachedData.metrics ? Object.keys(cachedData.metrics) : [],
-          chartDataKeys: cachedData.chartData ? Object.keys(cachedData.chartData) : [],
-          indicesKeys: cachedData.indices ? Object.keys(cachedData.indices) : [],
-          filterOptionsKeys: cachedData.filterOptions ? Object.keys(cachedData.filterOptions) : []
-        })
         return cachedData
       } else {
-        console.log('🔍 SERVICE: No cached developer quality data found in dedicated IndexedDB')
         return null
       }
     } catch (error) {
@@ -696,30 +667,9 @@ export const developerQualityService = {
         }
       }
       
-      console.log('💾 CACHING: About to cache processed developer quality data to dedicated IndexedDB:', {
-        totalIssues: cacheMetadata.totalIssues,
-        processingTime: cacheMetadata.processingTime,
-        cacheSize: cacheMetadata.cacheSize,
-        hasMetrics: !!processedData.metrics,
-        hasChartData: !!processedData.chartData,
-        hasIndices: !!processedData.indices,
-        metricsKeys: processedData.metrics ? Object.keys(processedData.metrics) : [],
-        chartDataKeys: processedData.chartData ? Object.keys(processedData.chartData) : []
-      })
-      
-      // Sample some data to verify
-      if (processedData.metrics?.teamContribution?.developerStats) {
-        const devStats = Array.from(processedData.metrics.teamContribution.developerStats.entries()).slice(0, 3)
-        console.log('💾 CACHING: Sample developer stats:', devStats)
-      }
-      
       // Store data using new granular IndexedDB structure
       // This splits the data across multiple stores for better scalability
       await developerQualityIndexedDB.storeCompleteDataset(processedData)
-      console.log('💾 CACHING: Successfully cached processed developer quality data to dedicated IndexedDB')
-      
-      // Verify the data was actually cached
-      await developerQualityService.verifyIndexedDBContents()
       
       return true
     } catch (error) {
@@ -738,7 +688,6 @@ export const developerQualityService = {
       
       // Clear all data from the dedicated IndexedDB
       await developerQualityIndexedDB.clearAllData()
-      console.log('🔍 SERVICE: Cleared cached developer quality data from dedicated IndexedDB')
       return true
     } catch (error) {
       console.error('🔍 SERVICE: Failed to clear cached developer quality data from dedicated IndexedDB:', error)
@@ -746,137 +695,6 @@ export const developerQualityService = {
     }
   },
 
-  /**
-   * Verify IndexedDB contents - log all databases and their contents
-   */
-  verifyIndexedDBContents: async () => {
-    try {
-      console.log('🔍 INDEXEDDB: Verifying IndexedDB contents...')
-      
-      // Get all databases
-      const databases = await indexedDB.databases()
-      console.log('🔍 INDEXEDDB: Available databases:', databases.map(db => ({ name: db.name, version: db.version })))
-      
-      // Check each database
-      for (const dbInfo of databases) {
-        if (dbInfo.name) {
-          try {
-            const db = await new Promise((resolve, reject) => {
-              const request = indexedDB.open(dbInfo.name, dbInfo.version)
-              request.onsuccess = () => resolve(request.result)
-              request.onerror = () => reject(request.error)
-            })
-            
-            console.log(`🔍 INDEXEDDB: Database "${dbInfo.name}" contains object stores:`, Array.from(db.objectStoreNames))
-            
-            // Check our dedicated developer quality dashboard database
-            if (dbInfo.name === 'developer_quality_dashboard') {
-              const transaction = db.transaction(Array.from(db.objectStoreNames), 'readonly')
-              
-              for (const storeName of db.objectStoreNames) {
-                const store = transaction.objectStore(storeName)
-                const keys = await new Promise((resolve) => {
-                  const request = store.getAllKeys()
-                  request.onsuccess = () => resolve(request.result)
-                  request.onerror = () => resolve([])
-                })
-                
-                console.log(`🔍 INDEXEDDB: Object store "${storeName}" has keys:`, keys)
-                
-                // Sample some data from each store
-                if (keys.length > 0) {
-                  const sampleKey = keys[0]
-                  const sampleData = await new Promise((resolve) => {
-                    const request = store.get(sampleKey)
-                    request.onsuccess = () => resolve(request.result)
-                    request.onerror = () => resolve(null)
-                  })
-                  
-                  console.log(`🔍 INDEXEDDB: Sample data from "${storeName}" (key: ${sampleKey}):`, {
-                    hasData: !!sampleData,
-                    dataKeys: sampleData ? Object.keys(sampleData) : [],
-                    timestamp: sampleData?.timestamp,
-                    size: sampleData?.size
-                  })
-                }
-              }
-            }
-            
-            // Also check legacy jira_data_cache database for migration reference
-            if (dbInfo.name === 'jira_data_cache') {
-              const transaction = db.transaction(Array.from(db.objectStoreNames), 'readonly')
-              
-              for (const storeName of db.objectStoreNames) {
-                const store = transaction.objectStore(storeName)
-                const keys = await new Promise((resolve) => {
-                  const request = store.getAllKeys()
-                  request.onsuccess = () => resolve(request.result)
-                  request.onerror = () => resolve([])
-                })
-                
-                console.log(`🔍 INDEXEDDB: Legacy store "${storeName}" has keys:`, keys)
-                
-                // Check for legacy developer quality data
-                if (keys.includes('developer_quality_processed_data')) {
-                  const data = await new Promise((resolve) => {
-                    const request = store.get('developer_quality_processed_data')
-                    request.onsuccess = () => resolve(request.result)
-                    request.onerror = () => resolve(null)
-                  })
-                  
-                  console.log('🔍 INDEXEDDB: Found legacy developer_quality_processed_data:', {
-                    hasData: !!data,
-                    dataKeys: data ? Object.keys(data) : [],
-                    hasMetrics: !!data?.data?.metrics,
-                    hasChartData: !!data?.data?.chartData,
-                    timestamp: data?.timestamp,
-                    size: data?.size
-                  })
-                }
-              }
-            }
-            
-            db.close()
-          } catch (error) {
-            console.error(`🔍 INDEXEDDB: Error checking database "${dbInfo.name}":`, error)
-          }
-        }
-      }
-      
-      // Check cache statistics from dedicated database
-      try {
-        const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
-        const cacheStats = await developerQualityIndexedDB.getCacheStats()
-        console.log('🔍 INDEXEDDB: Dedicated database cache stats:', cacheStats)
-      } catch (error) {
-        console.error('🔍 INDEXEDDB: Error getting cache stats:', error)
-      }
-      
-      // Also check localStorage for any cached data
-      console.log('🔍 LOCALSTORAGE: Checking localStorage for cached data...')
-      const localStorageKeys = Object.keys(localStorage).filter(key => key.includes('cache') || key.includes('developer') || key.includes('quality'))
-      console.log('🔍 LOCALSTORAGE: Relevant keys:', localStorageKeys)
-      
-      for (const key of localStorageKeys) {
-        const value = localStorage.getItem(key)
-        if (value) {
-          try {
-            const parsed = JSON.parse(value)
-            console.log(`🔍 LOCALSTORAGE: ${key}:`, {
-              hasData: !!parsed,
-              keys: typeof parsed === 'object' ? Object.keys(parsed) : [],
-              size: value.length
-            })
-          } catch (e) {
-            console.log(`🔍 LOCALSTORAGE: ${key} (not JSON):`, { size: value.length })
-          }
-        }
-      }
-      
-    } catch (error) {
-      console.error('🔍 INDEXEDDB: Error verifying IndexedDB contents:', error)
-    }
-  },
 
   /**
    * Get specific metric data from IndexedDB (for partial loading)
@@ -938,94 +756,6 @@ export const developerQualityService = {
     }
   },
 
-  /**
-   * Log current users/assignees in JSON format for configuration
-   */
-  logCurrentUsers: (data) => {
-    // Extract all unique assignees with their stats
-    const allUsers = []
-    
-    if (data.metrics.teamContribution.developerStats) {
-      data.metrics.teamContribution.developerStats.forEach((stats, assignee) => {
-        if (assignee !== 'Unassigned') {
-          allUsers.push({
-            name: assignee,
-            totalContributions: stats.contributions,
-            totalStoryPoints: stats.storyPoints,
-            totalBugs: stats.bugs,
-            projects: Array.from(stats.projects || []),
-            role: stats.role || 'developer',
-            isConfigured: true // These are only configured members now
-          })
-        }
-      })
-    }
-    
-    // Sort by story points (descending)
-    allUsers.sort((a, b) => b.totalStoryPoints - a.totalStoryPoints)
-  },
-
-  /**
-   * Log all users found in raw data for initial configuration setup
-   */
-  logAllUsersForSetup: (issues) => {
-    const allUsersMap = new Map()
-    
-    // Process all issues to get complete user list
-    issues.forEach(issue => {
-      const assignee = issue.fields?.assignee?.displayName || 'Unassigned'
-      const assigneeAccountId = issue.fields?.assignee?.accountId || null
-      const storyPoints = issue.fields?.customfield_10028 || 0
-      const issueType = issue.fields?.issuetype?.name || 'Unknown'
-      const project = issue.fields?.project?.key || 'Unknown'
-      
-      if (assignee !== 'Unassigned') {
-        if (!allUsersMap.has(assignee)) {
-          allUsersMap.set(assignee, {
-            jiraId: assigneeAccountId || assignee.toLowerCase().replace(/\s+/g, '.'),
-            name: assignee,
-            totalContributions: 0,
-            totalStoryPoints: 0,
-            totalBugs: 0,
-            projects: new Set()
-          })
-        }
-        
-        const userStats = allUsersMap.get(assignee)
-        userStats.totalContributions += 1
-        userStats.totalStoryPoints += storyPoints
-        userStats.projects.add(project)
-        
-        if (issueType === 'Bug') {
-          userStats.totalBugs += 1
-        }
-      }
-    })
-    
-    // Convert to array and sort
-    const allUsers = Array.from(allUsersMap.values())
-      .map(user => ({
-        ...user,
-        projects: Array.from(user.projects)
-      }))
-      .sort((a, b) => b.totalStoryPoints - a.totalStoryPoints)
-    
-    // Generate suggested configuration structure with new object format
-    const suggestedConfig = {
-      memberConfiguration: {
-        developers: allUsers.map(user => ({
-          jiraId: user.jiraId,
-          name: user.name
-        })),
-        qa: []
-      },
-      kpiSettings: {
-        onlyCalculateForConfiguredMembers: true,
-        minimumStoryPointsThreshold: 0,
-        excludeUnassigned: true
-      }
-    }
-  }
 }
 
 // Make the service available globally for debugging

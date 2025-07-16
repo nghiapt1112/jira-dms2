@@ -80,3 +80,5 @@ Commit: Fix the Developer quality dashboard
 - using indexedDB
 - Filters component fixed
 Commit: Fix: left nav bar
+Commit: Developer oke
+Commit: Develope-quality-dashboard oke

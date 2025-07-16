@@ -24,7 +24,9 @@ class MemoryManager {
       this.checkMemoryUsage()
     }, 10000) // Check every 10 seconds
     
-    console.log('Memory monitoring started')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Memory monitoring started')
+    }
   }
 
   // Stop memory monitoring
@@ -37,7 +39,9 @@ class MemoryManager {
       this.monitoringInterval = null
     }
     
-    console.log('Memory monitoring stopped')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Memory monitoring stopped')
+    }
   }
 
   // Check current memory usage
@@ -56,7 +60,9 @@ class MemoryManager {
       console.error(`Critical memory usage: ${usedMB.toFixed(2)}MB (${percentage.toFixed(1)}%)`)
       this.performEmergencyCleanup()
     } else if (memory.used > this.memoryThresholds.warning) {
-      console.warn(`High memory usage: ${usedMB.toFixed(2)}MB (${percentage.toFixed(1)}%)`)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`High memory usage: ${usedMB.toFixed(2)}MB (${percentage.toFixed(1)}%)`)
+      }
       this.performStandardCleanup()
     }
   }
@@ -95,7 +101,9 @@ class MemoryManager {
     const timer = performanceMonitor.startTimer('memoryCleanup')
     
     try {
-      console.log('Performing standard memory cleanup...')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Performing standard memory cleanup...')
+      }
       
       // Execute normal priority cleanup callbacks
       this.executeCleanupCallbacks('normal')
@@ -107,7 +115,9 @@ class MemoryManager {
       this.triggerGarbageCollection()
       
       timer?.end()
-      console.log('Standard memory cleanup completed')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Standard memory cleanup completed')
+      }
     } catch (error) {
       timer?.end()
       console.error('Standard cleanup failed:', error)
@@ -119,7 +129,9 @@ class MemoryManager {
     const timer = performanceMonitor.startTimer('emergencyCleanup')
     
     try {
-      console.log('Performing emergency memory cleanup...')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Performing emergency memory cleanup...')
+      }
       
       // Execute all cleanup callbacks, starting with high priority
       this.executeCleanupCallbacks('high')
@@ -133,7 +145,9 @@ class MemoryManager {
       this.triggerGarbageCollection(true)
       
       timer?.end()
-      console.log('Emergency memory cleanup completed')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Emergency memory cleanup completed')
+      }
     } catch (error) {
       timer?.end()
       console.error('Emergency cleanup failed:', error)
@@ -176,7 +190,9 @@ class MemoryManager {
   triggerGarbageCollection(force = false) {
     if (global.gc) {
       global.gc()
-      console.log('Garbage collection triggered')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Garbage collection triggered')
+      }
     } else if (force) {
       // Alternative approaches for browsers
       this.createMemoryPressure()

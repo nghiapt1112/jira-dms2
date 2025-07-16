@@ -333,9 +333,9 @@ const TeamContributionChart = React.memo(({
 TeamContributionChart.propTypes = {
   data: PropTypes.shape({
     data: PropTypes.arrayOf(PropTypes.shape({
-      timePeriod: PropTypes.string.isRequired,
-      // Add other developers' story points here
-      // e.g., 'developer1': 10, 'developer2': 5, ...
+      timePeriod: PropTypes.string.isRequired
+      // Note: Dynamic developer properties (e.g., 'developer1': 10, 'developer2': 5)
+      // are validated at runtime since they're dynamic based on actual data
     }))  
   }),
   metrics: PropTypes.shape({
@@ -343,7 +343,7 @@ TeamContributionChart.propTypes = {
     totalStoryPoints: PropTypes.number,
     averageContribution: PropTypes.number,
     averageStoryPoints: PropTypes.number,
-    contributionTrend: PropTypes.string,
+    contributionTrend: PropTypes.oneOf(['increasing', 'decreasing', 'stable']),
     topContributors: PropTypes.arrayOf(PropTypes.shape({
       developer: PropTypes.string.isRequired,
       contributions: PropTypes.number.isRequired,
@@ -358,7 +358,16 @@ TeamContributionChart.propTypes = {
   onTimePeriodChange: PropTypes.func,
   statusFilter: PropTypes.arrayOf(PropTypes.string),
   onStatusFilterChange: PropTypes.func,
-  filters: PropTypes.object
+  filters: PropTypes.shape({
+    developers: PropTypes.arrayOf(PropTypes.string),
+    projects: PropTypes.arrayOf(PropTypes.string),
+    issueTypes: PropTypes.arrayOf(PropTypes.string),
+    statuses: PropTypes.arrayOf(PropTypes.string),
+    severities: PropTypes.arrayOf(PropTypes.string),
+    rootCauses: PropTypes.arrayOf(PropTypes.string),
+    timeframe: PropTypes.oneOf(['week', 'month', 'quarter']),
+    statusFilter: PropTypes.arrayOf(PropTypes.string)
+  })
 }
 
 export default TeamContributionChart 
