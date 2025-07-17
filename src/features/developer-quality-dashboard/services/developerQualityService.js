@@ -248,14 +248,29 @@ export const developerQualityService = {
     // Team contribution metrics - now using story points and member filtering
     if (assignee !== 'Unassigned' && memberStatus.isIncluded) {
       if (!data.metrics.teamContribution.developerStats.has(assignee)) {
-        data.metrics.teamContribution.developerStats.set(assignee, {
+        // STEP 1: Keep existing structure EXACTLY the same
+        const currentStats = {
           contributions: 0,
           storyPoints: 0,
           bugs: 0,
           projects: new Set(),
           statusBreakdown: new Map(), // Track story points by status
           role: memberStatus.role // Track member role (developer/qa)
-        })
+        }
+
+        // STEP 2: APPEND new fields (safe extension)
+        const extendedStats = {
+          ...currentStats,           // INHERIT ALL EXISTING
+          // NEW FIELDS ONLY (appended safely)
+          reopenCount: 0,
+          resolutionTimes: [],
+          recentBugs: [],
+          severityBreakdown: { 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Unknown': 0 },
+          rootCauseBreakdown: {},
+          overdueCount: 0
+        }
+
+        data.metrics.teamContribution.developerStats.set(assignee, extendedStats)
       }
       
       const devStats = data.metrics.teamContribution.developerStats.get(assignee)
@@ -298,6 +313,49 @@ export const developerQualityService = {
           monthData.pending += 1
         }
       }
+    }
+
+    // NEW PROCESSING - APPENDED AFTER EXISTING (SAFE)
+    if (issueType === 'Bug' && memberStatus.isIncluded && assignee !== 'Unassigned') {
+      const devStats = data.metrics.teamContribution.developerStats.get(assignee)
+      
+      // NEW: Process additional bug metrics (doesn't affect existing bugs count)
+      const reopenMetrics = calculateReopenMetrics(issue)
+      if (reopenMetrics.hasReopenHistory) {
+        devStats.reopenCount += reopenMetrics.reopenCount  // NEW FIELD
+      }
+      
+      // NEW: Process resolution time
+      if (resolved && created) {
+        const resolutionMetrics = calculateResolutionTimeMetrics(issue)
+        if (resolutionMetrics.resolutionTimeHours !== null) {
+          devStats.resolutionTimes.push(resolutionMetrics)  // NEW FIELD
+          if (resolutionMetrics.isOverdue) {
+            devStats.overdueCount += 1  // NEW FIELD
+          }
+        }
+      }
+      
+      // NEW: Track severity (doesn't affect existing severity tracking)
+      if (devStats.severityBreakdown) {  // DEFENSIVE CHECK
+        devStats.severityBreakdown[severity] += 1  // NEW FIELD
+      }
+      
+      // NEW: Track root cause
+      const rootCauseAnalysis = extractRootCauseAnalysis(issue)
+      if (rootCauseAnalysis.rootCause !== 'Unknown') {
+        if (!devStats.rootCauseBreakdown[rootCauseAnalysis.rootCause]) {
+          devStats.rootCauseBreakdown[rootCauseAnalysis.rootCause] = 0
+        }
+        devStats.rootCauseBreakdown[rootCauseAnalysis.rootCause] += 1  // NEW FIELD
+      }
+      
+      // NEW: Track recent bugs for trends
+      devStats.recentBugs.push({  // NEW FIELD
+        created, resolved, severity,
+        rootCause: rootCauseAnalysis.rootCause,
+        issueType, reopenCount: reopenMetrics.reopenCount
+      })
     }
 
     // Root cause analysis - only include issues from configured members
@@ -513,17 +571,63 @@ export const developerQualityService = {
       statusBreakdown: Object.fromEntries(stats.statusBreakdown)
     })).sort((a, b) => b.storyPoints - a.storyPoints) // Sort by story points instead of contributions
     
-    // Calculate bug rate analysis
+    // Calculate bug rate analysis - EXTENDED VERSION
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
       const bugRate = stats.contributions > 0 ? (stats.bugs / stats.contributions) * 100 : 0
-      metrics.bugRateAnalysis.developers.set(developer, {
-        developer,
-        totalIssues: stats.contributions,
-        bugs: stats.bugs,
-        bugRate,
-        trend: 'stable', // Can be enhanced with historical data
-        projects: Array.from(stats.projects)
-      })
+      
+      // STEP 1: Keep existing object structure EXACTLY
+      const currentBugRateObject = {
+        developer,                        // UNCHANGED
+        totalIssues: stats.contributions, // UNCHANGED
+        bugs: stats.bugs,                // UNCHANGED
+        bugRate,                         // UNCHANGED
+        trend: 'stable',                 // UNCHANGED (will enhance later)
+        projects: Array.from(stats.projects) // UNCHANGED
+      }
+      
+      // STEP 2: Calculate new metrics (safe - doesn't affect existing)
+      const reopenRate = stats.bugs > 0 && stats.reopenCount ? 
+        (stats.reopenCount / stats.bugs) * 100 : 0
+      
+      let avgResolutionTimeHours = 0
+      if (stats.resolutionTimes && stats.resolutionTimes.length > 0) {
+        const totalTime = stats.resolutionTimes.reduce((sum, rt) => sum + rt.resolutionTimeHours, 0)
+        avgResolutionTimeHours = totalTime / stats.resolutionTimes.length
+      }
+      
+      const timeEfficiency = stats.resolutionTimes ? 
+        calculateTimeEfficiency(stats.resolutionTimes) : 0
+      
+      const qualityTrend = stats.recentBugs && stats.recentBugs.length > 0 ? 
+        calculateQualityTrend(stats.recentBugs) : { trend: 'stable', trendValue: 0 }
+      
+      // Helper function to get top root cause
+      const getTopRootCause = (breakdown) => {
+        if (!breakdown || Object.keys(breakdown).length === 0) return null
+        const entries = Object.entries(breakdown)
+        const sorted = entries.sort(([,a], [,b]) => b - a)
+        return { cause: sorted[0][0], count: sorted[0][1] }
+      }
+      
+      const topRootCause = getTopRootCause(stats.rootCauseBreakdown)
+      
+      // STEP 3: Create extended object (inherits all + adds new)
+      const extendedBugRateObject = {
+        ...currentBugRateObject,          // INHERIT ALL EXISTING
+        // NEW PROPERTIES ONLY (appended safely)
+        reopenCount: stats.reopenCount || 0,
+        reopenRate: Math.round(reopenRate * 100) / 100,
+        avgResolutionTimeHours: Math.round(avgResolutionTimeHours * 100) / 100,
+        timeEfficiency: timeEfficiency || 0,
+        qualityTrend: qualityTrend,
+        severityBreakdown: stats.severityBreakdown || {},
+        rootCauseBreakdown: stats.rootCauseBreakdown || {},
+        topRootCause,
+        overdueCount: stats.overdueCount || 0,
+        trend: qualityTrend.trend || 'stable'  // NOW calculated but fallback to 'stable'
+      }
+      
+      metrics.bugRateAnalysis.developers.set(developer, extendedBugRateObject)
     })
     
     // Calculate team average bug rate and convert to array

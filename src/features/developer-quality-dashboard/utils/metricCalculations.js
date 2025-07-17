@@ -203,8 +203,8 @@ export const calculateQualityTrend = (recentIssues, timeWindowDays = 30) => {
   const lastRate = dataPoints[dataPoints.length - 1].bugRate
   
   let trend = 'stable'
-  if (trendValue > 1) trend = 'improving'  // Bug rate decreasing is improving
-  else if (trendValue < -1) trend = 'declining'  // Bug rate increasing is declining
+  if (trendValue < -1) trend = 'improving'  // Bug rate decreasing is improving
+  else if (trendValue > 1) trend = 'declining'  // Bug rate increasing is declining
 
   const trendPercentage = firstRate > 0 ? ((lastRate - firstRate) / firstRate) * 100 : 0
 

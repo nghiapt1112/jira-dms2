@@ -37,15 +37,30 @@ const BugRateAnalysisTable = React.memo(({
   const [order, setOrder] = useState('desc')
   
   // 2. Memoized values
-  const columns = useMemo(() => [
-    { id: 'developer', label: 'Developer', sortable: true, align: 'left' },
-    { id: 'totalIssues', label: 'Total Issues', sortable: true, align: 'right' },
-    { id: 'bugs', label: 'Bugs', sortable: true, align: 'right' },
-    { id: 'bugRate', label: 'Bug Rate (%)', sortable: true, align: 'right' },
-    { id: 'trend', label: 'Trend', sortable: true, align: 'center' },
-    { id: 'projects', label: 'Projects', sortable: false, align: 'left' },
-    { id: 'performance', label: 'Performance', sortable: false, align: 'center' }
-  ], [])
+  const columns = useMemo(() => {
+    // EXISTING COLUMNS (unchanged)
+    const currentColumns = [
+      { id: 'developer', label: 'Developer', sortable: true, align: 'left' },
+      { id: 'totalIssues', label: 'Total Issues', sortable: true, align: 'right' },
+      { id: 'bugs', label: 'Bugs', sortable: true, align: 'right' },
+      { id: 'bugRate', label: 'Bug Rate (%)', sortable: true, align: 'right' },
+      { id: 'trend', label: 'Trend', sortable: true, align: 'center' },
+      { id: 'projects', label: 'Projects', sortable: false, align: 'left' },
+      { id: 'performance', label: 'Performance', sortable: false, align: 'center' }
+    ]
+    
+    // NEW COLUMNS (appended safely)
+    const newColumns = [
+      { id: 'reopenRate', label: 'Reopen Rate (%)', sortable: true, align: 'right' },
+      { id: 'avgResolutionTime', label: 'Avg Resolution (hrs)', sortable: true, align: 'right' },
+      { id: 'timeEfficiency', label: 'Efficiency (%)', sortable: true, align: 'right' },
+      { id: 'severityMix', label: 'Severity Mix', sortable: false, align: 'left' },
+      { id: 'topRootCause', label: 'Top Root Cause', sortable: false, align: 'left' }
+    ]
+    
+    // EXTENDED COLUMNS - INHERITS ALL + ADDS NEW
+    return [...currentColumns, ...newColumns]
+  }, [])
   
   const sortedData = useMemo(() => {
     if (!data || !data.developers) return []
@@ -123,6 +138,31 @@ const BugRateAnalysisTable = React.memo(({
     if (bugRate < excellent) return 'Excellent'
     if (bugRate <= good) return 'Good'
     return 'Needs Improvement'
+  }, [])
+  
+  // NEW HELPER FUNCTIONS (appended safely)
+  const getReopenRateColor = useMemo(() => (reopenRate) => {
+    if (reopenRate <= 5) return 'success'
+    if (reopenRate <= 10) return 'warning'
+    if (reopenRate <= 15) return 'error'
+    return 'error'
+  }, [])
+  
+  const getEfficiencyColor = useMemo(() => (efficiency) => {
+    if (efficiency >= 80) return 'success'
+    if (efficiency >= 60) return 'warning'
+    if (efficiency >= 40) return 'error'
+    return 'error'
+  }, [])
+  
+  const getSeverityColor = useMemo(() => (severity) => {
+    switch (severity.toLowerCase()) {
+      case 'critical': return 'error'
+      case 'high': return 'warning'
+      case 'medium': return 'info'
+      case 'low': return 'success'
+      default: return 'default'
+    }
   }, [])
   
   // 3. Callbacks
@@ -336,6 +376,81 @@ const BugRateAnalysisTable = React.memo(({
                     color={getBugRateColor(row.bugRate, data.benchmarks)}
                     sx={{ fontSize: '0.75rem' }}
                   />
+                </TableCell>
+                
+                {/* NEW COLUMNS - APPENDED SAFELY */}
+                <TableCell align="right">
+                  <Chip
+                    label={`${(row.reopenRate || 0).toFixed(1)}%`}
+                    size="small"
+                    color={getReopenRateColor(row.reopenRate || 0)}
+                    variant="outlined"
+                  />
+                </TableCell>
+                
+                <TableCell align="right">
+                  <Typography 
+                    variant="body2"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                  >
+                    {row.avgResolutionTimeHours ? `${row.avgResolutionTimeHours.toFixed(1)}h` : 'N/A'}
+                  </Typography>
+                  {row.overdueCount > 0 && (
+                    <Chip
+                      label={`${row.overdueCount} overdue`}
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                      sx={{ fontSize: '0.6rem', mt: 0.5 }}
+                    />
+                  )}
+                </TableCell>
+                
+                <TableCell align="right">
+                  <Chip
+                    label={`${row.timeEfficiency || 0}%`}
+                    size="small"
+                    color={getEfficiencyColor(row.timeEfficiency || 0)}
+                    variant="outlined"
+                  />
+                </TableCell>
+                
+                <TableCell align="left">
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {row.severityBreakdown && Object.entries(row.severityBreakdown)
+                      .filter(([_, count]) => count > 0)
+                      .slice(0, 3) // Show top 3 severities
+                      .map(([severity, count]) => (
+                        <Chip
+                          key={severity}
+                          label={`${severity}: ${count}`}
+                          size="small"
+                          color={getSeverityColor(severity)}
+                          variant="outlined"
+                          sx={{ fontSize: '0.6rem' }}
+                        />
+                      ))}
+                  </Box>
+                </TableCell>
+                
+                <TableCell align="left">
+                  {row.topRootCause ? (
+                    <Chip
+                      label={`${row.topRootCause.cause} (${row.topRootCause.count})`}
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                      sx={{ fontSize: '0.6rem' }}
+                    />
+                  ) : (
+                    <Typography 
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.6rem' }}
+                    >
+                      N/A
+                    </Typography>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
