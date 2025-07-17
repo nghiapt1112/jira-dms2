@@ -313,3 +313,116 @@ export const aggregateRootCauseBreakdown = (issues) => {
 
   return breakdown
 }
+
+/**
+ * Calculate time tracking metrics from issue
+ * @param {Object} issue - JIRA issue object
+ * @returns {Object} Time tracking analysis data
+ */
+export const calculateTimeTrackingMetrics = (issue) => {
+  const timetracking = issue.fields?.timetracking || {}
+  const timeSpentSeconds = timetracking.timeSpentSeconds || 0
+  const remainingEstimateSeconds = timetracking.remainingEstimateSeconds || 0
+  const originalEstimateSeconds = timetracking.originalEstimateSeconds || 0
+  
+  // Debug log to see what time tracking data is available
+  if (timeSpentSeconds > 0) {
+    console.log(`⏱️ TIME TRACKING DEBUG: Issue ${issue.key} - timeSpentSeconds: ${timeSpentSeconds}, originalEstimate: ${originalEstimateSeconds}`)
+  } else if (issue.fields?.timetracking) {
+    // Check if there's a timetracking field but no time logged
+    console.log(`⏱️ TIME TRACKING DEBUG: Issue ${issue.key} - has timetracking field but no time logged:`, issue.fields.timetracking)
+  }
+  
+  return {
+    timeSpentHours: timeSpentSeconds / 3600,
+    timeSpentSeconds,
+    remainingEstimateHours: remainingEstimateSeconds / 3600,
+    originalEstimateHours: originalEstimateSeconds / 3600,
+    hasTimeLogged: timeSpentSeconds > 0,
+    hasEstimate: originalEstimateSeconds > 0,
+    estimationAccuracy: originalEstimateSeconds > 0 ? 
+      (timeSpentSeconds / originalEstimateSeconds) * 100 : null
+  }
+}
+
+/**
+ * Aggregate time tracking data by time period
+ * @param {Array} issues - Array of issues with time tracking
+ * @param {string} timePeriod - 'week' or 'month'
+ * @returns {Map} Time tracking data grouped by period
+ */
+export const aggregateTimeTrackingByPeriod = (issues, timePeriod = 'week') => {
+  const aggregated = new Map()
+  
+  issues.forEach(issue => {
+    const created = issue.fields?.created
+    if (!created) return
+    
+    const timeKey = timePeriod === 'week' 
+      ? getWeekKey(new Date(created))
+      : created.substring(0, 7) // YYYY-MM format
+    
+    if (!aggregated.has(timeKey)) {
+      aggregated.set(timeKey, {
+        totalTimeSpent: 0,
+        totalStoryPoints: 0,
+        issueCount: 0,
+        timePerStoryPoint: 0
+      })
+    }
+    
+    const periodData = aggregated.get(timeKey)
+    const timeMetrics = calculateTimeTrackingMetrics(issue)
+    const storyPoints = issue.fields?.customfield_10028 || 0
+    
+    periodData.totalTimeSpent += timeMetrics.timeSpentHours
+    periodData.totalStoryPoints += storyPoints
+    periodData.issueCount += 1
+    
+    if (periodData.totalStoryPoints > 0) {
+      periodData.timePerStoryPoint = periodData.totalTimeSpent / periodData.totalStoryPoints
+    }
+  })
+  
+  return aggregated
+}
+
+/**
+ * Calculate time efficiency metrics for a developer
+ * @param {Array} timeTrackingData - Array of time tracking objects
+ * @returns {Object} Time efficiency analysis
+ */
+export const calculateDeveloperTimeEfficiency = (timeTrackingData) => {
+  if (!timeTrackingData || timeTrackingData.length === 0) {
+    return {
+      averageTimePerStoryPoint: 0,
+      estimationAccuracy: 0,
+      timeEfficiencyScore: 0,
+      totalTimeSpent: 0
+    }
+  }
+  
+  const totalTime = timeTrackingData.reduce((sum, data) => sum + data.timeSpentHours, 0)
+  const totalStoryPoints = timeTrackingData.reduce((sum, data) => sum + (data.storyPoints || 0), 0)
+  const accuracyData = timeTrackingData.filter(data => data.estimationAccuracy !== null)
+  
+  const averageTimePerStoryPoint = totalStoryPoints > 0 ? totalTime / totalStoryPoints : 0
+  const estimationAccuracy = accuracyData.length > 0 ? 
+    accuracyData.reduce((sum, data) => sum + data.estimationAccuracy, 0) / accuracyData.length : 0
+  
+  // Calculate efficiency score (0-100, higher is better)
+  let timeEfficiencyScore = 0
+  if (averageTimePerStoryPoint > 0) {
+    // Ideal: 4 hours per story point, acceptable: 8 hours per story point
+    timeEfficiencyScore = Math.max(0, Math.min(100, 
+      100 - ((averageTimePerStoryPoint - 4) / 4 * 100)
+    ))
+  }
+  
+  return {
+    averageTimePerStoryPoint,
+    estimationAccuracy,
+    timeEfficiencyScore: Math.round(timeEfficiencyScore),
+    totalTimeSpent: totalTime
+  }
+}

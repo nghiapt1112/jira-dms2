@@ -13,7 +13,10 @@ import {
   calculateQualityTrend,
   calculateTimeEfficiency,
   aggregateSeverityBreakdown,
-  aggregateRootCauseBreakdown
+  aggregateRootCauseBreakdown,
+  calculateTimeTrackingMetrics,
+  aggregateTimeTrackingByPeriod,
+  calculateDeveloperTimeEfficiency
 } from '../utils/metricCalculations'
 
 export const developerQualityService = {
@@ -267,7 +270,19 @@ export const developerQualityService = {
           recentBugs: [],
           severityBreakdown: { 'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0, 'Unknown': 0 },
           rootCauseBreakdown: {},
-          overdueCount: 0
+          overdueCount: 0,
+          
+          // NEW TIME TRACKING FIELDS - ADD THESE:
+          timeTrackingData: {
+            totalTimeSpentHours: 0,
+            totalStoryPoints: 0,
+            timePerStoryPoint: 0,
+            estimationAccuracy: [],
+            timeLoggedIssues: 0,
+            weeklyTimeTracking: new Map(),
+            monthlyTimeTracking: new Map(),
+            timeTrackingIssues: []
+          }
         }
 
         data.metrics.teamContribution.developerStats.set(assignee, extendedStats)
@@ -356,6 +371,70 @@ export const developerQualityService = {
         rootCause: rootCauseAnalysis.rootCause,
         issueType, reopenCount: reopenMetrics.reopenCount
       })
+    }
+
+    // NEW: Process time tracking data
+    if (memberStatus.isIncluded && assignee !== 'Unassigned') {
+      const timeMetrics = calculateTimeTrackingMetrics(issue)
+      const devStats = data.metrics.teamContribution.developerStats.get(assignee)
+      
+      // Ensure timeTrackingData exists (defensive check for existing cached data)
+      if (!devStats.timeTrackingData) {
+        devStats.timeTrackingData = {
+          totalTimeSpentHours: 0,
+          totalStoryPoints: 0,
+          timePerStoryPoint: 0,
+          estimationAccuracy: [],
+          timeLoggedIssues: 0,
+          weeklyTimeTracking: new Map(),
+          monthlyTimeTracking: new Map(),
+          timeTrackingIssues: []
+        }
+      }
+      
+      // Debug log for time tracking data
+      if (timeMetrics.hasTimeLogged) {
+        console.log(`⏱️ TIME TRACKING: Issue ${issue.key} by ${assignee} - Time: ${timeMetrics.timeSpentHours}h, SP: ${storyPoints}`)
+      }
+      
+      if (timeMetrics.hasTimeLogged) {
+        // Update developer time tracking data
+        devStats.timeTrackingData.totalTimeSpentHours += timeMetrics.timeSpentHours
+        devStats.timeTrackingData.timeLoggedIssues += 1
+        
+        // Add to story points for time efficiency calculation
+        if (storyPoints > 0) {
+          devStats.timeTrackingData.totalStoryPoints += storyPoints
+          devStats.timeTrackingData.timePerStoryPoint = 
+            devStats.timeTrackingData.totalTimeSpentHours / devStats.timeTrackingData.totalStoryPoints
+        }
+        
+        // Track estimation accuracy
+        if (timeMetrics.hasEstimate) {
+          devStats.timeTrackingData.estimationAccuracy.push(timeMetrics.estimationAccuracy)
+        }
+        
+        // Weekly time tracking
+        if (created) {
+          const week = developerQualityService.getWeekFromDate(created)
+          const weeklyTime = devStats.timeTrackingData.weeklyTimeTracking.get(week) || 0
+          devStats.timeTrackingData.weeklyTimeTracking.set(week, weeklyTime + timeMetrics.timeSpentHours)
+          
+          // Monthly time tracking
+          const month = created.substring(0, 7)
+          const monthlyTime = devStats.timeTrackingData.monthlyTimeTracking.get(month) || 0
+          devStats.timeTrackingData.monthlyTimeTracking.set(month, monthlyTime + timeMetrics.timeSpentHours)
+        }
+        
+        // Store time tracking issue data
+        devStats.timeTrackingData.timeTrackingIssues.push({
+          issueKey: issue.key,
+          timeSpentHours: timeMetrics.timeSpentHours,
+          storyPoints,
+          estimationAccuracy: timeMetrics.estimationAccuracy,
+          created
+        })
+      }
     }
 
     // Root cause analysis - only include issues from configured members
@@ -575,6 +654,13 @@ export const developerQualityService = {
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
       const bugRate = stats.contributions > 0 ? (stats.bugs / stats.contributions) * 100 : 0
       
+      // Debug log for time tracking data in finalize
+      if (stats.timeTrackingData?.totalTimeSpentHours > 0) {
+        console.log(`⏱️ FINALIZE DEBUG: ${developer} - Time: ${stats.timeTrackingData.totalTimeSpentHours}h, SP: ${stats.timeTrackingData.totalStoryPoints}, Rate: ${stats.timeTrackingData.timePerStoryPoint}h/SP`)
+      } else {
+        console.log(`⏱️ FINALIZE DEBUG: ${developer} - NO TIME TRACKING DATA OR ZERO TIME`)
+      }
+      
       // STEP 1: Keep existing object structure EXACTLY
       const currentBugRateObject = {
         developer,                        // UNCHANGED
@@ -624,7 +710,24 @@ export const developerQualityService = {
         rootCauseBreakdown: stats.rootCauseBreakdown || {},
         topRootCause,
         overdueCount: stats.overdueCount || 0,
-        trend: qualityTrend.trend || 'stable'  // NOW calculated but fallback to 'stable'
+        trend: qualityTrend.trend || 'stable',  // NOW calculated but fallback to 'stable'
+        
+        // NEW TIME TRACKING PROPERTIES - ADD THESE WITH DEFENSIVE CHECKS:
+        totalTimeSpentHours: stats.timeTrackingData?.totalTimeSpentHours || 0,
+        timePerStoryPoint: stats.timeTrackingData?.timePerStoryPoint || 0,
+        averageEstimationAccuracy: stats.timeTrackingData?.estimationAccuracy?.length > 0 ?
+          stats.timeTrackingData.estimationAccuracy.reduce((sum, acc) => sum + acc, 0) / 
+          stats.timeTrackingData.estimationAccuracy.length : 0,
+        timeLoggedIssues: stats.timeTrackingData?.timeLoggedIssues || 0,
+        weeklyTimeData: stats.timeTrackingData?.weeklyTimeTracking ? 
+          Array.from(stats.timeTrackingData.weeklyTimeTracking.entries())
+            .map(([week, hours]) => ({ week, hours }))
+            .sort((a, b) => a.week.localeCompare(b.week)) : [],
+        monthlyTimeData: stats.timeTrackingData?.monthlyTimeTracking ? 
+          Array.from(stats.timeTrackingData.monthlyTimeTracking.entries())
+            .map(([month, hours]) => ({ month, hours }))
+            .sort((a, b) => a.month.localeCompare(b.month)) : [],
+        timeTrackingIssues: stats.timeTrackingData?.timeTrackingIssues || []
       }
       
       metrics.bugRateAnalysis.developers.set(developer, extendedBugRateObject)
@@ -817,6 +920,7 @@ export const developerQualityService = {
       
       // Clear all data from the dedicated IndexedDB
       await developerQualityIndexedDB.clearAllData()
+      console.log('✅ TIME TRACKING FIX: Cleared cached developer quality data - time tracking should now work properly')
       return true
     } catch (error) {
       console.error('🔍 SERVICE: Failed to clear cached developer quality data from dedicated IndexedDB:', error)
@@ -890,4 +994,14 @@ export const developerQualityService = {
 // Make the service available globally for debugging
 if (typeof window !== 'undefined') {
   window.developerQualityService = developerQualityService
+  // Add a global function to clear cache for testing the time tracking fix
+  window.clearDeveloperQualityCache = async () => {
+    const success = await developerQualityService.clearCachedData()
+    if (success) {
+      console.log('✅ TIME TRACKING FIX: Cache cleared successfully. Please refresh the dashboard to see time tracking data.')
+    } else {
+      console.error('❌ Failed to clear cache')
+    }
+    return success
+  }
 } 

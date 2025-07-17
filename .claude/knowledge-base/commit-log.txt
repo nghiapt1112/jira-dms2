@@ -83,3 +83,4 @@ Commit: Fix: left nav bar
 Commit: Developer oke
 Commit: Develope-quality-dashboard oke
 Commit: bug-analysis-plan
+Commit: bug-rate analysis oke

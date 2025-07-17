@@ -58,8 +58,16 @@ const BugRateAnalysisTable = React.memo(({
       { id: 'topRootCause', label: 'Top Root Cause', sortable: false, align: 'left' }
     ]
     
+    // NEW TIME TRACKING COLUMNS (appended safely)
+    const timeTrackingColumns = [
+      { id: 'totalTimeSpent', label: 'Total Time (hrs)', sortable: true, align: 'right' },
+      { id: 'timePerStoryPoint', label: 'Time/SP (hrs)', sortable: true, align: 'right' },
+      { id: 'estimationAccuracy', label: 'Estimation Accuracy (%)', sortable: true, align: 'right' },
+      { id: 'timeTrackingEfficiency', label: 'Time Efficiency', sortable: false, align: 'center' }
+    ]
+    
     // EXTENDED COLUMNS - INHERITS ALL + ADDS NEW
-    return [...currentColumns, ...newColumns]
+    return [...currentColumns, ...newColumns, ...timeTrackingColumns]
   }, [])
   
   const sortedData = useMemo(() => {
@@ -163,6 +171,28 @@ const BugRateAnalysisTable = React.memo(({
       case 'low': return 'success'
       default: return 'default'
     }
+  }, [])
+  
+  // NEW TIME TRACKING HELPER FUNCTIONS (appended safely)
+  const getTimeEfficiencyColor = useMemo(() => (timePerStoryPoint) => {
+    if (!timePerStoryPoint) return 'default'
+    if (timePerStoryPoint <= 4) return 'success'  // <= 4 hours per SP
+    if (timePerStoryPoint <= 8) return 'warning'  // <= 8 hours per SP
+    return 'error'  // > 8 hours per SP
+  }, [])
+  
+  const getEstimationAccuracyColor = useMemo(() => (accuracy) => {
+    if (!accuracy) return 'default'
+    if (accuracy >= 80 && accuracy <= 120) return 'success'  // 80-120% accurate
+    if (accuracy >= 60 && accuracy <= 140) return 'warning'  // 60-140% accurate
+    return 'error'  // < 60% or > 140% accurate
+  }, [])
+  
+  const getTimeEfficiencyLabel = useMemo(() => (timePerStoryPoint) => {
+    if (!timePerStoryPoint) return 'No Data'
+    if (timePerStoryPoint <= 4) return 'Efficient'
+    if (timePerStoryPoint <= 8) return 'Average'
+    return 'Slow'
   }, [])
   
   // 3. Callbacks
@@ -451,6 +481,53 @@ const BugRateAnalysisTable = React.memo(({
                       N/A
                     </Typography>
                   )}
+                </TableCell>
+                
+                {/* NEW TIME TRACKING COLUMNS - APPENDED SAFELY */}
+                <TableCell align="right">
+                  <Typography 
+                    variant="body2"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                  >
+                    {row.totalTimeSpentHours ? `${row.totalTimeSpentHours.toFixed(1)}h` : '0h'}
+                  </Typography>
+                </TableCell>
+                
+                <TableCell align="right">
+                  <Chip
+                    label={row.timePerStoryPoint ? `${row.timePerStoryPoint.toFixed(1)}h/SP` : 'N/A'}
+                    size="small"
+                    color={getTimeEfficiencyColor(row.timePerStoryPoint)}
+                    variant="outlined"
+                  />
+                </TableCell>
+                
+                <TableCell align="right">
+                  <Chip
+                    label={row.averageEstimationAccuracy ? 
+                      `${row.averageEstimationAccuracy.toFixed(0)}%` : 'N/A'}
+                    size="small"
+                    color={getEstimationAccuracyColor(row.averageEstimationAccuracy)}
+                    variant="outlined"
+                  />
+                </TableCell>
+                
+                <TableCell align="center">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip
+                      label={getTimeEfficiencyLabel(row.timePerStoryPoint)}
+                      size="small"
+                      color={getTimeEfficiencyColor(row.timePerStoryPoint)}
+                      sx={{ fontSize: '0.6rem' }}
+                    />
+                    {row.weeklyTimeData && row.weeklyTimeData.length > 0 && (
+                      <Tooltip title={`Weekly time tracking: ${row.weeklyTimeData.length} weeks`}>
+                        <IconButton size="small">
+                          <TrendingUp fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
