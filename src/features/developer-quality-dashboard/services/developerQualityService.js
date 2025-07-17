@@ -6,6 +6,15 @@
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { shouldIncludeMember, memberConfiguration } from '../../../constants/memberConfiguration'
+import { 
+  calculateReopenMetrics, 
+  calculateResolutionTimeMetrics, 
+  extractRootCauseAnalysis,
+  calculateQualityTrend,
+  calculateTimeEfficiency,
+  aggregateSeverityBreakdown,
+  aggregateRootCauseBreakdown
+} from '../utils/metricCalculations'
 
 export const developerQualityService = {
   /**
@@ -106,7 +115,23 @@ export const developerQualityService = {
         Low: 0,
         Unknown: 0
       },
-      monthlyBugTrend: new Map()
+      monthlyBugTrend: new Map(),
+      // NEW METRICS - EXTENDED
+      reopenAnalysis: {
+        totalReopens: 0,
+        overallReopenRate: 0,
+        byDeveloper: new Map(),
+        byProject: new Map(),
+        trends: new Map()
+      },
+      resolutionTimeAnalysis: {
+        averageResolutionTimeHours: 0,
+        byDeveloper: new Map(),
+        bySeverity: new Map(),
+        overdueCount: 0,
+        efficiencyAverage: 0,
+        trends: new Map()
+      }
     },
     rootCauseAnalysis: {
       categories: new Map(),
