@@ -797,6 +797,47 @@ export const developerQualityService = {
   },
 
   /**
+   * Generate time-based TIME TRACKING chart data with dynamic status filtering
+   * @param {Object} metrics - Processed metrics
+   * @param {string} timePeriodType - 'week', 'month', or 'quarter'
+   * @param {Array} statusFilter - Array of statuses to include
+   * @returns {Array} Chart data for time tracking visualization
+   */
+  generateTimeBasedTimeTrackingChartData: (metrics, timePeriodType = 'month', statusFilter = []) => {
+    // Use existing time tracking data structure
+    const timeBasedData = new Map()
+    
+    // Process developer stats to extract time tracking data
+    metrics.teamContribution.developerStats.forEach((stats, developer) => {
+      if (stats.timeTrackingData) {
+        const timeTrackingMap = timePeriodType === 'week' ? 
+          stats.timeTrackingData.weeklyTimeTracking :
+          timePeriodType === 'quarter' ? 
+            stats.timeTrackingData.quarterlyTimeTracking || new Map() :
+            stats.timeTrackingData.monthlyTimeTracking
+        
+        timeTrackingMap.forEach((hours, timePeriod) => {
+          if (!timeBasedData.has(timePeriod)) {
+            timeBasedData.set(timePeriod, new Map())
+          }
+          timeBasedData.get(timePeriod).set(developer, hours)
+        })
+      }
+    })
+    
+    // Convert to chart data format (same structure as story points)
+    return Array.from(timeBasedData.entries())
+      .map(([timePeriod, developersMap]) => {
+        const result = { timePeriod }
+        developersMap.forEach((hours, developer) => {
+          result[developer] = hours
+        })
+        return result
+      })
+      .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
+  },
+
+  /**
    * Finalize chart data
    */
   finalizeChartData: (chartData, metrics) => {
@@ -809,6 +850,20 @@ export const developerQualityService = {
       timePeriodType, 
       statusFilter
     )
+    
+    // NEW: Add time tracking data for team contribution chart
+    const timeTrackingData = developerQualityService.generateTimeBasedTimeTrackingChartData(
+      metrics, 
+      timePeriodType, 
+      statusFilter
+    )
+    
+    // APPEND time tracking data to existing chart data structure
+    chartData.teamContributionChart.timeTrackingData = timeTrackingData
+    
+    // EXTEND config to support data type selection
+    chartData.teamContributionChart.config.supportedDataTypes = ['storyPoints', 'timeTracking']
+    chartData.teamContributionChart.config.defaultDataType = 'storyPoints'
     
     // Bug trend chart
     chartData.bugTrendChart.data = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())

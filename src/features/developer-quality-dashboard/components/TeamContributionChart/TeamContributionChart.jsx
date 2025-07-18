@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo, useEffect, useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Paper, Typography, Chip, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { BarChart } from '@mui/x-charts/BarChart'
@@ -17,6 +17,24 @@ const TeamContributionChart = React.memo(({
   filters = {}
 }) => {
   // 1. Hooks first
+  // NEW STATE - Data type selection
+  const [dataType, setDataType] = useState('storyPoints') // Default to existing functionality
+  const [showTimeTrackingToggle, setShowTimeTrackingToggle] = useState(false)
+  
+  // NEW EFFECT - Check if time tracking data is available
+  useEffect(() => {
+    if (data?.timeTrackingData && data.timeTrackingData.length > 0) {
+      setShowTimeTrackingToggle(true)
+    }
+  }, [data])
+  
+  // NEW HANDLER - Data type change
+  const handleDataTypeChange = useCallback((event, newDataType) => {
+    if (newDataType !== null) {
+      setDataType(newDataType)
+    }
+  }, [])
+  
   useEffect(() => {
     const timer = performanceMonitor.startTimer('chartRender')
     console.log('TeamContributionChart - Rendering with data:', 
@@ -46,14 +64,20 @@ const TeamContributionChart = React.memo(({
     console.log('📊 CHART: Recalculating chartData with:', {
       hasData: !!data,
       dataLength: data?.data?.length || 0,
+      dataType: dataType,
+      hasTimeTrackingData: !!(data?.timeTrackingData && data.timeTrackingData.length > 0),
       filters: filters
     })
     
-    if (!data || !data.data || data.data.length === 0) return null
+    // STEP 1: Get appropriate data source based on selected type
+    const sourceData = dataType === 'timeTracking' && data?.timeTrackingData ? 
+      data.timeTrackingData : data?.data
+    
+    if (!sourceData || sourceData.length === 0) return null
     
     // Extract all developers from the data
     const developers = new Set()
-    data.data.forEach(item => {
+    sourceData.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key !== 'timePeriod') {
           developers.add(key)
@@ -71,23 +95,23 @@ const TeamContributionChart = React.memo(({
     ]
     
     return {
-      dataset: data.data,
+      dataset: sourceData,
       series: developersArray.map((developer, index) => ({
         dataKey: developer,
         label: developer,
         color: colors[index % colors.length],
-        stack: 'storyPoints'
+        stack: dataType === 'timeTracking' ? 'timeTracking' : 'storyPoints'
       })),
       xAxis: [{
         dataKey: 'timePeriod',
         scaleType: 'band',
         tickLabelStyle: {
-          angle: data.data.length > 6 ? -45 : 0,
-          textAnchor: data.data.length > 6 ? 'end' : 'middle'
+          angle: sourceData.length > 6 ? -45 : 0,
+          textAnchor: sourceData.length > 6 ? 'end' : 'middle'
         }
       }]
     }
-  }, [data])
+  }, [data, dataType])
   
   const chartConfig = useMemo(() => ({
     height: height,
@@ -119,8 +143,12 @@ const TeamContributionChart = React.memo(({
   }, [metrics?.topContributors])
   
   const totalStoryPoints = useMemo(() => {
-    if (!data || !data.data || data.data.length === 0) return 0
-    return data.data.reduce((total, item) => {
+    // Use appropriate data source based on current data type
+    const sourceData = dataType === 'timeTracking' && data?.timeTrackingData ? 
+      data.timeTrackingData : data?.data
+    
+    if (!sourceData || sourceData.length === 0) return 0
+    return sourceData.reduce((total, item) => {
       return total + Object.keys(item).reduce((itemTotal, key) => {
         if (key !== 'timePeriod') {
           return itemTotal + (item[key] || 0)
@@ -128,7 +156,7 @@ const TeamContributionChart = React.memo(({
         return itemTotal
       }, 0)
     }, 0)
-  }, [data])
+  }, [data, dataType])
   
   // 3. Callbacks (none needed)
   
@@ -176,7 +204,7 @@ const TeamContributionChart = React.memo(({
             fontWeight: 600
           }}
         >
-          {title}
+          {dataType === 'timeTracking' ? 'Team Contribution by Time Tracking' : title}
         </Typography>
         
         <Box sx={{ 
@@ -228,6 +256,46 @@ const TeamContributionChart = React.memo(({
         </Box>
       )}
       
+      {/* NEW: Data Type Toggle Controls */}
+      {showTimeTrackingToggle && (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center',
+          mb: { xs: 2, sm: 3 },
+          gap: 1
+        }}>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              alignSelf: 'center',
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              fontWeight: 500
+            }}
+          >
+            Data Type:
+          </Typography>
+          <ToggleButtonGroup
+            value={dataType}
+            exclusive
+            onChange={handleDataTypeChange}
+            size="small"
+            sx={{ 
+              '& .MuiToggleButton-root': {
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                px: { xs: 1, sm: 2 }
+              }
+            }}
+          >
+            <ToggleButton value="storyPoints">
+              Story Points
+            </ToggleButton>
+            <ToggleButton value="timeTracking">
+              Time Tracking (hrs)
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+      
       {/* Chart */}
       <Box sx={{ 
         height: { xs: Math.min(height, 300), sm: height },
@@ -238,6 +306,9 @@ const TeamContributionChart = React.memo(({
           dataset={chartData.dataset}
           series={chartData.series}
           xAxis={chartData.xAxis}
+          yAxis={[{ 
+            label: dataType === 'timeTracking' ? 'Hours' : 'Story Points'
+          }]}
           {...chartConfig}
         />
       </Box>
@@ -259,7 +330,7 @@ const TeamContributionChart = React.memo(({
             color="text.secondary"
             sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
-            Total Story Points
+            {dataType === 'timeTracking' ? 'Total Hours' : 'Total Story Points'}
           </Typography>
           <Typography 
             variant="h6"
@@ -268,7 +339,9 @@ const TeamContributionChart = React.memo(({
               fontWeight: 600
             }}
           >
-            {totalStoryPoints?.toLocaleString() || 0}
+            {dataType === 'timeTracking' ? 
+              `${totalStoryPoints?.toFixed(1) || 0}h` : 
+              totalStoryPoints?.toLocaleString() || 0}
           </Typography>
         </Box>
         
@@ -287,7 +360,9 @@ const TeamContributionChart = React.memo(({
               fontWeight: 600
             }}
           >
-            {metrics.averageStoryPoints?.toFixed(1) || '0.0'}
+            {dataType === 'timeTracking' ? 
+              `${(totalStoryPoints / (chartData?.series?.length || 1)).toFixed(1)}h` : 
+              (metrics.averageStoryPoints?.toFixed(1) || '0.0')}
           </Typography>
         </Box>
         
@@ -336,7 +411,11 @@ TeamContributionChart.propTypes = {
       timePeriod: PropTypes.string.isRequired
       // Note: Dynamic developer properties (e.g., 'developer1': 10, 'developer2': 5)
       // are validated at runtime since they're dynamic based on actual data
-    }))  
+    })),
+    timeTrackingData: PropTypes.arrayOf(PropTypes.shape({
+      timePeriod: PropTypes.string.isRequired
+      // Note: Dynamic developer properties with time tracking values
+    }))
   }),
   metrics: PropTypes.shape({
     totalContributions: PropTypes.number,
