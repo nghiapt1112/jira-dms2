@@ -51,7 +51,7 @@ describe('filterService', () => {
         assignee: 'John Doe',
         project: 'PROJ-A',
         issueType: 'Bug',
-        severity: 'High',
+        severity: 'Major',
         rootCause: 'Logic Error',
         created: '2024-01-15T10:00:00.000Z',
         resolved: '2024-01-20T10:00:00.000Z'
@@ -62,7 +62,7 @@ describe('filterService', () => {
         assignee: 'Jane Smith',
         project: 'PROJ-A',
         issueType: 'Story',
-        severity: 'Medium',
+        severity: 'Minor',
         rootCause: 'Integration Issue',
         created: '2024-01-16T10:00:00.000Z',
         resolved: null
@@ -73,7 +73,7 @@ describe('filterService', () => {
         assignee: 'John Doe',
         project: 'PROJ-A',
         issueType: 'Bug',
-        severity: 'High',
+        severity: 'Major',
         rootCause: 'Logic Error',
         created: '2024-01-17T10:00:00.000Z',
         resolved: '2024-01-22T10:00:00.000Z'
@@ -84,7 +84,7 @@ describe('filterService', () => {
         assignee: 'Jane Smith',
         project: 'PROJ-B',
         issueType: 'Story',
-        severity: 'Medium',
+        severity: 'Minor',
         rootCause: 'Integration Issue',
         created: '2024-02-01T10:00:00.000Z',
         resolved: null
@@ -320,7 +320,7 @@ describe('filterService', () => {
       expect(result.teamContribution.topContributors[0].contributions).toBe(3)
       
       expect(result.bugAnalysis.totalBugs).toBe(3) // All 3 issues are bugs for John Doe
-      expect(result.bugAnalysis.severityDistribution.High).toBe(2)
+      expect(result.bugAnalysis.severityDistribution.Major).toBe(2)
       expect(result.bugAnalysis.severityDistribution.Low).toBe(1)
     })
 
@@ -512,12 +512,12 @@ describe('filterService', () => {
         developers: ['John Doe', 'Jane Smith'],
         projects: ['PROJ-A'],
         issueTypes: ['Bug', 'Story'],
-        severities: ['High', 'Medium']
+        severities: ['Major', 'Minor']
       }
       
       const result = filterService.applyFilters(filters, mockCacheData)
       
-      // Expected: John Doe + Jane Smith, PROJ-A, Bug + Story, High + Medium
+      // Expected: John Doe + Jane Smith, PROJ-A, Bug + Story, Major + Minor
       // Intersection should be issues 0, 1, 2
       expect(result.filteredIssues).toHaveLength(3)
       expect(result.totalResults).toBe(3)

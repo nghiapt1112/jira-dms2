@@ -112,7 +112,15 @@ const FilterPanel = React.memo(({
   ), [])
   
   // 4. Early returns
-  if (!filterOptions) return null
+  if (!filterOptions) {
+    console.log('❌ FILTER PANEL: No filterOptions provided')
+    return null
+  }
+
+  // Debug filterOptions (only when empty)
+  if (filterOptions?.developers?.length === 0) {
+    console.log('⚠️ FILTER PANEL: No developers in filterOptions, check memberConfiguration')
+  }
   
   // 5. Render
   return (
@@ -226,17 +234,33 @@ const FilterPanel = React.memo(({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 224,
-                  width: 250,
+                  maxHeight: 400,
+                  width: 'auto',
+                  minWidth: 300,
+                  zIndex: 9999,
                 },
+              },
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
               },
             }}
           >
-            {filterOptions.statuses?.map((status) => (
-              <MenuItem key={status} value={status}>
-                {status}
+            {filterOptions.statuses?.length > 0 ? (
+              filterOptions.statuses.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>
+                No statuses available
               </MenuItem>
-            ))}
+            )}
           </Select>
         </FormControl>
         
@@ -256,17 +280,33 @@ const FilterPanel = React.memo(({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 224,
-                  width: 250,
+                  maxHeight: 400,
+                  width: 'auto',
+                  minWidth: 300,
+                  zIndex: 9999,
                 },
+              },
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
               },
             }}
           >
-            {filterOptions.developers?.map((developer) => (
-              <MenuItem key={developer} value={developer}>
-                {developer}
+            {filterOptions.developers?.length > 0 ? (
+              filterOptions.developers.map((developer) => (
+                <MenuItem key={developer} value={developer}>
+                  {developer}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>
+                No developers available
               </MenuItem>
-            ))}
+            )}
           </Select>
         </FormControl>
         
@@ -301,17 +341,33 @@ const FilterPanel = React.memo(({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 224,
-                  width: 250,
+                  maxHeight: 400,
+                  width: 'auto',
+                  minWidth: 300,
+                  zIndex: 9999,
                 },
+              },
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
               },
             }}
           >
-            {filterOptions.projects?.map((project) => (
-              <MenuItem key={project} value={project}>
-                {project}
+            {filterOptions.projects?.length > 0 ? (
+              filterOptions.projects.map((project) => (
+                <MenuItem key={project} value={project}>
+                  {project}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>
+                No projects available
               </MenuItem>
-            ))}
+            )}
           </Select>
         </FormControl>
         
@@ -331,17 +387,33 @@ const FilterPanel = React.memo(({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 224,
-                  width: 250,
+                  maxHeight: 400,
+                  width: 'auto',
+                  minWidth: 300,
+                  zIndex: 9999,
                 },
+              },
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
               },
             }}
           >
-            {filterOptions.issueTypes?.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
+            {filterOptions.issueTypes?.length > 0 ? (
+              filterOptions.issueTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {type}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>
+                No issue types available
               </MenuItem>
-            ))}
+            )}
           </Select>
         </FormControl>
         
@@ -361,17 +433,33 @@ const FilterPanel = React.memo(({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 224,
-                  width: 250,
+                  maxHeight: 400,
+                  width: 'auto',
+                  minWidth: 300,
+                  zIndex: 9999,
                 },
+              },
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
               },
             }}
           >
-            {filterOptions.severities?.map((severity) => (
-              <MenuItem key={severity} value={severity}>
-                {severity}
+            {filterOptions.severities?.length > 0 ? (
+              filterOptions.severities.map((severity) => (
+                <MenuItem key={severity} value={severity}>
+                  {severity}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>
+                No severities available
               </MenuItem>
-            ))}
+            )}
           </Select>
         </FormControl>
         
@@ -391,17 +479,33 @@ const FilterPanel = React.memo(({
             MenuProps={{
               PaperProps: {
                 style: {
-                  maxHeight: 224,
-                  width: 250,
+                  maxHeight: 400,
+                  width: 'auto',
+                  minWidth: 300,
+                  zIndex: 9999,
                 },
+              },
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
               },
             }}
           >
-            {filterOptions.rootCauses?.map((rootCause) => (
-              <MenuItem key={rootCause} value={rootCause}>
-                {rootCause}
+            {filterOptions.rootCauses?.length > 0 ? (
+              filterOptions.rootCauses.map((rootCause) => (
+                <MenuItem key={rootCause} value={rootCause}>
+                  {rootCause}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>
+                No root causes available
               </MenuItem>
-            ))}
+            )}
           </Select>
         </FormControl>
       </Box>

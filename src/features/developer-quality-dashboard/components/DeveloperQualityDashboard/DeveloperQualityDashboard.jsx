@@ -5,9 +5,11 @@ import { Refresh as RefreshIcon, CloudDownload as DownloadIcon } from '@mui/icon
 
 import { useDeveloperQualityCache } from '../../hooks/useDeveloperQualityCache'
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
+import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 import DeveloperQualityErrorBoundary from '../ErrorBoundary'
 import FilterPanel from '../FilterPanel'
 import TeamContributionChart from '../TeamContributionChart'
+import DeveloperDetailPanel from '../DeveloperDetailPanel'
 import BugTrendAnalysis from '../BugTrendAnalysis'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import DeveloperRootCauseAnalysis from '../DeveloperRootCauseAnalysis'
@@ -35,6 +37,7 @@ const DeveloperQualityDashboard = React.memo(() => {
     updateStatusFilter,
     filteredData
   } = useDeveloperQualityFilters()
+  const { loadData } = useDeveloperQualityStore()
   
   // Debug logging for filter changes
   useEffect(() => {
@@ -58,6 +61,12 @@ const DeveloperQualityDashboard = React.memo(() => {
       cacheKeys: cacheData ? Object.keys(cacheData) : []
     })
   }, [cacheData, isLoading, error, needsInitialization, filteredData])
+  
+  // Check if single developer is selected for detail panel
+  const selectedDeveloper = useMemo(() => {
+    const developers = filters?.developers || []
+    return developers.length === 1 ? developers[0] : null
+  }, [filters?.developers])
   
   // 2. Memoized values
   const handleFiltersChange = useCallback((newFilters) => {
@@ -83,6 +92,55 @@ const DeveloperQualityDashboard = React.memo(() => {
   const handleStatusFilterChange = useCallback((newStatusFilter) => {
     updateStatusFilter(newStatusFilter)
   }, [updateStatusFilter])
+
+  // Temporary function to load test data for debugging
+  const handleLoadTestData = useCallback(async () => {
+    try {
+      console.log('📥 LOADING TEST DATA: Fetching Q1-2025 test data...')
+      const response = await fetch('/api/test-data/Q1-2025-tickets-256KB.json')
+      if (!response.ok) {
+        // Fallback: try to load from static files or use mock data
+        console.log('📥 TEST DATA: Fallback to mock data')
+        throw new Error('Test data not available from API')
+      }
+      const testData = await response.json()
+      console.log('📥 TEST DATA: Loaded', testData.length, 'issues')
+      await loadData(testData)
+    } catch (error) {
+      console.error('❌ TEST DATA: Failed to load test data:', error)
+      // Load minimal mock data for testing filter options
+      const mockData = [
+        {
+          "id": "70354", "key": "YUIM-129",
+          "fields": {
+            "issuetype": { "name": "Task" },
+            "created": "2025-03-24T18:47:01.131+0900",
+            "project": { "key": "YUIM", "name": "Yuime" },
+            "assignee": { "displayName": "John Doe" },
+            "status": { "name": "Done" },
+            "priority": { "name": "Medium" },
+            "customfield_10028": 5,
+            "summary": "Test task for filter options"
+          }
+        },
+        {
+          "id": "70355", "key": "PROJ-100",
+          "fields": {
+            "issuetype": { "name": "Bug" },
+            "created": "2025-03-25T10:30:00.000+0900",
+            "project": { "key": "PROJ", "name": "Project Alpha" },
+            "assignee": { "displayName": "Jane Smith" },
+            "status": { "name": "In Progress" },
+            "priority": { "name": "High" },
+            "customfield_10028": 3,
+            "summary": "Fix critical bug"
+          }
+        }
+      ]
+      console.log('📥 TEST DATA: Using mock data with', mockData.length, 'issues')
+      await loadData(mockData)
+    }
+  }, [loadData])
   
   // 4. Early returns
   if (isLoading) {
@@ -139,14 +197,24 @@ const DeveloperQualityDashboard = React.memo(() => {
         <Alert 
           severity="info"
           action={
-            <Button 
-              color="inherit" 
-              size="small" 
-              onClick={handleForceReload}
-              startIcon={<DownloadIcon />}
-            >
-              Load Data from S3
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={handleForceReload}
+                startIcon={<DownloadIcon />}
+              >
+                Load Data from S3
+              </Button>
+              <Button 
+                color="secondary" 
+                size="small" 
+                onClick={handleLoadTestData}
+                startIcon={<RefreshIcon />}
+              >
+                Load Test Data
+              </Button>
+            </Box>
           }
         >
           No developer quality data available. Click "Load Data from S3" to download and process JIRA data.
@@ -232,6 +300,18 @@ const DeveloperQualityDashboard = React.memo(() => {
             filters={filters} // Pass complete filters object including projects
           />
         </Grid>
+
+        {/* Developer Detail Panel - Shows when single developer is selected */}
+        {selectedDeveloper && (
+          <Grid item xs={12}>
+            <DeveloperDetailPanel
+              developerName={selectedDeveloper}
+              metrics={filteredData.filteredMetrics}
+              filteredData={filteredData}
+              statusFilter={filters?.statusFilter || ['Done']}
+            />
+          </Grid>
+        )}
         
         {/* Bug Trend Analysis */}
         <Grid item xs={12} md={6}>

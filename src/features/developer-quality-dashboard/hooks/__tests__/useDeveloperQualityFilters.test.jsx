@@ -34,7 +34,7 @@ describe('useDeveloperQualityFilters', () => {
     projects: ['PROJ-A', 'PROJ-B', 'PROJ-C'],
     issueTypes: ['Bug', 'Story', 'Task'],
     statuses: ['Done', 'In Progress', 'To Do'],
-    severities: ['Critical', 'High', 'Medium', 'Low'],
+    severities: ['Critical', 'Major', 'Minor', 'Low', 'Cosmetic'],
     rootCauses: ['Logic Error', 'Integration Issue', 'Performance']
   }
 

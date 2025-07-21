@@ -1,0 +1,148 @@
+{
+  "developer": "Ahmad Alfan",
+  "totalIssues": 42,
+  "bugs": 5,
+  "bugRate": 11.904761904761903,
+  "trend": "stable",
+  "projects": [
+    "Yuime"
+  ],
+  "reopenCount": 0,
+  "reopenRate": 0,
+  "avgResolutionTimeHours": 83.95,
+  "timeEfficiency": 68,
+  "qualityTrend": {
+    "trend": "stable",
+    "trendValue": 0,
+    "trendPercentage": 0,
+    "dataPoints": []
+  },
+  "severityBreakdown": {
+    "Critical": 0,
+    "Major": 0,
+    "Minor": 0,
+    "Low": 0,
+    "Cosmetic": 0,
+    "Unknown": 9
+  },
+  "rootCauseBreakdown": {},
+  "topRootCause": null,
+  "overdueCount": 3,
+  "totalTimeSpentHours": 41.416666666666664,
+  "timePerStoryPoint": 0.9412878787878788,
+  "averageEstimationAccuracy": 0,
+  "timeLoggedIssues": 13,
+  "weeklyTimeData": [
+    {
+      "week": "2025-W24",
+      "hours": 19.25
+    },
+    {
+      "week": "2025-W25",
+      "hours": 18.666666666666664
+    },
+    {
+      "week": "2025-W26",
+      "hours": 3.5
+    }
+  ],
+  "monthlyTimeData": [
+    {
+      "month": "2025-06",
+      "hours": 41.416666666666664
+    }
+  ],
+  "timeTrackingIssues": [
+    {
+      "issueKey": "YUIM-868",
+      "timeSpentHours": 1.5,
+      "storyPoints": 3,
+      "estimationAccuracy": null,
+      "created": "2025-06-26T14:28:51.134+0900"
+    },
+    {
+      "issueKey": "YUIM-866",
+      "timeSpentHours": 2,
+      "storyPoints": 2,
+      "estimationAccuracy": null,
+      "created": "2025-06-26T12:17:29.943+0900"
+    },
+    {
+      "issueKey": "YUIM-802",
+      "timeSpentHours": 3,
+      "storyPoints": 3,
+      "estimationAccuracy": null,
+      "created": "2025-06-20T11:14:51.641+0900"
+    },
+    {
+      "issueKey": "YUIM-801",
+      "timeSpentHours": 9,
+      "storyPoints": 5,
+      "estimationAccuracy": null,
+      "created": "2025-06-20T11:14:37.035+0900"
+    },
+    {
+      "issueKey": "YUIM-778",
+      "timeSpentHours": 0.25,
+      "storyPoints": 1,
+      "estimationAccuracy": null,
+      "created": "2025-06-18T15:05:28.535+0900"
+    },
+    {
+      "issueKey": "YUIM-775",
+      "timeSpentHours": 0.25,
+      "storyPoints": 1,
+      "estimationAccuracy": null,
+      "created": "2025-06-18T14:04:42.389+0900"
+    },
+    {
+      "issueKey": "YUIM-773",
+      "timeSpentHours": 0.16666666666666666,
+      "storyPoints": 1,
+      "estimationAccuracy": null,
+      "created": "2025-06-18T13:42:44.494+0900"
+    },
+    {
+      "issueKey": "YUIM-739",
+      "timeSpentHours": 6.083333333333333,
+      "storyPoints": 3,
+      "estimationAccuracy": null,
+      "created": "2025-06-16T11:26:11.320+0900"
+    },
+    {
+      "issueKey": "YUIM-738",
+      "timeSpentHours": 9.5,
+      "storyPoints": 8,
+      "estimationAccuracy": null,
+      "created": "2025-06-16T11:25:54.175+0900"
+    },
+    {
+      "issueKey": "YUIM-737",
+      "timeSpentHours": 1.6666666666666667,
+      "storyPoints": 3,
+      "estimationAccuracy": null,
+      "created": "2025-06-16T11:25:22.504+0900"
+    },
+    {
+      "issueKey": "YUIM-736",
+      "timeSpentHours": 2,
+      "storyPoints": 8,
+      "estimationAccuracy": null,
+      "created": "2025-06-16T11:24:44.199+0900"
+    },
+    {
+      "issueKey": "YUIM-834",
+      "timeSpentHours": 3,
+      "storyPoints": 5,
+      "estimationAccuracy": null,
+      "created": "2025-06-24T11:03:21.212+0900"
+    },
+    {
+      "issueKey": "YUIM-772",
+      "timeSpentHours": 3,
+      "storyPoints": 1,
+      "estimationAccuracy": null,
+      "created": "2025-06-18T13:25:06.571+0900"
+    }
+  ]
+}

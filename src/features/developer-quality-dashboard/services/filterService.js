@@ -67,7 +67,9 @@ export const filterService = {
             colorScheme: 'multi',
             timeframe,
             statusFilter
-          }
+          },
+          // Pass through timeTrackingData from original chartData
+          timeTrackingData: cacheData.chartData?.teamContributionChart?.timeTrackingData || []
         }
       },
       appliedFilters: filters,
@@ -136,7 +138,9 @@ export const filterService = {
             colorScheme: 'multi',
             timePeriodType,
             statusFilter
-          }
+          },
+          // Pass through timeTrackingData from original chartData
+          timeTrackingData: cacheData.chartData?.teamContributionChart?.timeTrackingData || []
         }
       },
       appliedFilters: filters,
@@ -263,8 +267,10 @@ export const filterService = {
       const projIndices = new Set()
       filters.projects.forEach(proj => {
         const projIssues = indices.byProject.get(proj) || []
+        console.log(`🔍 FILTER: Project "${proj}" has ${projIssues.length} issues in index`)
         projIssues.forEach(idx => projIndices.add(idx))
       })
+      console.log(`🔍 FILTER: Total project indices found: ${projIndices.size}`)
       filterResults.push(projIndices)
     }
     
@@ -383,6 +389,12 @@ export const filterService = {
   recalculateMetricsFromIndices: (indices, cacheData) => {
     const filteredIssues = filterService.getFilteredIssues(indices, cacheData.minimalIssues)
     
+    console.log('🔍 FILTER RECALC: Starting with filtered issues:', filteredIssues.length)
+    console.log('🔍 FILTER RECALC: Original cache bugRateAnalysis developers type:', 
+      Array.isArray(cacheData.metrics?.bugRateAnalysis?.developers) ? 'Array' : 'Other')
+    console.log('🔍 FILTER RECALC: Original cache bugRateAnalysis developers count:', 
+      cacheData.metrics?.bugRateAnalysis?.developers?.length || 0)
+    
     const metrics = {
       teamContribution: {
         totalContributions: 0,
@@ -484,7 +496,7 @@ export const filterService = {
     })
     
     // Finalize calculations
-    filterService.finalizeFilteredMetrics(metrics)
+    filterService.finalizeFilteredMetrics(metrics, cacheData)
     
     return metrics
   },
@@ -554,8 +566,9 @@ export const filterService = {
   /**
    * Finalize filtered metrics calculations
    * @param {Object} metrics - Metrics to finalize
+   * @param {Object} cacheData - Original cache data for preserving comprehensive developer data
    */
-  finalizeFilteredMetrics: (metrics) => {
+  finalizeFilteredMetrics: (metrics, cacheData) => {
     // Calculate team contribution averages
     const totalDevs = metrics.teamContribution.developerStats.size
     if (totalDevs > 0) {
@@ -576,17 +589,95 @@ export const filterService = {
         (stats.contributions / metrics.teamContribution.totalContributions) * 100 : 0
     })).sort((a, b) => b.contributions - a.contributions)
     
-    // Calculate bug rate analysis
+    // Calculate bug rate analysis - PRESERVE COMPREHENSIVE DATA FROM ORIGINAL CACHE
+    console.log('🔍 FILTER RECALC: Calculating bug rate analysis for developers:', 
+      metrics.teamContribution.developerStats.size)
+    
+    // DEBUG: Check what comprehensive data is available in cache
+    console.log('🔍 FILTER RECALC: Cache data structure:', {
+      hasCacheMetrics: !!cacheData.metrics,
+      hasBugRateAnalysis: !!cacheData.metrics?.bugRateAnalysis,
+      hasDevelopers: !!cacheData.metrics?.bugRateAnalysis?.developers,
+      developersType: cacheData.metrics?.bugRateAnalysis?.developers ? 
+        (Array.isArray(cacheData.metrics.bugRateAnalysis.developers) ? 'Array' : 'Map') : 'none',
+      developersCount: cacheData.metrics?.bugRateAnalysis?.developers ? 
+        (Array.isArray(cacheData.metrics.bugRateAnalysis.developers) ? 
+          cacheData.metrics.bugRateAnalysis.developers.length : 
+          cacheData.metrics.bugRateAnalysis.developers.size) : 0,
+      sampleDeveloperKeys: cacheData.metrics?.bugRateAnalysis?.developers ? 
+        (Array.isArray(cacheData.metrics.bugRateAnalysis.developers) ? 
+          (cacheData.metrics.bugRateAnalysis.developers[0] ? Object.keys(cacheData.metrics.bugRateAnalysis.developers[0]) : []) :
+          (cacheData.metrics.bugRateAnalysis.developers.size > 0 ? Object.keys(Array.from(cacheData.metrics.bugRateAnalysis.developers.values())[0]) : [])) : []
+    })
+    
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
       const bugRate = stats.contributions > 0 ? (stats.bugs / stats.contributions) * 100 : 0
-      metrics.bugRateAnalysis.developers.set(developer, {
+      
+      // Find the original comprehensive developer data from cache
+      let originalDeveloperData = null
+      if (cacheData.metrics?.bugRateAnalysis?.developers) {
+        if (Array.isArray(cacheData.metrics.bugRateAnalysis.developers)) {
+          // If it's already an array (finalized)
+          originalDeveloperData = cacheData.metrics.bugRateAnalysis.developers.find(
+            dev => dev.developer === developer || dev.name === developer
+          )
+        } else if (cacheData.metrics.bugRateAnalysis.developers instanceof Map) {
+          // If it's still a Map (before finalization)
+          originalDeveloperData = cacheData.metrics.bugRateAnalysis.developers.get(developer)
+        }
+      }
+      
+      console.log(`🔍 FILTER RECALC: Developer ${developer} - found original data:`, 
+        !!originalDeveloperData, originalDeveloperData ? Object.keys(originalDeveloperData) : 'none')
+      
+      // SPECIFIC DEBUG: Check if comprehensive fields exist in original data
+      if (originalDeveloperData) {
+        console.log(`🔍 FILTER RECALC: ${developer} comprehensive check:`, {
+          hasTimeSpent: 'totalTimeSpentHours' in originalDeveloperData,
+          hasTimePerPoint: 'timePerStoryPoint' in originalDeveloperData,
+          hasSeverity: 'severityBreakdown' in originalDeveloperData,
+          hasRootCause: 'rootCauseBreakdown' in originalDeveloperData,
+          hasWeeklyData: 'weeklyTimeData' in originalDeveloperData,
+          timeSpentValue: originalDeveloperData.totalTimeSpentHours,
+          timePerPointValue: originalDeveloperData.timePerStoryPoint
+        })
+      }
+      
+      // Create comprehensive developer object - use original data if available, otherwise basic data
+      const comprehensiveDeveloperData = originalDeveloperData ? {
+        // PRESERVE ALL ORIGINAL COMPREHENSIVE DATA
+        ...originalDeveloperData,
+        // UPDATE only the basic metrics that might change with filtering
+        developer,
+        totalIssues: stats.contributions,
+        bugs: stats.bugs,
+        bugRate,
+        projects: Array.from(stats.projects)
+      } : {
+        // FALLBACK: Basic data if no comprehensive data found
         developer,
         totalIssues: stats.contributions,
         bugs: stats.bugs,
         bugRate,
         trend: 'stable',
-        projects: Array.from(stats.projects)
+        projects: Array.from(stats.projects),
+        // Add default values for expected comprehensive fields
+        totalTimeSpentHours: 0,
+        timePerStoryPoint: 0,
+        severityBreakdown: {},
+        rootCauseBreakdown: {},
+        weeklyTimeData: [],
+        overdueCount: 0,
+        reopenCount: 0,
+        reopenRate: 0
+      }
+      
+      console.log(`🔍 FILTER RECALC: Final data for ${developer}:`, {
+        hasComprehensiveFields: 'totalTimeSpentHours' in comprehensiveDeveloperData,
+        keys: Object.keys(comprehensiveDeveloperData)
       })
+      
+      metrics.bugRateAnalysis.developers.set(developer, comprehensiveDeveloperData)
     })
     
     // Calculate team average bug rate and convert to array

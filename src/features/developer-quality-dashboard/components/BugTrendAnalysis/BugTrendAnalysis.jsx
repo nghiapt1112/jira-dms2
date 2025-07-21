@@ -2,6 +2,9 @@ import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Paper, Typography, Chip } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
+import { ChartJSLineChart } from '../../../../components/charts/ChartJS'
+import { selectChartComponent } from '../../../../config/features'
+import { transformSeriesData } from '../../../../utils/dataTransformers'
 import { TrendingUp, TrendingDown, TrendingFlat, BugReport } from '@mui/icons-material'
 
 const BugTrendAnalysis = React.memo(({ 
@@ -13,10 +16,12 @@ const BugTrendAnalysis = React.memo(({
   // 1. Hooks first (none needed)
   
   // 2. Memoized values
+  const useChartJS = selectChartComponent('medium') === 'chartjs'
+  
   const chartData = useMemo(() => {
     if (!data || !data.data || data.data.length === 0) return null
     
-    return {
+    const muiData = {
       dataset: data.data,
       series: [
         {
@@ -47,7 +52,14 @@ const BugTrendAnalysis = React.memo(({
         }
       }]
     }
-  }, [data])
+    
+    if (useChartJS) {
+      // Transform data for Chart.js
+      return transformSeriesData(data.data, muiData.series)
+    }
+    
+    return muiData
+  }, [data, useChartJS])
   
   const chartConfig = useMemo(() => ({
     height: height,
@@ -184,12 +196,44 @@ const BugTrendAnalysis = React.memo(({
         width: '100%',
         mb: { xs: 2, sm: 3 }
       }}>
-        <LineChart
-          dataset={chartData.dataset}
-          series={chartData.series}
-          xAxis={chartData.xAxis}
-          {...chartConfig}
-        />
+        {useChartJS ? (
+          <ChartJSLineChart
+            data={chartData}
+            title=""
+            height={height}
+            options={{
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: false,
+                }
+              },
+              scales: {
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Month'
+                  }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: 'Bug Count'
+                  }
+                }
+              }
+            }}
+          />
+        ) : (
+          <LineChart
+            dataset={chartData.dataset}
+            series={chartData.series}
+            xAxis={chartData.xAxis}
+            {...chartConfig}
+          />
+        )}
       </Box>
       
       {/* Metrics Summary */}

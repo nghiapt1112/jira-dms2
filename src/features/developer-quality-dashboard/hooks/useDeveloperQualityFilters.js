@@ -25,10 +25,18 @@ export const useDeveloperQualityFilters = () => {
     })
   }, [data, filters])
 
-  // Memoized filter options
+  // Memoized filter options - include data as dependency since getFilterOptions accesses data.filterOptions
   const filterOptions = useMemo(() => {
-    return getFilterOptions()
-  }, [getFilterOptions])
+    console.log('🔧 HOOK: Recalculating filterOptions due to data change')
+    const options = getFilterOptions()
+    console.log('🔧 HOOK: New filterOptions:', {
+      developers: options.developers?.length || 0,
+      projects: options.projects?.length || 0,
+      issueTypes: options.issueTypes?.length || 0,
+      statuses: options.statuses?.length || 0
+    })
+    return options
+  }, [getFilterOptions, data])
 
   // Memoized filtered data with performance monitoring
   const filteredData = useMemo(() => {

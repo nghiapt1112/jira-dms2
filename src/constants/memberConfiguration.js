@@ -388,7 +388,7 @@ export const memberConfiguration = {
     // },
     // {
     //   jiraId: "61244f1d129802006acfbca3",
-    //   name: "SHIFT 三浦翔"
+    //   name: "SHIFT 三浦 翔"
     // },
     // {
     //   jiraId: "62ce68a41e326fd93012b091",
@@ -396,7 +396,7 @@ export const memberConfiguration = {
     // },
     // {
     //   jiraId: "6228466e6a4c4c0070b16a18",
-    //   name: "高橋　慶太郎"
+    //   name: "高橋 慶太郎"
     // },
     // {
     //   jiraId: "712020:29dd53a0-931f-41c3-ba41-a21c93c44175",
@@ -412,7 +412,7 @@ export const memberConfiguration = {
     // },
     // {
     //   jiraId: "712020:0748a8e0-33ee-474d-9602-f1a6c751a031",
-    //   name: "村上和隆"
+    //   name: "村上 和隆"
     // },
     // {
     //   jiraId: "712020:d85880b4-df87-4a03-9af0-c5a32343d5c4",
@@ -427,6 +427,113 @@ export const memberConfiguration = {
     // { jiraId: "mike.davis", name: "Mike Davis" }
   ],
   
+  // Array of project objects - these will be pre-populated in project filters
+  projects: [
+    { key: "BCP", name: "Borderless City Project" },
+    { key: "CF", name: "Calbee-FfF" },
+    { key: "DAICO", name: "Daicolo" },
+    { key: "DAAI", name: "Daicolo-AIFeatures" },
+    { key: "ENT", name: "Enterprise Team" },
+    { key: "HG", name: "Hiruta GoDump" },
+    { key: "IP", name: "Internal PJ" },
+    { key: "IS", name: "Ishibashi Gakki" },
+    { key: "KB", name: "Kuribara" },
+    { key: "MIT", name: "Mitaden" },
+    { key: "NKR2", name: "NikkenRentacom_2" },
+    { key: "OOPS", name: "Oops" },
+    { key: "PMAX", name: "PROMAX" },
+    { key: "PDS", name: "Product Design" },
+    { key: "RAG", name: "RAG" },
+    { key: "SG", name: "SCOP-GO" },
+    { key: "STU", name: "SD - Time Utilization " },
+    { key: "SIP", name: "SD Internal Project" },
+    { key: "SEK", name: "Sekisuiheim" },
+    { key: "TG", name: "TOHO GAS" },
+    { key: "TOUC", name: "TOUCH" },
+    { key: "TIT", name: "Titans" },
+    { key: "TS", name: "Tokyu-Stay" },
+    { key: "WON", name: "WonderTable" },
+    { key: "YUB", name: "Yubisui" },
+    { key: "YUIM", name: "Yuime" },
+    { key: "ECHO", name: "echo" }
+  ],
+  issueTypes: [
+    "Bug",
+    "Capacity",
+    "Epic",
+    "Improvement",
+    "Meeting",
+    "PR Review",
+    "Question",
+    "SD-Improvement",
+    "Story",
+    "Sub-task",
+    "Subtask",
+    "Task"
+  ],
+  rootCauses: [
+    "Change in Design",
+    "Change in Requirements",
+    "Communication Gaps",
+    "Concurrency Issue",
+    "Customer Perspective",
+    "Data Migration",
+    "Environment Issue",
+    "Human Error",
+    "Implementation Issue",
+    "Inadequate Requirements Analysis",
+    "Infrastructure or Deployment Issues",
+    "Insufficient Testing",
+    "Legacy Code",
+    "Missed Requirement",
+    "Other( If other please decribe in the root cause text box)",
+    "Process Gaps",
+    "Release/Code Merge Issue",
+    "Test Data Issue",
+    "Third-Party Issue",
+    "Tool or Automation Issue",
+    "Unknown",
+    "User Input Validation Failure",
+    "Version Control Mismanagement"
+  ],
+  statuses: [
+    "BACK FROM QA",
+    "BLOCK",
+    "BLOCKED",
+    "Back from QA",
+    "Blocked",
+    "Blocked (QA)",
+    "Blocked By QA",
+    "Blocked by QA",
+    "CONFIRM BY PM",
+    "Canceled(DO NOT USE)",
+    "Closed(DO NOT USE)",
+    "Create Document",
+    "Dev / QA Done",
+    "Dev Test",
+    "Done",
+    "IN QA",
+    "In Progress",
+    "In QA",
+    "In Review",
+    "Log Time",
+    "NO ACTION",
+    "ON HOLD",
+    "Pending",
+    "QA",
+    "QA Blocked",
+    "QA in Progress",
+    "Ready for QA",
+    "Rejected",
+    "Review",
+    "Selected for Development",
+    "Test by Dev",
+    "Test by dev",
+    "To Do",
+    "Under QA",
+    "Verify(DO NOT USE)",
+    "Waiting for QA"
+  ],
   // Configuration settings for KPI calculations
   kpiSettings: {
     // If true, only calculate KPIs for members listed in developers/qa arrays
@@ -440,7 +547,97 @@ export const memberConfiguration = {
     
     // If true, separate developers and QA in different sections of the dashboard
     separateByRole: true
-  }
+  },
+
+  // Configuration for reopen detection 
+  reopenDetection: {
+    // Default configuration for all projects
+    default: {
+      // Status names that indicate a bug has been reopened
+      reopenStatuses: ["REOPENED", "Reopened"],
+      
+      // Status transitions that count as reopening (from closed states back to active)
+      reopenTransitions: [
+        { from: ["Done", "Closed", "Resolved"], to: ["In Progress", "To Do", "Open"] },
+        { from: ["Waiting for QA", "Ready for QA"], to: ["In Progress", "Back from QA"] }
+      ]
+    },
+    
+    // Project-specific configurations (override default)
+    projects: {
+      // Example: "YUIM": { ... custom config ... }
+    }
+  },
+
+  // Configuration for severity/priority field mapping
+  severityConfiguration: {
+    // Default configuration for all projects  
+    default: {
+      // Field to use for severity data
+      severityField: "customfield_10049", // Default severity custom field
+      
+      // Fallback to priority field if severity field is null/empty
+      usePriorityFallback: true,
+      
+      // Mapping from JIRA values to standardized severity levels
+      severityMapping: {
+        // For custom severity field values
+        "Critical": "Critical",
+        "Functional": "Major", 
+        "Non-Functional": "Major",
+        "Integration": "Major",
+        "Performance": "Major",
+        "Security": "Critical",
+        "UI/UX": "Minor",
+        "Data": "Major",
+        
+        // For priority field values (when used as fallback)
+        "Highest": "Critical",
+        "Important": "Critical", 
+        "High": "Major",
+        "Medium": "Minor",
+        "Low": "Low",
+        "Lowest": "Cosmetic"
+      },
+      
+      // Standard severity levels used in dashboard
+      severityLevels: ["Critical", "Major", "Minor", "Low", "Cosmetic"]
+    },
+    
+    // Project-specific configurations (override default)
+    projects: {
+      // Example: "WON": { severityField: "priority", usePriorityFallback: false, ... }
+    }
+  },
+
+  // Severity levels for filters - centralized configuration
+  severities: [
+    "Critical",
+    "Major", 
+    "Minor",
+    "Low",
+    "Cosmetic"
+  ]
+}
+
+/**
+ * Get reopen detection configuration for a project
+ * @param {string} projectKey - The project key (e.g., "YUIM", "WON")
+ * @returns {Object} - Reopen detection configuration
+ */
+export const getReopenDetectionConfig = (projectKey) => {
+  const projectConfig = memberConfiguration.reopenDetection.projects[projectKey]
+  return projectConfig || memberConfiguration.reopenDetection.default
+}
+
+/**
+ * Get severity configuration for a project
+ * @param {string} projectKey - The project key (e.g., "YUIM", "WON") 
+ * @returns {Object} - Severity configuration
+ */
+export const getSeverityConfig = (projectKey) => {
+  const projectConfig = memberConfiguration.severityConfiguration.projects[projectKey]
+  return projectConfig || memberConfiguration.severityConfiguration.default
 }
 
 /**
@@ -490,6 +687,30 @@ export const getAllConfiguredMembers = () => {
 }
 
 /**
+ * Get all configured projects
+ * @returns {Array} - Array of all configured project objects
+ */
+export const getAllConfiguredProjects = () => {
+  return memberConfiguration.projects || []
+}
+
+/**
+ * Get all configured project keys
+ * @returns {Array} - Array of all configured project keys
+ */
+export const getAllConfiguredProjectKeys = () => {
+  return memberConfiguration.projects?.map(proj => proj.key) || []
+}
+
+/**
+ * Get all configured project names
+ * @returns {Array} - Array of all configured project names
+ */
+export const getAllConfiguredProjectNames = () => {
+  return memberConfiguration.projects?.map(proj => proj.name) || []
+}
+
+/**
  * Get all configured member names
  * @returns {Array} - Array of all configured member names
  */
@@ -514,6 +735,14 @@ export const getMembersByRole = (role) => {
     default:
       return []
   }
+}
+
+/**
+ * Get all configured severities
+ * @returns {Array} - Array of severity levels
+ */
+export const getAllConfiguredSeverities = () => {
+  return memberConfiguration.severities || []
 }
 
 /**

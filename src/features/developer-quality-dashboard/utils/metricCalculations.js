@@ -4,31 +4,69 @@
  * Following .cursorrules conventions - camelCase naming, performance optimizations
  */
 
+import { getReopenDetectionConfig, getSeverityConfig } from '../../../constants/memberConfiguration.js'
+
 /**
  * Calculate reopen rate based on issue changelog
  * @param {Object} issue - JIRA issue object
+ * @param {string} projectKey - Project key for configuration (optional)
  * @returns {Object} Reopen analysis data
  */
-export const calculateReopenMetrics = (issue) => {
+export const calculateReopenMetrics = (issue, projectKey = null) => {
+  // Only process Bug tickets
+  const issueType = issue.fields?.issuetype?.name || issue.issueType
+  if (issueType !== 'Bug') {
+    return {
+      reopenCount: 0,
+      isReopened: false,
+      lastReopenDate: null,
+      hasReopenHistory: false
+    }
+  }
+
   const changelog = issue.changelog?.histories || []
   let reopenCount = 0
   let isReopened = false
   let lastReopenDate = null
 
-  // Check for status changes to 'Reopened' or transitions back to 'Open'/'To Do' from 'Done'/'Resolved'
-  changelog.forEach(history => {
-    const statusChanges = history.items?.filter(item => 
-      item.field === 'status' && 
-      (item.toString?.toLowerCase() === 'reopened' || 
-       (item.fromString?.toLowerCase().includes('done') || item.fromString?.toLowerCase().includes('resolved')) &&
-       (item.toString?.toLowerCase().includes('open') || item.toString?.toLowerCase().includes('to do')))
-    ) || []
+  // Get configurable reopen detection settings
+  const reopenConfig = getReopenDetectionConfig(projectKey)
+  const { reopenStatuses, reopenTransitions } = reopenConfig
 
-    if (statusChanges.length > 0) {
-      reopenCount += statusChanges.length
-      isReopened = true
-      lastReopenDate = history.created
-    }
+  // Check for status changes in changelog
+  changelog.forEach(history => {
+    const statusChanges = history.items?.filter(item => item.field === 'status') || []
+
+    statusChanges.forEach(statusChange => {
+      const fromStatus = statusChange.fromString
+      const toStatus = statusChange.toString
+
+      // Check for explicit reopen statuses
+      if (reopenStatuses.some(status => 
+        toStatus?.toLowerCase() === status.toLowerCase()
+      )) {
+        reopenCount += 1
+        isReopened = true
+        lastReopenDate = history.created
+        return
+      }
+
+      // Check for reopen transitions (from closed states back to active)
+      reopenTransitions.forEach(transition => {
+        const matchesFromStatus = transition.from.some(fromState => 
+          fromStatus?.toLowerCase().includes(fromState.toLowerCase())
+        )
+        const matchesToStatus = transition.to.some(toState => 
+          toStatus?.toLowerCase().includes(toState.toLowerCase())
+        )
+
+        if (matchesFromStatus && matchesToStatus) {
+          reopenCount += 1
+          isReopened = true
+          lastReopenDate = history.created
+        }
+      })
+    })
   })
 
   return {
@@ -270,21 +308,44 @@ const calculateLinearTrend = (values) => {
 /**
  * Aggregate severity breakdown for multiple issues
  * @param {Array} issues - Array of issues
+ * @param {string} projectKey - Project key for configuration (optional)
  * @returns {Object} Severity breakdown object
  */
-export const aggregateSeverityBreakdown = (issues) => {
-  const breakdown = {
-    'Critical': 0,
-    'High': 0,
-    'Medium': 0,
-    'Low': 0,
-    'Unknown': 0
-  }
+export const aggregateSeverityBreakdown = (issues, projectKey = null) => {
+  // Get configurable severity settings
+  const severityConfig = getSeverityConfig(projectKey)
+  const { severityField, usePriorityFallback, severityMapping, severityLevels } = severityConfig
+  
+  // Initialize breakdown with correct severity levels
+  const breakdown = {}
+  severityLevels.forEach(level => {
+    breakdown[level] = 0
+  })
+  breakdown['Unknown'] = 0
 
   issues.forEach(issue => {
-    const severity = issue.severity || issue.fields?.priority?.name || 'Unknown'
-    if (breakdown.hasOwnProperty(severity)) {
-      breakdown[severity] += 1
+    let severityValue = null
+    
+    // Try to get severity from configured custom field
+    if (severityField && issue.fields?.[severityField]) {
+      const customFieldValue = issue.fields[severityField]
+      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
+    }
+    
+    // Fallback to priority field if configured and severity field is empty
+    if (!severityValue && usePriorityFallback && issue.fields?.priority?.name) {
+      severityValue = issue.fields.priority.name
+    }
+    
+    // Map the severity value to standardized levels
+    let mappedSeverity = 'Unknown'
+    if (severityValue && severityMapping[severityValue]) {
+      mappedSeverity = severityMapping[severityValue]
+    }
+    
+    // Increment the count for the mapped severity
+    if (Object.prototype.hasOwnProperty.call(breakdown, mappedSeverity)) {
+      breakdown[mappedSeverity] += 1
     } else {
       breakdown['Unknown'] += 1
     }
@@ -324,15 +385,8 @@ export const calculateTimeTrackingMetrics = (issue) => {
   const timeSpentSeconds = timetracking.timeSpentSeconds || 0
   const remainingEstimateSeconds = timetracking.remainingEstimateSeconds || 0
   const originalEstimateSeconds = timetracking.originalEstimateSeconds || 0
-  
-  // Debug log to see what time tracking data is available
-  if (timeSpentSeconds > 0) {
-    console.log(`⏱️ TIME TRACKING DEBUG: Issue ${issue.key} - timeSpentSeconds: ${timeSpentSeconds}, originalEstimate: ${originalEstimateSeconds}`)
-  } else if (issue.fields?.timetracking) {
-    // Check if there's a timetracking field but no time logged
-    console.log(`⏱️ TIME TRACKING DEBUG: Issue ${issue.key} - has timetracking field but no time logged:`, issue.fields.timetracking)
-  }
-  
+
+
   return {
     timeSpentHours: timeSpentSeconds / 3600,
     timeSpentSeconds,

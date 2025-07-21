@@ -12,7 +12,7 @@ const mockFilterOptions = {
   developers: ['john.doe', 'jane.smith', 'bob.wilson'],
   projects: ['PROJ-A', 'PROJ-B', 'PROJ-C'],
   issueTypes: ['Bug', 'Story', 'Task', 'Epic'],
-  severities: ['Critical', 'High', 'Medium', 'Low']
+  severities: ['Critical', 'Major', 'Minor', 'Low', 'Cosmetic']
 }
 
 const mockFilters = {
