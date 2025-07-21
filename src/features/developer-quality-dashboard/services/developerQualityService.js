@@ -31,6 +31,7 @@ const getTimePeriodKey = (dateString, period) => {
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { shouldIncludeMember, memberConfiguration, getSeverityConfig } from '../../../constants/memberConfiguration'
+import { parseSeverity } from '../../../shared/utils/severityParser.js'
 import { 
   calculateReopenMetrics, 
   calculateResolutionTimeMetrics, 
@@ -317,22 +318,9 @@ export const developerQualityService = {
     const issueType = issue.fields?.issuetype?.name || 'Unknown'
     const status = issue.fields?.status?.name || 'Unknown'
     
-    // Get severity using configurable mapping
-    const severityConfig = getSeverityConfig(project)
-    const { severityField, usePriorityFallback, severityMapping } = severityConfig
-    
-    let severityValue = null
-    // Try to get severity from configured custom field
-    if (severityField && issue.fields?.[severityField]) {
-      const customFieldValue = issue.fields[severityField]
-      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
-    }
-    // Fallback to priority field if configured and severity field is empty
-    if (!severityValue && usePriorityFallback && issue.fields?.priority?.name) {
-      severityValue = issue.fields.priority.name
-    }
-    // Map the severity value to standardized levels
-    const severity = (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
+    // Get severity using centralized parser
+    const severityResult = parseSeverity(issue, project)
+    const severity = severityResult.severity
     
     const rootCause = developerQualityService.extractRootCause(issue)
     const created = issue.fields?.created

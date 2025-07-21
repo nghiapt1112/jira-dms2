@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { getSeverityConfig } from '../../shared/constants/memberConfiguration'
+import { getSeverityConfig } from '../../../../constants/memberConfiguration'
+import { calculateWeightedBugRate, calculateSeverityBreakdown } from '../../../../shared/utils/severityCalculations.js'
+import { getSeverityColor } from '../../../../shared/constants/severityConstants.js'
 import {
   Box,
   Typography,
@@ -105,67 +107,9 @@ const ProjectHealthTable = React.memo(({
     }
   }, [])
 
-  // Standardized severity weights for consistent calculation across dashboards
-  const SEVERITY_WEIGHTS = {
-    Critical: 1.0,
-    Major: 0.7,
-    Minor: 0.5,
-    Low: 0.3,
-    Cosmetic: 0.1,
-    Unknown: 0.2
-  }
+  // Severity weights are now centralized in severityConstants.js
 
-  // Helper function to parse bug severity using configurable parsing logic
-  const parseBugSeverity = useCallback((bug, projectKey = null) => {
-    const severityConfig = getSeverityConfig(projectKey)
-    const { severityField, usePriorityFallback, severityMapping } = severityConfig
-    
-    let severityValue = null
-    if (severityField && bug.fields?.[severityField]) {
-      const customFieldValue = bug.fields[severityField]
-      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
-    }
-    
-    if (!severityValue && usePriorityFallback && bug.fields?.priority?.name) {
-      severityValue = bug.fields.priority.name
-    }
-    
-    return (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
-  }, [])
-
-  // Calculate severity breakdown using standardized parsing
-  const calculateSeverityBreakdown = useCallback((bugs, projectKey = null) => {
-    const breakdown = {
-      Critical: 0,
-      Major: 0,
-      Minor: 0,
-      Low: 0,
-      Cosmetic: 0,
-      Unknown: 0
-    }
-    
-    if (!bugs || bugs.length === 0) return breakdown
-    
-    bugs.forEach(bug => {
-      const severity = parseBugSeverity(bug, projectKey)
-      breakdown[severity] = (breakdown[severity] || 0) + 1
-    })
-    
-    return breakdown
-  }, [parseBugSeverity])
-
-  // Calculate weighted bug rate using severity weights
-  const calculateWeightedBugRate = useCallback((bugs, totalIssues, projectKey = null) => {
-    if (!bugs || bugs.length === 0 || totalIssues === 0) return 0
-    
-    const weightedBugCount = bugs.reduce((total, bug) => {
-      const severity = parseBugSeverity(bug, projectKey)
-      const weight = SEVERITY_WEIGHTS[severity] || SEVERITY_WEIGHTS.Unknown
-      return total + weight
-    }, 0)
-    
-    return (weightedBugCount / totalIssues) * 100
-  }, [parseBugSeverity])
+  // Using centralized severity utilities from shared/utils/severityCalculations.js and severityConstants.js
 
   const formatBugTooltip = useCallback((project) => {
     const severityBreakdown = project.severityBreakdown || calculateSeverityBreakdown(project.bugs, project.projectKey)
@@ -175,20 +119,11 @@ const ProjectHealthTable = React.memo(({
         <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', mb: 0.5 }}>
           Bug Severity Breakdown:
         </Typography>
-        {Object.entries(SEVERITY_WEIGHTS).map(([severity, weight]) => {
-          const count = severityBreakdown[severity] || 0
+        {Object.entries(severityBreakdown).map(([severity, count]) => {
           if (count === 0) return null
           
-          const getSeverityColor = (sev) => {
-            switch (sev) {
-              case 'Critical': return theme.palette.error.main
-              case 'Major': return theme.palette.error.light
-              case 'Minor': return theme.palette.warning.main
-              case 'Low': return theme.palette.info.main
-              case 'Cosmetic': return theme.palette.success.main
-              default: return theme.palette.text.secondary
-            }
-          }
+          const colorName = getSeverityColor(severity)
+          const color = theme.palette[colorName]?.main || theme.palette.text.secondary
           
           return (
             <Typography 
@@ -196,11 +131,11 @@ const ProjectHealthTable = React.memo(({
               variant="caption" 
               sx={{ 
                 display: 'block', 
-                color: getSeverityColor(severity),
+                color,
                 pl: 1
               }}
             >
-              • {severity}: {count} bug{count > 1 ? 's' : ''} (weight: {weight.toFixed(1)})
+              • {severity}: {count} bug{count > 1 ? 's' : ''}
             </Typography>
           )
         })}
@@ -211,7 +146,7 @@ const ProjectHealthTable = React.memo(({
         )}
       </Box>
     )
-  }, [theme, calculateSeverityBreakdown])
+  }, [theme])
 
   const TableHeaderCell = ({ property, label, numeric = false, sortable = true }) => (
     <TableCell

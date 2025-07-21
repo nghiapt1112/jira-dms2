@@ -87,3 +87,6 @@ Commit: bug-rate analysis oke
 Commit: idea work
 Commit: Refactor some code
 Commit: Team-contribution-chart : update to react-chartjs2
+Commit: creating template to refactor the BugSeverity
+
+c

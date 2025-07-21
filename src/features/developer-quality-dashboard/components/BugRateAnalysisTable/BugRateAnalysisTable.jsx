@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { getSeverityConfig } from '../../shared/constants/memberConfiguration'
+import { getSeverityConfig, memberConfiguration } from '../../../../constants/memberConfiguration'
+import { getSeverityColor } from '../../../../shared/constants/severityConstants.js'
 import {
   Box,
   Paper,
@@ -15,16 +16,16 @@ import {
   TableSortLabel,
   Chip,
   IconButton,
-  Tooltip
+  Tooltip,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material'
 import {
   Assessment as AnalysisIcon,
   TrendingUp,
   TrendingDown,
   TrendingFlat,
-  Person as PersonIcon,
-  ToggleButton,
-  ToggleButtonGroup
+  Person as PersonIcon
 } from '@mui/icons-material'
 
 // Severity weights for consistent calculation across dashboards
@@ -174,12 +175,12 @@ const BugRateAnalysisTable = React.memo(({
         align: 'right',
         tooltip: 'Time efficiency score based on resolution speed vs complexity. Higher % indicates faster resolution relative to issue complexity.'
       },
-      { 
+            {
         id: 'severityMix', 
-        label: 'Severity Mix', 
+        label: 'Bug Severity Breakdown', 
         sortable: false, 
         align: 'left',
-        tooltip: 'Distribution of bugs by severity level (Critical, High, Medium, Low). Shows count per severity.'
+        tooltip: 'Complete breakdown of bugs by severity level (Critical, Major, Minor, Low, Cosmetic). Shows count per severity with color coding.'
       },
       { 
         id: 'topRootCause', 
@@ -336,15 +337,7 @@ const BugRateAnalysisTable = React.memo(({
     return 'error'
   }, [])
   
-  const getSeverityColor = useMemo(() => (severity) => {
-    switch (severity.toLowerCase()) {
-      case 'critical': return 'error'
-      case 'high': return 'warning'
-      case 'medium': return 'info'
-      case 'low': return 'success'
-      default: return 'default'
-    }
-  }, [])
+  // Using centralized getSeverityColor from severityConstants.js
   
   // NEW TIME TRACKING HELPER FUNCTIONS (appended safely)
   const getTimeEfficiencyColor = useMemo(() => (timePerStoryPoint) => {
@@ -701,22 +694,110 @@ const BugRateAnalysisTable = React.memo(({
                   />
                 </TableCell>
                 
-                <TableCell align="left">
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {row.severityBreakdown && Object.entries(row.severityBreakdown)
-                      .filter(([_, count]) => count > 0)
-                      .slice(0, 3) // Show top 3 severities
-                      .map(([severity, count]) => (
-                        <Chip
-                          key={severity}
-                          label={`${severity}: ${count}`}
-                          size="small"
-                          color={getSeverityColor(severity)}
-                          variant="outlined"
-                          sx={{ fontSize: '0.6rem' }}
-                        />
-                      ))}
-                  </Box>
+                <TableCell align="left" sx={{ maxWidth: 180 }}>
+                  {row.severityBreakdown ? (() => {
+                    const severities = memberConfiguration.severities || ['Critical', 'Major', 'Minor', 'Low', 'Cosmetic']
+                    const severityChips = severities
+                      .filter(severity => row.severityBreakdown[severity] > 0)
+                      .map(severity => `${severity}: ${row.severityBreakdown[severity]}`)
+                    
+                    if (severityChips.length === 0) {
+                      return (
+                        <Typography 
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontSize: '0.75rem' }}
+                        >
+                          No bugs
+                        </Typography>
+                      )
+                    }
+                    
+                    const fullText = severityChips.join(', ')
+                    const visibleChips = severityChips.slice(0, 2)
+                    const hiddenCount = severityChips.length - 2
+                    
+                    return (
+                      <Tooltip 
+                        title={
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                              Bug Severity Breakdown
+                            </Typography>
+                            {severities.map(severity => (
+                              <Box key={severity} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                <Typography variant="body2" sx={{ mr: 2 }}>
+                                  {severity}:
+                                </Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                  {row.severityBreakdown[severity] || 0}
+                                </Typography>
+                              </Box>
+                            ))}
+                            <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                Total: {Object.values(row.severityBreakdown).reduce((sum, count) => sum + count, 0)} bugs
+                              </Typography>
+                            </Box>
+                          </Box>
+                        }
+                        placement="top"
+                        arrow
+                      >
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            flexWrap: 'wrap', 
+                            gap: 0.5,
+                            cursor: 'help',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >
+                          {visibleChips.map((chipText, index) => {
+                            const [severity, count] = chipText.split(': ')
+                            return (
+                              <Chip
+                                key={severity}
+                                label={chipText}
+                                size="small"
+                                color={getSeverityColor(severity)}
+                                variant="outlined"
+                                sx={{ 
+                                  fontSize: '0.6rem',
+                                  maxWidth: 80,
+                                  '& .MuiChip-label': {
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }
+                                }}
+                              />
+                            )
+                          })}
+                          {hiddenCount > 0 && (
+                            <Chip
+                              label={`+${hiddenCount} more`}
+                              size="small"
+                              variant="outlined"
+                              sx={{ 
+                                fontSize: '0.6rem',
+                                backgroundColor: 'action.hover'
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </Tooltip>
+                    )
+                  })() : (
+                    <Typography 
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: '0.75rem' }}
+                    >
+                      N/A
+                    </Typography>
+                  )}
                 </TableCell>
                 
                 <TableCell align="left">

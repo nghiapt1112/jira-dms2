@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
+import { getSeverityColor } from '../../../../shared/constants/severityConstants.js'
 import { Box, Paper, Typography, Chip } from '@mui/material'
 import { LineChart } from '@mui/x-charts/LineChart'
 import { ChartJSLineChart } from '../../../../components/charts/ChartJS'
@@ -200,21 +201,7 @@ const BugTrendAnalysis = React.memo(({
     }
   }, [metrics?.bugTrend])
   
-  // Helper function for severity colors (must be declared before use)
-  const getSeverityColor = (severity) => {
-    switch (severity.toLowerCase()) {
-      case 'critical':
-        return 'error'
-      case 'high':
-        return 'warning'
-      case 'medium':
-        return 'info'
-      case 'low':
-        return 'success'
-      default:
-        return 'default'
-    }
-  }
+  // Using centralized getSeverityColor from severityConstants.js
 
   const severityData = useMemo(() => {
     if (!metrics?.severityDistribution) return []

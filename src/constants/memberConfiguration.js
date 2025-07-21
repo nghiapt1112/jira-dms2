@@ -601,7 +601,17 @@ export const memberConfiguration = {
       },
       
       // Standard severity levels used in dashboard
-      severityLevels: ["Critical", "Major", "Minor", "Low", "Cosmetic"]
+      severityLevels: ["Critical", "Major", "Minor", "Low", "Cosmetic"],
+      
+      // Severity weights for weighted bug rate calculations
+      severityWeights: {
+        "Critical": 1.0,
+        "Major": 0.7,
+        "Minor": 0.5,
+        "Low": 0.3,
+        "Cosmetic": 0.1,
+        "Unknown": 0.2
+      }
     },
     
     // Project-specific configurations (override default)
@@ -683,6 +693,16 @@ export const getReopenDetectionConfig = (projectKey) => {
 export const getSeverityConfig = (projectKey) => {
   const projectConfig = memberConfiguration.severityConfiguration.projects[projectKey]
   return projectConfig || memberConfiguration.severityConfiguration.default
+}
+
+/**
+ * Get severity weights configuration for a project
+ * @param {string} projectKey - The project key (e.g., "YUIM", "WON")
+ * @returns {Object} - Severity weights configuration
+ */
+export const getSeverityWeights = (projectKey) => {
+  const severityConfig = getSeverityConfig(projectKey)
+  return severityConfig.severityWeights || memberConfiguration.severityConfiguration.default.severityWeights
 }
 
 /**

@@ -5,6 +5,7 @@
  */
 
 import { getReopenDetectionConfig, getSeverityConfig } from '../../../constants/memberConfiguration.js'
+import { calculateSeverityBreakdown } from '../../../shared/utils/severityCalculations.js'
 
 /**
  * Calculate reopen rate based on issue changelog
@@ -312,46 +313,8 @@ const calculateLinearTrend = (values) => {
  * @returns {Object} Severity breakdown object
  */
 export const aggregateSeverityBreakdown = (issues, projectKey = null) => {
-  // Get configurable severity settings
-  const severityConfig = getSeverityConfig(projectKey)
-  const { severityField, usePriorityFallback, severityMapping, severityLevels } = severityConfig
-  
-  // Initialize breakdown with correct severity levels
-  const breakdown = {}
-  severityLevels.forEach(level => {
-    breakdown[level] = 0
-  })
-  breakdown['Unknown'] = 0
-
-  issues.forEach(issue => {
-    let severityValue = null
-    
-    // Try to get severity from configured custom field
-    if (severityField && issue.fields?.[severityField]) {
-      const customFieldValue = issue.fields[severityField]
-      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
-    }
-    
-    // Fallback to priority field if configured and severity field is empty
-    if (!severityValue && usePriorityFallback && issue.fields?.priority?.name) {
-      severityValue = issue.fields.priority.name
-    }
-    
-    // Map the severity value to standardized levels
-    let mappedSeverity = 'Unknown'
-    if (severityValue && severityMapping[severityValue]) {
-      mappedSeverity = severityMapping[severityValue]
-    }
-    
-    // Increment the count for the mapped severity
-    if (Object.prototype.hasOwnProperty.call(breakdown, mappedSeverity)) {
-      breakdown[mappedSeverity] += 1
-    } else {
-      breakdown['Unknown'] += 1
-    }
-  })
-
-  return breakdown
+  // Use centralized severity calculation utility
+  return calculateSeverityBreakdown(issues, projectKey)
 }
 
 /**

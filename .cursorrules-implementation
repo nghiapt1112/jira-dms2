@@ -1,0 +1,311 @@
+# Cursor AI Implementation Rules - Task Execution
+
+## 🎯 IMPLEMENTATION WORKFLOW RULES (MANDATORY)
+
+> **CRITICAL**: Follow this workflow for ALL implementation tasks. Any deviation = code rejection.
+
+## 📋 PHASE-BASED IMPLEMENTATION
+
+### Phase 1: Analysis & Planning (MANDATORY)
+- [ ] **Deep Code Analysis**: Review ALL related files mentioned in requirements
+- [ ] **Current State Documentation**: Document existing implementations and patterns
+- [ ] **Issue Identification**: List specific problems with evidence from code
+- [ ] **Solution Design**: Create detailed technical approach with file-by-file changes
+- [ ] **Dependency Mapping**: Identify all files that need updates and their relationships
+
+### Phase 2: Foundation Setup (MANDATORY)
+- [ ] **Constants & Configuration**: Create/update centralized configuration files first
+- [ ] **Utility Functions**: Implement shared utilities before components
+- [ ] **Type Definitions**: Add/update PropTypes and interfaces
+- [ ] **Test Setup**: Create test utilities and mock data
+- [ ] **Validation**: Ensure foundation code follows .cursorrules conventions
+
+### Phase 3: Core Implementation (MANDATORY)
+- [ ] **Service Layer**: Update business logic and data processing
+- [ ] **Component Updates**: Modify React components following .cursorrules patterns
+- [ ] **State Management**: Update Zustand stores with new logic
+- [ ] **Integration**: Connect all pieces with proper error handling
+- [ ] **Performance**: Apply React.memo, useMemo, useCallback optimizations
+
+### Phase 4: Testing & Validation (MANDATORY)
+- [ ] **Unit Tests**: Create/update tests for all modified functions
+- [ ] **Integration Tests**: Test component interactions and data flow
+- [ ] **Manual Testing**: Verify UI functionality and user experience
+- [ ] **Performance Testing**: Ensure no regressions in speed/memory
+- [ ] **Code Review**: Self-review against .cursorrules compliance
+
+## 🔍 DEEP ANALYSIS REQUIREMENTS
+
+### Code Investigation Rules:
+- **Read ALL related files** mentioned in requirements completely
+- **Compare implementations** across different components for consistency
+- **Document inconsistencies** with specific line numbers and examples
+- **Trace data flow** from source to UI rendering
+- **Identify performance bottlenecks** and optimization opportunities
+
+### Evidence-Based Analysis:
+- **Quote exact code** when identifying issues
+- **Provide line numbers** for all references
+- **Show before/after** comparisons for proposed changes
+- **Document dependencies** between files and functions
+- **Validate assumptions** with actual code examination
+
+## 📁 FILE ORGANIZATION RULES
+
+### Update Order (MANDATORY):
+1. **Constants/Configuration** (`src/constants/`, `src/shared/constants/`)
+2. **Utilities** (`src/utils/`, `src/features/*/utils/`)
+3. **Services** (`src/features/*/services/`)
+4. **Stores** (`src/features/*/store/`)
+5. **Components** (`src/features/*/components/`)
+6. **Tests** (`src/features/*/__tests__/`)
+
+### File Naming Conventions:
+- **React Components**: `ComponentName.jsx` (NOT .js)
+- **Services**: `serviceName.js`
+- **Utilities**: `utilityName.js`
+- **Tests**: `ComponentName.test.jsx` or `serviceName.test.js`
+- **Constants**: `constantsName.js`
+
+## ⚛️ COMPONENT UPDATE RULES
+
+### Required Pattern:
+```javascript
+// REQUIRED: Every updated component must follow this pattern
+import React, { useMemo, useCallback } from 'react'
+import PropTypes from 'prop-types'
+
+const Component = React.memo(({ prop1, prop2 = 'default', ...props }) => {
+  // 1. Hooks first
+  const [state, setState] = useState()
+  
+  // 2. Memoized values
+  const processedData = useMemo(() => {
+    return expensiveCalculation(prop1)
+  }, [prop1])
+  
+  // 3. Callbacks
+  const handleAction = useCallback(() => {
+    // action logic
+  }, [])
+  
+  // 4. Early returns
+  if (!prop1) return null
+  
+  // 5. Render
+  return <Box {...props}>Content</Box>
+})
+
+Component.propTypes = {
+  prop1: PropTypes.string.isRequired,
+  prop2: PropTypes.string
+}
+
+export default Component
+```
+
+### Performance Requirements:
+- **React.memo**: MANDATORY for all components
+- **useMemo**: For expensive calculations and object creation
+- **useCallback**: For event handlers and function props
+- **PropTypes**: MANDATORY for all props
+
+## 🗄️ STATE MANAGEMENT RULES
+
+### Zustand Store Pattern:
+```javascript
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export const useStore = create(
+  persist(
+    (set, get) => ({
+      // State
+      data: null,
+      isLoading: false,
+      error: null,
+      
+      // Actions
+      setData: (data) => set({ data }),
+      
+      // Async actions
+      loadData: async () => {
+        set({ isLoading: true, error: null })
+        try {
+          const data = await fetchData()
+          set({ data, isLoading: false })
+        } catch (error) {
+          set({ error: error.message, isLoading: false })
+        }
+      }
+    }),
+    {
+      name: 'store-name',
+      partialize: (state) => ({
+        // Only persist user preferences, not large data
+        filters: state.filters
+      })
+    }
+  )
+)
+```
+
+## 🎨 MUI INTEGRATION RULES
+
+### Required Patterns:
+```javascript
+// Use sx prop ONLY (no style or className)
+<Box sx={{
+  p: 2,                                    // Theme spacing
+  backgroundColor: 'background.paper',      // Theme colors
+  [theme.breakpoints.down('md')]: { p: 1 } // Theme breakpoints
+}}>
+
+// Responsive design patterns
+<Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+  <Grid item xs={12} sm={6} md={4}>
+```
+
+### Color Mapping Standards:
+```javascript
+// Standardized severity color mapping
+const getSeverityColor = (severity) => {
+  const colorMap = {
+    'Critical': 'error',
+    'Major': 'warning', 
+    'Minor': 'info',
+    'Low': 'success',
+    'Cosmetic': 'default',
+    'Unknown': 'default'
+  }
+  return colorMap[severity] || 'default'
+}
+```
+
+## 📊 CHART IMPLEMENTATION RULES
+
+### Chart.js Requirements:
+```javascript
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  // ... only register what you need
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+
+// Register only needed components (tree-shaking)
+ChartJS.register(CategoryScale, LinearScale, BarElement)
+
+const Chart = React.memo(({ data, options }) => {
+  const chartData = useMemo(() => ({
+    labels: data.labels,
+    datasets: data.datasets
+  }), [data])
+  
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    ...options
+  }), [options])
+  
+  return <Bar data={chartData} options={chartOptions} />
+})
+```
+
+## 🧪 TESTING REQUIREMENTS
+
+### Test Structure:
+```javascript
+import { render, screen } from '@testing-library/react'
+import { ThemeProvider } from '@mui/material/styles'
+import theme from '../../theme'
+
+const renderWithTheme = (component) => 
+  render(<ThemeProvider theme={theme}>{component}</ThemeProvider>)
+
+describe('Component', () => {
+  it('follows .cursorrules patterns', () => {
+    // Test React.memo usage
+    // Test PropTypes validation
+    // Test performance optimizations
+  })
+})
+```
+
+## 📋 IMPLEMENTATION CHECKLIST
+
+### Before Starting:
+- [ ] Read ALL related files completely
+- [ ] Document current implementation patterns
+- [ ] Identify ALL inconsistencies with evidence
+- [ ] Create detailed file-by-file change plan
+- [ ] Verify understanding with code quotes
+
+### During Implementation:
+- [ ] Follow phase-based approach (1→2→3→4)
+- [ ] Update files in correct order (constants→utils→services→components)
+- [ ] Apply .cursorrules patterns to ALL modified code
+- [ ] Add comprehensive error handling
+- [ ] Include performance optimizations
+
+### After Implementation:
+- [ ] All tests passing
+- [ ] No console errors or warnings
+- [ ] Performance metrics maintained
+- [ ] Code follows .cursorrules exactly
+- [ ] Documentation updated
+
+## 🚫 IMMEDIATE REJECTION TRIGGERS
+
+- **Skipping deep analysis** of related files
+- **Missing React.memo** on components
+- **Missing PropTypes** validation
+- **No performance optimizations** (useMemo, useCallback)
+- **Inconsistent patterns** across components
+- **Missing error handling**
+- **No tests** for new/modified code
+- **Style/className props** instead of sx
+- **Wrong file extensions** (.js instead of .jsx for components)
+
+## 📝 DOCUMENTATION REQUIREMENTS
+
+### Code Comments:
+```javascript
+/**
+ * Component description and purpose
+ * @param {Object} props - Component props
+ * @param {string} props.data - Data description
+ * @returns {JSX.Element} - Component JSX
+ */
+```
+
+### Implementation Notes:
+- Document **why** decisions were made
+- Explain **performance optimizations** applied
+- Note **breaking changes** or **migrations** needed
+- Include **usage examples** for complex components
+
+## 🎯 SUCCESS CRITERIA
+
+### Code Quality:
+- **100% .cursorrules compliance**
+- **Zero console errors/warnings**
+- **All tests passing**
+- **Performance maintained or improved**
+
+### Consistency:
+- **Same patterns** across all modified files
+- **Consistent naming** and structure
+- **Unified error handling** approach
+- **Standardized color/style mappings**
+
+### Documentation:
+- **Clear implementation notes**
+- **Updated PropTypes**
+- **Comprehensive test coverage**
+- **Usage examples provided**
+
+---
+
+**Remember**: This is a **STRICT WORKFLOW**. Follow every step, apply every pattern, and ensure complete consistency across the entire codebase. Quality over speed - do it right the first time. 

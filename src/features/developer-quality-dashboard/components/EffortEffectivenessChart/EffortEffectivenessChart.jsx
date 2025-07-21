@@ -6,7 +6,13 @@
 
 import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
-import { memberConfiguration, getSeverityConfig } from '../../shared/constants/memberConfiguration'
+import { memberConfiguration, getSeverityConfig, getSeverityWeights } from '../../../../constants/memberConfiguration'
+import { 
+  calculateProjectSeverityRates,
+  calculateWeightedBugRate,
+  calculateSeverityBreakdown,
+  calculateSimpleBugRate
+} from '../../../../shared/utils/severityCalculations.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,15 +56,7 @@ ChartJS.register(
   Legend
 )
 
-// Severity weights for consistent calculation across dashboards
-const SEVERITY_WEIGHTS = {
-  Critical: 1.0,
-  Major: 0.7,
-  Minor: 0.5,
-  Low: 0.3,
-  Cosmetic: 0.1,
-  Unknown: 0.2
-}
+// Severity weights are now centralized in severityConstants.js and memberConfiguration.js
 
 const EffortEffectivenessChart = ({ 
   developerData, 
@@ -68,63 +66,28 @@ const EffortEffectivenessChart = ({
   projectData = null  // New prop for project-level severity calculations
 }) => {
 
-  // Helper function to parse bug severity using configurable parsing logic
-  const parseBugSeverity = (bug, projectKey = null) => {
-    const severityConfig = getSeverityConfig(projectKey)
-    const { severityField, usePriorityFallback, severityMapping } = severityConfig
-    
-    let severityValue = null
-    if (severityField && bug.fields?.[severityField]) {
-      const customFieldValue = bug.fields[severityField]
-      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
+  // Using centralized severity utilities from shared/utils/severityCalculations.js
+  
+  // Project Severity Rate Storage - stores severity rate data from Project Overview for cross-dashboard integration
+  const projectSeverityRates = useMemo(() => {
+    if (!projectData || !Array.isArray(projectData)) {
+      return []
     }
     
-    if (!severityValue && usePriorityFallback && bug.fields?.priority?.name) {
-      severityValue = bug.fields.priority.name
-    }
-    
-    return (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
-  }
+    // Calculate project severity rates using centralized utilities
+    return calculateProjectSeverityRates(projectData)
+  }, [projectData])
 
-  // Calculate simple bug rate
-  const calculateSimpleBugRate = (bugs, totalIssues) => {
-    if (!bugs || bugs.length === 0 || totalIssues === 0) return 0
-    return (bugs.length / totalIssues) * 100
-  }
+  // Store severity weights configuration for the current project context
+  const currentSeverityWeights = useMemo(() => {
+    const projectKey = selectedDeveloper?.projectKey || null
+    return getSeverityWeights(projectKey)
+  }, [selectedDeveloper?.projectKey])
 
-  // Calculate weighted bug rate using severity weights
-  const calculateWeightedBugRate = (bugs, totalIssues, projectKey = null) => {
-    if (!bugs || bugs.length === 0 || totalIssues === 0) return 0
-    
-    const weightedBugCount = bugs.reduce((total, bug) => {
-      const severity = parseBugSeverity(bug, projectKey)
-      const weight = SEVERITY_WEIGHTS[severity] || SEVERITY_WEIGHTS.Unknown
-      return total + weight
-    }, 0)
-    
-    return (weightedBugCount / totalIssues) * 100
-  }
-
-  // Calculate severity breakdown for bugs
-  const calculateSeverityBreakdown = (bugs, projectKey = null) => {
-    const breakdown = {
-      Critical: 0,
-      Major: 0,
-      Minor: 0,
-      Low: 0,
-      Cosmetic: 0,
-      Unknown: 0
-    }
-    
-    if (!bugs || bugs.length === 0) return breakdown
-    
-    bugs.forEach(bug => {
-      const severity = parseBugSeverity(bug, projectKey)
-      breakdown[severity] = (breakdown[severity] || 0) + 1
-    })
-    
-    return breakdown
-  }
+  // Expose project severity rates for other components to consume
+  // This enables cross-dashboard data sharing as specified in the implementation plan
+  const getProjectSeverityRates = () => projectSeverityRates
+  const getCurrentSeverityWeights = () => currentSeverityWeights
 
   // Helper function to get time period key from date
   const getTimePeriodKey = (dateString, period) => {
