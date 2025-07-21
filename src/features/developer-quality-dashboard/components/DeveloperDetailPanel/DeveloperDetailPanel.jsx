@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
+import { memberConfiguration } from '../../../../constants/memberConfiguration'
 import { 
   Box, 
   Paper, 
@@ -38,7 +39,7 @@ const DeveloperDetailPanel = ({
   developerName, 
   metrics, 
   filteredData,
-  statusFilter = ['Done'] 
+  statusFilter = memberConfiguration.filterDefaults.statusFilter 
 }) => {
   // Extract comprehensive developer data from the bug rate analysis (contains all detailed metrics)
   const developerData = useMemo(() => {
@@ -282,7 +283,7 @@ DeveloperDetailPanel.propTypes = {
 DeveloperDetailPanel.defaultProps = {
   metrics: null,
   filteredData: null,
-  statusFilter: ['Done']
+  statusFilter: memberConfiguration.filterDefaults.statusFilter
 }
 
 export default React.memo(DeveloperDetailPanel)

@@ -4,6 +4,23 @@
  * Following .cursorrules conventions - camelCase naming, performance optimizations
  */
 
+// Helper function to get time period key from date
+const getTimePeriodKey = (dateString, period) => {
+  const date = new Date(dateString)
+  switch (period) {
+    case 'week':
+      const year = date.getFullYear()
+      const week = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
+      return `${year}-W${week.toString().padStart(2, '0')}`
+    case 'quarter':
+      const quarter = Math.ceil((date.getMonth() + 1) / 3)
+      return `${date.getFullYear()}-Q${quarter}`
+    case 'month':
+    default:
+      return dateString.substring(0, 7) // YYYY-MM
+  }
+}
+
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { shouldIncludeMember, memberConfiguration, getSeverityConfig } from '../../../constants/memberConfiguration'
 import { 
@@ -148,6 +165,9 @@ export const developerQualityService = {
         Unknown: 0
       },
       monthlyBugTrend: new Map(),
+      // NEW: Time period trends for responsive charts
+      weeklyBugTrend: new Map(),
+      quarterlyBugTrend: new Map(),
       // NEW METRICS - EXTENDED
       reopenAnalysis: {
         totalReopens: 0,
@@ -195,7 +215,7 @@ export const developerQualityService = {
         yAxisKey: 'storyPoints',
         colorScheme: 'multi',
         timePeriodType: 'month', // week, month, quarter
-        statusFilter: ['Done', 'In Progress', 'In Review'] // Dynamic status filter
+        statusFilter: memberConfiguration.filterDefaults.statusFilter // Dynamic status filter
       }
     },
     bugTrendChart: {
@@ -382,20 +402,29 @@ export const developerQualityService = {
       data.metrics.bugAnalysis.severityDistribution[severity] = 
         (data.metrics.bugAnalysis.severityDistribution[severity] || 0) + 1
       
-      // Monthly bug trend
+      // Bug trends by time period
       if (created) {
-        const month = created.substring(0, 7) // '2024-01'
-        if (!data.metrics.bugAnalysis.monthlyBugTrend.has(month)) {
-          data.metrics.bugAnalysis.monthlyBugTrend.set(month, { total: 0, resolved: 0, pending: 0 })
+        const periods = {
+          month: getTimePeriodKey(created, 'month'),
+          week: getTimePeriodKey(created, 'week'),
+          quarter: getTimePeriodKey(created, 'quarter')
         }
-        const monthData = data.metrics.bugAnalysis.monthlyBugTrend.get(month)
-        monthData.total += 1
         
-        if (resolved) {
-          monthData.resolved += 1
-        } else {
-          monthData.pending += 1
-        }
+        // Track bugs by all time periods
+        Object.entries(periods).forEach(([periodType, periodKey]) => {
+          const trendMap = data.metrics.bugAnalysis[`${periodType}lyBugTrend`]
+          if (!trendMap.has(periodKey)) {
+            trendMap.set(periodKey, { total: 0, resolved: 0, pending: 0 })
+          }
+          const periodData = trendMap.get(periodKey)
+          periodData.total += 1
+          
+          if (resolved) {
+            periodData.resolved += 1
+          } else {
+            periodData.pending += 1
+          }
+        })
       }
     }
 
@@ -829,12 +858,20 @@ export const developerQualityService = {
       metrics.bugRateAnalysis.developers = []
     }
     
-    // Convert monthlyBugTrend Map to array for component consumption
-    if (metrics.bugAnalysis.monthlyBugTrend instanceof Map) {
-      metrics.bugAnalysis.monthlyBugTrend = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
-        .map(([month, data]) => ({ month, ...data }))
-        .sort((a, b) => a.month.localeCompare(b.month))
-    }
+    // Convert bug trend Maps to arrays for component consumption
+    const bugTrendTypes = ['monthly', 'weekly', 'quarterly']
+    bugTrendTypes.forEach(periodType => {
+      const trendKey = `${periodType}BugTrend`
+      if (metrics.bugAnalysis[trendKey] instanceof Map) {
+        metrics.bugAnalysis[trendKey] = Array.from(metrics.bugAnalysis[trendKey].entries())
+          .map(([period, data]) => ({ 
+            period, 
+            [periodType === 'monthly' ? 'month' : periodType === 'weekly' ? 'week' : 'quarter']: period,
+            ...data 
+          }))
+          .sort((a, b) => a.period.localeCompare(b.period))
+      }
+    })
   },
 
   /**
@@ -1217,10 +1254,35 @@ export const developerQualityService = {
     chartData.teamContributionChart.config.supportedDataTypes = ['storyPoints', 'timeTracking', 'effortEffectiveness']
     chartData.teamContributionChart.config.defaultDataType = 'storyPoints'
     
-    // Bug trend chart
-    chartData.bugTrendChart.data = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
-      .map(([month, data]) => ({ month, ...data }))
-      .sort((a, b) => a.month.localeCompare(b.month))
+    // Bug trend chart - use appropriate time period data
+    try {
+      const timePeriod = filters?.timeframe || 'month'
+      const bugTrendKey = `${timePeriod}lyBugTrend`
+      const bugTrendData = metrics.bugAnalysis[bugTrendKey] || metrics.bugAnalysis.monthlyBugTrend
+      
+      chartData.bugTrendChart.data = Array.isArray(bugTrendData) 
+        ? bugTrendData 
+        : Array.from(bugTrendData.entries())
+            .map(([period, data]) => ({ 
+              [timePeriod]: period,
+              period,
+              ...data 
+            }))
+            .sort((a, b) => a.period.localeCompare(b.period))
+      
+      // Store time period info for chart component
+      chartData.bugTrendChart.config = {
+        ...(chartData.bugTrendChart.config || {}),
+        timePeriod,
+        periodKey: timePeriod
+      }
+    } catch (bugTrendError) {
+      console.error('📊 ERROR: Bug trend chart processing failed:', bugTrendError)
+      // Fallback to monthly data
+      chartData.bugTrendChart.data = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
+        .map(([month, data]) => ({ month, ...data }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+    }
     
     // Root cause chart
     chartData.rootCauseChart.data = Array.from(metrics.rootCauseAnalysis.categories.entries())

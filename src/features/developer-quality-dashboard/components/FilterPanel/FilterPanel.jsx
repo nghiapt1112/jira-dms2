@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react'
 import PropTypes from 'prop-types'
+import { memberConfiguration } from '../../../../constants/memberConfiguration'
 import { 
   Box, 
   FormControl, 
@@ -91,25 +92,51 @@ const FilterPanel = React.memo(({
         endDate: null
       },
       timeframe: 'month',
-      statusFilter: ['Done', 'In Progress', 'In Review']
+      statusFilter: memberConfiguration.filterDefaults.statusFilter
     })
   }, [onFiltersChange])
   
-  const renderChips = useCallback((selected) => (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-      {selected.map((value) => (
-        <Chip 
-          key={value} 
-          label={value} 
-          size="small"
-          sx={{ 
-            fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-            height: { xs: 24, sm: 28 }
-          }}
-        />
-      ))}
-    </Box>
-  ), [])
+  const renderChips = useCallback((selected, maxVisible = 3) => {
+    if (!selected || selected.length === 0) return null
+    
+    const visibleItems = selected.slice(0, maxVisible)
+    const hiddenCount = selected.length - maxVisible
+    
+    return (
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+        {visibleItems.map((value) => (
+          <Chip 
+            key={value} 
+            label={value} 
+            size="small"
+            sx={{ 
+              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+              height: { xs: 24, sm: 28 },
+              maxWidth: 120,
+              '& .MuiChip-label': {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }
+            }}
+          />
+        ))}
+        {hiddenCount > 0 && (
+          <Chip 
+            label={`+${hiddenCount} more`}
+            size="small"
+            variant="outlined"
+            sx={{ 
+              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+              height: { xs: 24, sm: 28 },
+              color: 'text.secondary',
+              borderColor: 'text.secondary'
+            }}
+          />
+        )}
+      </Box>
+    )
+  }, [])
   
   // 4. Early returns
   if (!filterOptions) {
@@ -230,7 +257,7 @@ const FilterPanel = React.memo(({
               }
             }}
             input={<OutlinedInput label="Statuses" />}
-            renderValue={renderChips}
+            renderValue={(selected) => renderChips(selected, 2)}
             MenuProps={{
               PaperProps: {
                 style: {
@@ -276,7 +303,7 @@ const FilterPanel = React.memo(({
             value={filters.developers || []}
             onChange={(e) => handleFilterChange('developers', e.target.value)}
             input={<OutlinedInput label="Developers" />}
-            renderValue={renderChips}
+            renderValue={(selected) => renderChips(selected, 2)}
             MenuProps={{
               PaperProps: {
                 style: {
@@ -337,7 +364,7 @@ const FilterPanel = React.memo(({
               setProjectFilters(newProjects)
             }}
             input={<OutlinedInput label="Projects" />}
-            renderValue={renderChips}
+            renderValue={(selected) => renderChips(selected, 2)}
             MenuProps={{
               PaperProps: {
                 style: {

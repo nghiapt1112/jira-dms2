@@ -21,6 +21,10 @@ const BugTrendAnalysis = React.memo(({
   const chartData = useMemo(() => {
     if (!data || !data.data || data.data.length === 0) return null
     
+    // Get time period from config or default to month
+    const timePeriod = data.config?.timePeriod || 'month'
+    const periodKey = data.config?.periodKey || 'month'
+    
     const muiData = {
       dataset: data.data,
       series: [
@@ -44,7 +48,7 @@ const BugTrendAnalysis = React.memo(({
         }
       ],
       xAxis: [{
-        dataKey: 'month',
+        dataKey: periodKey,
         scaleType: 'point',
         tickLabelStyle: {
           angle: data.data.length > 6 ? -45 : 0,
@@ -167,7 +171,7 @@ const BugTrendAnalysis = React.memo(({
               fontWeight: 600
             }}
           >
-            {title}
+            {title} {chartData && data.config?.timePeriod && `(by ${data.config.timePeriod})`}
           </Typography>
         </Box>
         
@@ -214,7 +218,9 @@ const BugTrendAnalysis = React.memo(({
                 x: {
                   title: {
                     display: true,
-                    text: 'Month'
+                    text: data.config?.timePeriod ? 
+                      `${data.config.timePeriod.charAt(0).toUpperCase() + data.config.timePeriod.slice(1)}` : 
+                      'Month'
                   }
                 },
                 y: {

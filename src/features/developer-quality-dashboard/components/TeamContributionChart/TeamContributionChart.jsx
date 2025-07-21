@@ -1,44 +1,21 @@
 import React, { useMemo, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { Box, Paper, Typography, Chip, ToggleButton, ToggleButtonGroup } from '@mui/material'
+import { Box, Paper, Typography, Chip } from '@mui/material'
 import { TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material'
 import { performanceMonitor } from '../../utils/PerformanceMonitor'
 import TeamOverviewChart from './TeamOverviewChart'
-import DeveloperAnalysisChart from './DeveloperAnalysisChart'
-import ChartModeIndicator from './ChartModeIndicator'
 
 const TeamContributionChart = React.memo(({ 
   data, 
   metrics, 
   title = 'Team Contribution by Story Points', 
   height = 400,
-  timePeriodType = 'month',
-  onTimePeriodChange,
   statusFilter = [],
   onStatusFilterChange,
   filters = {}
 }) => {
   // 1. Hooks first
-  // Chart mode detection based on developer filter
-  const selectedDevelopers = filters?.developers || []
-  const isSingleDeveloperView = selectedDevelopers.length === 1
-  const selectedDeveloper = isSingleDeveloperView ? selectedDevelopers[0] : null
-  const chartMode = isSingleDeveloperView ? 'individual' : 'team'
-  
-  // Extract time tracking data for chart mode detection
-  const timeTrackingData = data?.filteredChartData?.teamContributionChart?.timeTrackingData || 
-                          data?.timeTrackingData // fallback for backward compatibility
-  
-  // Check if selected developer has time tracking data
-  const hasTimeTrackingData = useMemo(() => {
-    if (!timeTrackingData || !selectedDeveloper) return false
-    
-    return timeTrackingData.some(item => 
-      item[selectedDeveloper] && item[selectedDeveloper] > 0
-    )
-  }, [timeTrackingData, selectedDeveloper])
-  
-  // Get team size for team mode
+  // Get team size for metrics display
   const teamSize = useMemo(() => {
     if (!data?.data || data.data.length === 0) return 0
     
@@ -80,16 +57,15 @@ const TeamContributionChart = React.memo(({
   // 2. Performance monitoring
   useEffect(() => {
     const timer = performanceMonitor.startTimer('chartRender')
-    console.log('📊 CHART: Rendering with mode:', chartMode, {
+    console.log('📊 CHART: Rendering team overview chart', {
       dataLength: data?.data?.length || 0,
-      selectedDeveloper,
-      hasTimeTrackingData,
-      teamSize
+      teamSize,
+      filterProjects: filters?.projects
     })
     return () => {
       timer?.end()
     }
-  }, [chartMode, data, selectedDeveloper, hasTimeTrackingData, teamSize])
+  }, [data, teamSize, filters])
   
   // 3. Chart configuration
   const chartConfig = useMemo(() => ({
@@ -147,14 +123,6 @@ const TeamContributionChart = React.memo(({
         backgroundColor: 'background.paper'
       }}
     >
-      {/* Chart Mode Indicator */}
-      <ChartModeIndicator 
-        mode={chartMode}
-        selectedDeveloper={selectedDeveloper}
-        hasTimeTrackingData={hasTimeTrackingData}
-        teamSize={teamSize}
-      />
-      
       {/* Header */}
       <Box sx={{ 
         display: 'flex', 
@@ -171,7 +139,7 @@ const TeamContributionChart = React.memo(({
             fontWeight: 600
           }}
         >
-          {chartMode === 'individual' ? `Individual Analysis - ${selectedDeveloper}` : title}
+          {title}
         </Typography>
         
         <Box sx={{ 
@@ -193,53 +161,14 @@ const TeamContributionChart = React.memo(({
         </Box>
       </Box>
       
-      {/* Time Period Controls */}
-      {onTimePeriodChange && (
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center',
-          mb: { xs: 2, sm: 3 }
-        }}>
-          <ToggleButtonGroup
-            value={timePeriodType}
-            exclusive
-            onChange={(e, newValue) => {
-              if (newValue !== null) {
-                onTimePeriodChange(newValue)
-              }
-            }}
-            size="small"
-            sx={{ 
-              '& .MuiToggleButton-root': {
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                px: { xs: 1, sm: 2 }
-              }
-            }}
-          >
-            <ToggleButton value="week">Week</ToggleButton>
-            <ToggleButton value="month">Month</ToggleButton>
-            <ToggleButton value="quarter">Quarter</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-      )}
       
-      {/* Dedicated Chart Components */}
-      {chartMode === 'team' ? (
-        <TeamOverviewChart 
-          data={data?.data}
-          metrics={metrics}
-          height={height}
-          chartConfig={chartConfig}
-        />
-      ) : (
-        <DeveloperAnalysisChart 
-          storyPointsData={data?.data}
-          timeTrackingData={timeTrackingData}
-          selectedDeveloper={selectedDeveloper}
-          height={height}
-          chartConfig={chartConfig}
-        />
-      )}
+      {/* Team Overview Chart */}
+      <TeamOverviewChart 
+        data={data?.data}
+        metrics={metrics}
+        height={height}
+        chartConfig={chartConfig}
+      />
       
       {/* Metrics Summary */}
       <Box sx={{ 
@@ -328,25 +257,13 @@ const TeamContributionChart = React.memo(({
   )
 })
 
-// ✅ UPDATED: PropTypes for refactored component
+// ✅ PropTypes for team overview chart
 TeamContributionChart.propTypes = {
   data: PropTypes.shape({
     data: PropTypes.arrayOf(PropTypes.shape({
       timePeriod: PropTypes.string.isRequired
       // Note: Dynamic developer properties (e.g., 'developer1': 10, 'developer2': 5)
       // are validated at runtime since they're dynamic based on actual data
-    })),
-    filteredChartData: PropTypes.shape({
-      teamContributionChart: PropTypes.shape({
-        timeTrackingData: PropTypes.arrayOf(PropTypes.shape({
-          timePeriod: PropTypes.string.isRequired
-          // Note: Dynamic developer properties with time tracking values
-        }))
-      })
-    }),
-    timeTrackingData: PropTypes.arrayOf(PropTypes.shape({
-      timePeriod: PropTypes.string.isRequired
-      // Note: Dynamic developer properties with time tracking values (fallback)
     }))
   }),
   metrics: PropTypes.shape({
@@ -364,8 +281,6 @@ TeamContributionChart.propTypes = {
   }),
   title: PropTypes.string,
   height: PropTypes.number,
-  timePeriodType: PropTypes.oneOf(['week', 'month', 'quarter']),
-  onTimePeriodChange: PropTypes.func,
   statusFilter: PropTypes.arrayOf(PropTypes.string),
   onStatusFilterChange: PropTypes.func,
   filters: PropTypes.shape({

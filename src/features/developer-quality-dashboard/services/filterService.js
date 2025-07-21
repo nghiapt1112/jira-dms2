@@ -4,6 +4,8 @@
  * Following .cursorrules conventions - camelCase naming, performance optimizations
  */
 
+import { memberConfiguration } from '../../../constants/memberConfiguration'
+
 export const filterService = {
   /**
    * Apply filters to developer quality data using pre-built indices
@@ -20,7 +22,10 @@ export const filterService = {
     }
     
     // Extract timeframe and statusFilter from unified filters object
-    const { timeframe = 'month', statusFilter = ['Done', 'In Progress', 'In Review'] } = filters || {}
+    const { 
+      timeframe = 'month', 
+      statusFilter = memberConfiguration.filterDefaults.statusFilter 
+    } = filters || {}
     
     // Get intersection of indices based on filters
     const resultIndices = filterService.getFilteredIndices(filters, cacheData.indices)

@@ -48,8 +48,8 @@ export const useDeveloperQualityCache = () => {
 
   // Simplified data loading logic - just process JIRA data when available
   useEffect(() => {
-    // Skip if already loading or data exists
-    if (isLoading || data) return
+    // Skip if already loading, data exists, or there's an error
+    if (isLoading || data || error) return
     
     // Skip if JIRA is still loading
     if (jiraLoading) return
@@ -59,20 +59,29 @@ export const useDeveloperQualityCache = () => {
       hasJiraData: !!jiraData && jiraData.length > 0,
       jiraDataLength: jiraData?.length || 0,
       isLoading,
-      jiraLoading
+      jiraLoading,
+      hasError: !!error
     })
     
     // If we have JIRA data, just process it - don't worry about cached processed data
     if (jiraData && Array.isArray(jiraData) && jiraData.length > 0) {
       console.log('🔍 CACHE HOOK: Processing JIRA data for developer quality:', jiraData.length, 'issues')
-      loadData(jiraData)
+      try {
+        loadData(jiraData)
+      } catch (loadError) {
+        console.error('🔍 CACHE HOOK: Error calling loadData:', loadError)
+      }
       return
     }
     
     // If no JIRA data in memory but it should exist, load it
     if (!jiraData && hasData) {
       console.log('🔍 CACHE HOOK: No JIRA data in memory, loading from cache...')
-      loadCachedData()
+      try {
+        loadCachedData()
+      } catch (cacheError) {
+        console.error('🔍 CACHE HOOK: Error calling loadCachedData:', cacheError)
+      }
       return
     }
     
@@ -80,21 +89,21 @@ export const useDeveloperQualityCache = () => {
     if (!jiraData && !hasData) {
       console.log('🔍 CACHE HOOK: No data available, user needs to load from S3')
     }
-  }, [data, isLoading, jiraData, jiraLoading, hasData, loadData, loadCachedData])
+  }, [data, isLoading, jiraData, jiraLoading, hasData, error])
 
-  // Auto-refresh when JIRA data updates
-  useEffect(() => {
-    if (jiraData && data && lastUpdated && hasData) {
-      // Simple check - if we have new JIRA data and it's different length than cached
-      const currentCount = Array.isArray(jiraData) ? jiraData.length : 0
-      const cachedCount = data?.metadata?.totalIssues || 0
+  // Auto-refresh when JIRA data updates - disable for now to prevent loops
+  // useEffect(() => {
+  //   if (jiraData && data && lastUpdated && hasData) {
+  //     // Simple check - if we have new JIRA data and it's different length than cached
+  //     const currentCount = Array.isArray(jiraData) ? jiraData.length : 0
+  //     const cachedCount = data?.metadata?.totalIssues || 0
       
-      if (currentCount > 0 && currentCount !== cachedCount) {
-        console.log('JIRA data updated, refreshing developer quality data')
-        refreshData()
-      }
-    }
-  }, [jiraData, data, lastUpdated, refreshData, hasData])
+  //     if (currentCount > 0 && currentCount !== cachedCount) {
+  //       console.log('JIRA data updated, refreshing developer quality data')
+  //       refreshData()
+  //     }
+  //   }
+  // }, [jiraData, data, lastUpdated, hasData])
 
   // Refresh data callback
   const handleRefresh = useCallback(async () => {
@@ -103,7 +112,7 @@ export const useDeveloperQualityCache = () => {
     } catch (error) {
       console.error('Failed to refresh developer quality data:', error)
     }
-  }, [refreshData])
+  }, [])
 
   // Force reload callback - this will trigger S3 download
   const handleForceReload = useCallback(async () => {
@@ -114,7 +123,7 @@ export const useDeveloperQualityCache = () => {
     } catch (error) {
       console.error('Failed to force reload developer quality data:', error)
     }
-  }, [reset, fetchData])
+  }, [])
 
   // Clear cache callback
   const handleClearCache = useCallback(async () => {
@@ -129,7 +138,7 @@ export const useDeveloperQualityCache = () => {
       console.error('Failed to clear cache:', error)
       reset() // Fallback to just clearing the store
     }
-  }, [reset, loadData])
+  }, [])
 
   // Check if cache is stale (older than 1 hour)
   const isCacheStale = useMemo(() => {

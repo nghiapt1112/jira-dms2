@@ -2,6 +2,7 @@ import React, { useMemo, useCallback, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Grid, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
 import { Refresh as RefreshIcon, CloudDownload as DownloadIcon } from '@mui/icons-material'
+import { memberConfiguration } from '../../../../constants/memberConfiguration'
 
 import { useDeveloperQualityCache } from '../../hooks/useDeveloperQualityCache'
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
@@ -293,8 +294,6 @@ const DeveloperQualityDashboard = React.memo(() => {
           <TeamContributionChart
             data={filteredData.filteredChartData.teamContributionChart}
             metrics={filteredData.filteredMetrics.teamContribution}
-            timePeriodType={filters.timeframe}
-            onTimePeriodChange={handleTimePeriodChange}
             statusFilter={filters.statusFilter}
             onStatusFilterChange={handleStatusFilterChange}
             filters={filters} // Pass complete filters object including projects
@@ -308,7 +307,7 @@ const DeveloperQualityDashboard = React.memo(() => {
               developerName={selectedDeveloper}
               metrics={filteredData.filteredMetrics}
               filteredData={filteredData}
-              statusFilter={filters?.statusFilter || ['Done']}
+              statusFilter={filters?.statusFilter || memberConfiguration.filterDefaults.statusFilter}
             />
           </Grid>
         )}

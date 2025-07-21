@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, devtools } from 'zustand/middleware'
 import { developerQualityService } from '../services/developerQualityService'
 import { filterService } from '../services/filterService'
+import { memberConfiguration } from '../../../constants/memberConfiguration'
 
 // Deep comparison utility for detecting actual filter changes
 const areFiltersChanged = (oldFilters, newFilters) => {
@@ -62,7 +63,7 @@ export const useDeveloperQualityStore = create(
         },
         // Moved from component state to store
         timeframe: 'month', // Previously timePeriodType
-        statusFilter: ['Done', 'In Progress', 'In Review']
+        statusFilter: memberConfiguration.filterDefaults.statusFilter
       },
       
       // Filtered data cache
@@ -172,7 +173,7 @@ export const useDeveloperQualityStore = create(
             endDate: null
           },
           timeframe: 'month',
-          statusFilter: ['Done', 'In Progress', 'In Review']
+          statusFilter: memberConfiguration.filterDefaults.statusFilter
         },
         filteredData: null,
         filterAppliedAt: null
@@ -197,7 +198,7 @@ export const useDeveloperQualityStore = create(
             endDate: null
           },
           timeframe: 'month',
-          statusFilter: ['Done', 'In Progress', 'In Review']
+          statusFilter: memberConfiguration.filterDefaults.statusFilter
         },
         filteredData: null,
         filterAppliedAt: null
@@ -289,7 +290,7 @@ export const useDeveloperQualityStore = create(
         const isDefaultTimeframe = filters.timeframe === 'month'
         const isDefaultStatusFilter = 
           JSON.stringify(filters.statusFilter.sort()) === 
-          JSON.stringify(['Done', 'In Progress', 'In Review'].sort())
+          JSON.stringify(memberConfiguration.filterDefaults.statusFilter.sort())
         
         return Boolean(
           (filters.developers && filters.developers.length > 0) ||
@@ -320,6 +321,7 @@ export const useDeveloperQualityStore = create(
     ),
     {
       name: 'developer-quality-storage',
+      version: 2, // Increment this when default configuration changes
       // Only persist user preferences, not cache metadata
       partialize: (state) => ({
         filters: state.filters,

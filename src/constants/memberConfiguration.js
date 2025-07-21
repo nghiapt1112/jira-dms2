@@ -617,7 +617,52 @@ export const memberConfiguration = {
     "Minor",
     "Low",
     "Cosmetic"
-  ]
+  ],
+
+  // Default filter configuration
+  filterDefaults: {
+    // Default status filter for "delivered" work metrics
+    // This is used for story points, time tracking, and efficiency calculations
+    statusFilter: ["BACK FROM QA",
+      "BLOCK",
+      "BLOCKED",
+      "Back from QA",
+      "Blocked",
+      "Blocked (QA)",
+      "Blocked By QA",
+      "Blocked by QA",
+      "CONFIRM BY PM",
+      "Dev / QA Done",
+      "Dev Test",
+      "Done",
+      "IN QA",
+      "In QA",
+      "In Review",
+      "Log Time",
+      "NO ACTION",
+      "ON HOLD",
+      "Pending",
+      "QA",
+      "QA Blocked",
+      "QA in Progress",
+      "Ready for QA",
+      "Review",
+      "Selected for Development",
+      "Test by Dev",
+      "Test by dev",
+      "Under QA",
+      "Verify(DO NOT USE)",
+      "Waiting for QA"],
+    
+    // Available statuses that can be selected in filters
+    availableStatuses: [
+      "To Do",
+      "In Progress", 
+      "In Review",
+      "Done",
+      "Closed"
+    ]
+  }
 }
 
 /**

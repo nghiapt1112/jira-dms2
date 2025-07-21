@@ -3,6 +3,42 @@ import PropTypes from 'prop-types'
 import { Box, Typography } from '@mui/material'
 import { BarChart } from '@mui/x-charts'
 
+// Helper function to convert week string to date range
+const getWeekDateRange = (weekString) => {
+  if (!weekString || !weekString.includes('-W')) {
+    return { startDate: null, endDate: null, formatted: weekString }
+  }
+  
+  const [year, weekNum] = weekString.split('-W')
+  const yearNum = parseInt(year)
+  const week = parseInt(weekNum)
+  
+  // Calculate the date of the first day of the year
+  const firstDayOfYear = new Date(yearNum, 0, 1)
+  
+  // Calculate the start date of the week (assuming Monday as start of week)
+  const daysToAdd = (week - 1) * 7 - firstDayOfYear.getDay() + 1
+  const startDate = new Date(yearNum, 0, 1 + daysToAdd)
+  
+  // Calculate end date (Sunday)
+  const endDate = new Date(startDate)
+  endDate.setDate(startDate.getDate() + 6)
+  
+  // Format dates as DD-MM-YYYY
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}-${month}-${year}`
+  }
+  
+  return {
+    startDate,
+    endDate,
+    formatted: `${formatDate(startDate)} - ${formatDate(endDate)}`
+  }
+}
+
 /**
  * TeamOverviewChart - Dedicated component for displaying team-wide story points comparison
  * Shows story points as stacked bars for all developers in the team
@@ -117,6 +153,55 @@ const TeamOverviewChart = ({
           ...chartConfig.margin
         }}
         grid={{ horizontal: true }}
+        tooltip={{
+          trigger: 'item',
+          content: ({ label, payload }) => {
+            if (!payload || payload.length === 0) return null
+            
+            // Get date range for week format
+            const dateRange = getWeekDateRange(label)
+            const isWeekFormat = label && label.includes('-W')
+            const title = isWeekFormat ? dateRange.formatted : label
+            
+            // Calculate total story points for this period
+            const total = payload.reduce((sum, entry) => sum + (entry.value || 0), 0)
+            
+            return (
+              <Box sx={{ 
+                bgcolor: 'background.paper', 
+                p: 2, 
+                border: '1px solid', 
+                borderColor: 'divider',
+                borderRadius: 1,
+                boxShadow: 2,
+                minWidth: 200
+              }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {title}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, color: 'primary.main' }}>
+                  Total: {total} story points
+                </Typography>
+                {payload.map((entry, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                    <Box 
+                      sx={{ 
+                        width: 12, 
+                        height: 12, 
+                        bgcolor: entry.color, 
+                        mr: 1,
+                        borderRadius: 0.5
+                      }} 
+                    />
+                    <Typography variant="body2">
+                      {entry.name}: {entry.value} points
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )
+          }
+        }}
         {...chartConfig}
       />
     </Box>
