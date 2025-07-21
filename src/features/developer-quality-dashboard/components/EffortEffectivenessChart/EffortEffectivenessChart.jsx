@@ -6,7 +6,7 @@
 
 import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
-import { memberConfiguration } from '../../../../constants/memberConfiguration'
+import { memberConfiguration, getSeverityConfig } from '../../shared/constants/memberConfiguration'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,8 +26,6 @@ import {
   CardContent, 
   Grid, 
   Chip, 
-  ToggleButton,
-  ToggleButtonGroup,
   Table,
   TableBody,
   TableCell,
@@ -52,13 +50,81 @@ ChartJS.register(
   Legend
 )
 
+// Severity weights for consistent calculation across dashboards
+const SEVERITY_WEIGHTS = {
+  Critical: 1.0,
+  Major: 0.7,
+  Minor: 0.5,
+  Low: 0.3,
+  Cosmetic: 0.1,
+  Unknown: 0.2
+}
+
 const EffortEffectivenessChart = ({ 
   developerData, 
   selectedDeveloper, 
-  statusFilter = memberConfiguration.filterDefaults.statusFilter 
+  statusFilter = memberConfiguration.filterDefaults.statusFilter,
+  timeframe = 'month',
+  projectData = null  // New prop for project-level severity calculations
 }) => {
-  // State for time period
-  const [timePeriod, setTimePeriod] = useState('month')
+
+  // Helper function to parse bug severity using configurable parsing logic
+  const parseBugSeverity = (bug, projectKey = null) => {
+    const severityConfig = getSeverityConfig(projectKey)
+    const { severityField, usePriorityFallback, severityMapping } = severityConfig
+    
+    let severityValue = null
+    if (severityField && bug.fields?.[severityField]) {
+      const customFieldValue = bug.fields[severityField]
+      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
+    }
+    
+    if (!severityValue && usePriorityFallback && bug.fields?.priority?.name) {
+      severityValue = bug.fields.priority.name
+    }
+    
+    return (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
+  }
+
+  // Calculate simple bug rate
+  const calculateSimpleBugRate = (bugs, totalIssues) => {
+    if (!bugs || bugs.length === 0 || totalIssues === 0) return 0
+    return (bugs.length / totalIssues) * 100
+  }
+
+  // Calculate weighted bug rate using severity weights
+  const calculateWeightedBugRate = (bugs, totalIssues, projectKey = null) => {
+    if (!bugs || bugs.length === 0 || totalIssues === 0) return 0
+    
+    const weightedBugCount = bugs.reduce((total, bug) => {
+      const severity = parseBugSeverity(bug, projectKey)
+      const weight = SEVERITY_WEIGHTS[severity] || SEVERITY_WEIGHTS.Unknown
+      return total + weight
+    }, 0)
+    
+    return (weightedBugCount / totalIssues) * 100
+  }
+
+  // Calculate severity breakdown for bugs
+  const calculateSeverityBreakdown = (bugs, projectKey = null) => {
+    const breakdown = {
+      Critical: 0,
+      Major: 0,
+      Minor: 0,
+      Low: 0,
+      Cosmetic: 0,
+      Unknown: 0
+    }
+    
+    if (!bugs || bugs.length === 0) return breakdown
+    
+    bugs.forEach(bug => {
+      const severity = parseBugSeverity(bug, projectKey)
+      breakdown[severity] = (breakdown[severity] || 0) + 1
+    })
+    
+    return breakdown
+  }
 
   // Helper function to get time period key from date
   const getTimePeriodKey = (dateString, period) => {
@@ -148,7 +214,7 @@ const EffortEffectivenessChart = ({
     
     deliveredIssues.forEach(issue => {
       if (issue.created) {
-        const periodKey = getTimePeriodKey(issue.created, timePeriod)
+        const periodKey = getTimePeriodKey(issue.created, timeframe)
         if (!timeGroups.has(periodKey)) {
           timeGroups.set(periodKey, {
             period: periodKey,
@@ -202,7 +268,47 @@ const EffortEffectivenessChart = ({
         new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime()
       )
     }
-  }, [developerData, statusFilter, timePeriod])
+  }, [developerData, statusFilter, timeframe])
+
+  // Severity Rate Data Storage - for cross-dashboard consistency
+  const severityRateData = useMemo(() => {
+    if (!projectData || !projectData.projects) {
+      // Fallback: create basic data from developer data if available
+      if (developerData && developerData.bugs) {
+        const projectKey = developerData.projectKey || null
+        const totalIssues = (developerData.totalIssues || 0)
+        const bugs = developerData.bugs || []
+        
+        return [{
+          projectId: projectKey || 'developer-project',
+          projectName: projectKey || 'Developer Analysis',
+          developer: selectedDeveloper,
+          rawBugRate: calculateSimpleBugRate(bugs, totalIssues),
+          weightedBugRate: calculateWeightedBugRate(bugs, totalIssues, projectKey),
+          severityBreakdown: calculateSeverityBreakdown(bugs, projectKey),
+          qualityEfficiency: Math.max(0, 100 - calculateWeightedBugRate(bugs, totalIssues, projectKey)),
+          totalIssues,
+          totalBugs: bugs.length
+        }]
+      }
+      return []
+    }
+    
+    return projectData.projects.map(project => ({
+      projectId: project.id || project.projectKey,
+      projectName: project.name || project.projectKey,
+      rawBugRate: calculateSimpleBugRate(project.bugs, project.totalIssues),
+      weightedBugRate: calculateWeightedBugRate(project.bugs, project.totalIssues, project.projectKey),
+      severityBreakdown: calculateSeverityBreakdown(project.bugs, project.projectKey),
+      qualityEfficiency: Math.max(0, 100 - calculateWeightedBugRate(project.bugs, project.totalIssues, project.projectKey)),
+      totalIssues: project.totalIssues || 0,
+      totalBugs: (project.bugs || []).length,
+      // Additional project metadata
+      progress: project.progress,
+      qualityScore: project.qualityScore,
+      healthScore: project.healthScore
+    }))
+  }, [projectData, developerData, selectedDeveloper])
 
   // Chart data configuration
   const chartData = useMemo(() => {
@@ -322,7 +428,7 @@ const EffortEffectivenessChart = ({
         },
         title: {
           display: true,
-          text: `Story Points & Time Tracking - ${selectedDeveloper} (by ${timePeriod})`,
+          text: `Story Points & Time Tracking - ${selectedDeveloper} (by ${timeframe})`,
           font: {
             size: 16,
             weight: 'bold'
@@ -348,7 +454,7 @@ const EffortEffectivenessChart = ({
           display: true,
           title: {
             display: true,
-            text: `Time Period (${timePeriod})`
+            text: `Time Period (${timeframe})`
           }
         },
         y: {
@@ -382,7 +488,7 @@ const EffortEffectivenessChart = ({
         }
       }
     }
-  }, [selectedDeveloper, timePeriod])
+  }, [selectedDeveloper, timeframe])
 
   // Get efficiency color
   const getEfficiencyColor = (efficiency) => {
@@ -413,24 +519,12 @@ const EffortEffectivenessChart = ({
   return (
     <Card>
       <CardContent>
-        {/* Header with Time Period Selector */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mb: 2 }}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TrendingUpIcon color="primary" />
-            Effort Effectiveness Analysis
+            Effort Effectiveness Analysis ({timeframe})
           </Typography>
-          
-          {/* Time Period Selector */}
-          <ToggleButtonGroup
-            value={timePeriod}
-            exclusive
-            onChange={(e, newPeriod) => newPeriod && setTimePeriod(newPeriod)}
-            size="small"
-          >
-            <ToggleButton value="week">Week</ToggleButton>
-            <ToggleButton value="month">Month</ToggleButton>
-            <ToggleButton value="quarter">Quarter</ToggleButton>
-          </ToggleButtonGroup>
         </Box>
 
         {/* Metrics Summary */}
@@ -490,7 +584,7 @@ const EffortEffectivenessChart = ({
         {/* Velocity Trends Chart */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
-            Velocity Trends by {timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}
+            Velocity Trends by {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
           </Typography>
           <Box sx={{ height: 400 }}>
             {timeBasedData.chartData ? (
@@ -589,6 +683,115 @@ const EffortEffectivenessChart = ({
           </TableContainer>
         </Box>
 
+        {/* Severity Rate Analysis - New Section */}
+        {severityRateData.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
+              Quality Efficiency Analysis
+            </Typography>
+            
+            <TableContainer 
+              component={Paper} 
+              sx={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Project</strong></TableCell>
+                    <TableCell align="right"><strong>Total Issues</strong></TableCell>
+                    <TableCell align="right"><strong>Total Bugs</strong></TableCell>
+                    <TableCell align="right"><strong>Simple Bug Rate (%)</strong></TableCell>
+                    <TableCell align="right"><strong>Weighted Bug Rate (%)</strong></TableCell>
+                    <TableCell align="right"><strong>Quality Efficiency (%)</strong></TableCell>
+                    <TableCell><strong>Severity Mix</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {severityRateData.map((project, index) => (
+                    <TableRow key={`${project.projectId}-${index}`} hover>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                          {project.projectName}
+                        </Typography>
+                        {project.developer && (
+                          <Typography variant="caption" color="textSecondary">
+                            Developer: {project.developer}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {project.totalIssues}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Chip 
+                          label={project.totalBugs} 
+                          size="small" 
+                          color={project.totalBugs > 0 ? 'warning' : 'default'}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {project.rawBugRate.toFixed(1)}%
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Chip 
+                          label={`${project.weightedBugRate.toFixed(1)}%`}
+                          size="small" 
+                          color={project.weightedBugRate > 15 ? 'error' : project.weightedBugRate > 10 ? 'warning' : 'success'}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Chip 
+                          label={`${project.qualityEfficiency.toFixed(1)}%`}
+                          size="small" 
+                          color={project.qualityEfficiency >= 85 ? 'success' : project.qualityEfficiency >= 70 ? 'warning' : 'error'}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {Object.entries(project.severityBreakdown)
+                            .filter(([_, count]) => count > 0)
+                            .slice(0, 3)
+                            .map(([severity, count]) => {
+                              const getSeverityColor = (sev) => {
+                                switch (sev) {
+                                  case 'Critical': return 'error'
+                                  case 'Major': return 'warning' 
+                                  case 'Minor': return 'info'
+                                  case 'Low': return 'success'
+                                  default: return 'default'
+                                }
+                              }
+                              return (
+                                <Chip
+                                  key={severity}
+                                  label={`${severity}: ${count}`}
+                                  size="small"
+                                  color={getSeverityColor(severity)}
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.6rem' }}
+                                />
+                              )
+                            })}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
+              Quality Efficiency = 100 - Weighted Bug Rate. Weighted calculation uses severity-based weights: Critical(1.0), Major(0.7), Minor(0.5), Low(0.3), Cosmetic(0.1).
+            </Typography>
+          </Box>
+        )}
+
         {/* Combined Insights */}
         <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(0, 0, 0, 0.02)', borderRadius: 1 }}>
           <Typography variant="body2" color="textSecondary">
@@ -612,7 +815,14 @@ const EffortEffectivenessChart = ({
           {timeBasedData.issuesData.length > 0 && (
             <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
               <strong>Issues Summary:</strong> Showing {timeBasedData.issuesData.length} issues with time tracking data. 
-              Red efficiency values (>2h/SP) may indicate complex work or estimation issues.
+              Red efficiency values (&gt;2h/SP) may indicate complex work or estimation issues.
+            </Typography>
+          )}
+          
+          {severityRateData.length > 0 && (
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              <strong>Quality Analysis:</strong> Severity-weighted bug rates provide more accurate quality metrics than simple percentages. 
+              Quality Efficiency above 85% indicates excellent development practices.
             </Typography>
           )}
         </Box>
@@ -624,12 +834,27 @@ const EffortEffectivenessChart = ({
 EffortEffectivenessChart.propTypes = {
   developerData: PropTypes.object,
   selectedDeveloper: PropTypes.string.isRequired,
-  statusFilter: PropTypes.arrayOf(PropTypes.string)
+  statusFilter: PropTypes.arrayOf(PropTypes.string),
+  timeframe: PropTypes.oneOf(['week', 'month', 'quarter']),
+  projectData: PropTypes.shape({
+    projects: PropTypes.arrayOf(PropTypes.shape({
+      id: PropTypes.string,
+      projectKey: PropTypes.string,
+      name: PropTypes.string,
+      totalIssues: PropTypes.number,
+      bugs: PropTypes.array,
+      progress: PropTypes.number,
+      qualityScore: PropTypes.number,
+      healthScore: PropTypes.number
+    }))
+  })
 }
 
 EffortEffectivenessChart.defaultProps = {
   developerData: null,
-  statusFilter: memberConfiguration.filterDefaults.statusFilter
+  statusFilter: memberConfiguration.filterDefaults.statusFilter,
+  timeframe: 'month',
+  projectData: null
 }
 
 export default EffortEffectivenessChart

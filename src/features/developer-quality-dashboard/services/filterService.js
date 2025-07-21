@@ -55,14 +55,14 @@ export const filterService = {
     )
     
     // Recalculate metrics from filtered data
-    const filteredMetrics = filterService.recalculateMetricsFromIndices(finalIndices, cacheData)
+    const filteredMetrics = filterService.recalculateMetricsFromIndices(finalIndices, cacheData, timeframe)
     
     // Return filtered data with recalculated metrics and time-based chart data
     const filteredData = {
       filteredIssues,
       filteredMetrics,
       filteredChartData: {
-        ...filterService.recalculateChartDataFromIndices(finalIndices, cacheData),
+        ...filterService.recalculateChartDataFromIndices(finalIndices, cacheData, timeframe),
         teamContributionChart: {
           type: 'stacked-bar',
           data: timeBasedChartData,
@@ -126,14 +126,14 @@ export const filterService = {
     )
     
     // Recalculate metrics from filtered data
-    const filteredMetrics = filterService.recalculateMetricsFromIndices(resultIndices, cacheData)
+    const filteredMetrics = filterService.recalculateMetricsFromIndices(resultIndices, cacheData, timePeriodType)
     
     // Return filtered data with time-based chart data
     const filteredData = {
       filteredIssues,
       filteredMetrics,
       filteredChartData: {
-        ...filterService.recalculateChartDataFromIndices(resultIndices, cacheData),
+        ...filterService.recalculateChartDataFromIndices(resultIndices, cacheData, timePeriodType),
         teamContributionChart: {
           type: 'stacked-bar',
           data: timeBasedChartData,
@@ -225,15 +225,65 @@ export const filterService = {
   },
 
   /**
-   * Get week from date string
+   * Get week from date string using ISO week calculation
    * @param {string} dateString - ISO date string
-   * @returns {string} Week identifier (e.g., '2024-W12')
+   * @returns {string} Week identifier (e.g., '2025-W01')
    */
   getWeekFromDate: (dateString) => {
     const date = new Date(dateString)
-    const year = date.getFullYear()
-    const weekNum = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
+    
+    // ISO week calculation
+    const thursday = new Date(date.getTime())
+    thursday.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 3)
+    
+    const year = thursday.getFullYear()
+    const firstThursday = new Date(year, 0, 4)
+    firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
+    
+    const weekNum = Math.floor((thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+    
     return `${year}-W${weekNum.toString().padStart(2, '0')}`
+  },
+
+  /**
+   * Get week date range from week identifier
+   * @param {string} weekId - Week identifier (e.g., '2025-W01')
+   * @returns {Object} Object with startDate and endDate
+   */
+  getWeekDateRange: (weekId) => {
+    const [yearStr, weekStr] = weekId.split('-W')
+    const year = parseInt(yearStr)
+    const week = parseInt(weekStr)
+    
+    // Find first Thursday of the year
+    const firstThursday = new Date(year, 0, 4)
+    firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
+    
+    // Calculate the Thursday of the target week
+    const targetThursday = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000)
+    
+    // Calculate Monday (start of week)
+    const startDate = new Date(targetThursday.getTime())
+    startDate.setDate(targetThursday.getDate() - 3)
+    
+    // Calculate Sunday (end of week)
+    const endDate = new Date(targetThursday.getTime())
+    endDate.setDate(targetThursday.getDate() + 3)
+    
+    return { startDate, endDate }
+  },
+
+  /**
+   * Format date to DD/MM/YYYY
+   * @param {Date} date - Date object
+   * @returns {string} Formatted date string
+   */
+  formatDateDDMMYYYY: (date) => {
+    if (!date || !(date instanceof Date)) return 'Invalid Date'
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
   },
 
   /**
@@ -389,16 +439,11 @@ export const filterService = {
    * Recalculate metrics from filtered indices
    * @param {Set} indices - Filtered indices
    * @param {Object} cacheData - Original cache data
+   * @param {string} timeframe - Time period for trend analysis ('week', 'month', 'quarter')
    * @returns {Object} Recalculated metrics
    */
-  recalculateMetricsFromIndices: (indices, cacheData) => {
+  recalculateMetricsFromIndices: (indices, cacheData, timeframe = 'month') => {
     const filteredIssues = filterService.getFilteredIssues(indices, cacheData.minimalIssues)
-    
-    console.log('🔍 FILTER RECALC: Starting with filtered issues:', filteredIssues.length)
-    console.log('🔍 FILTER RECALC: Original cache bugRateAnalysis developers type:', 
-      Array.isArray(cacheData.metrics?.bugRateAnalysis?.developers) ? 'Array' : 'Other')
-    console.log('🔍 FILTER RECALC: Original cache bugRateAnalysis developers count:', 
-      cacheData.metrics?.bugRateAnalysis?.developers?.length || 0)
     
     const metrics = {
       teamContribution: {
@@ -416,7 +461,7 @@ export const filterService = {
           Low: 0,
           Unknown: 0
         },
-        monthlyBugTrend: new Map()
+        monthlyBugTrend: new Map(), // Will be renamed dynamically based on timeframe
       },
       rootCauseAnalysis: {
         categories: new Map()
@@ -465,19 +510,31 @@ export const filterService = {
         metrics.bugAnalysis.severityDistribution[severity] = 
           (metrics.bugAnalysis.severityDistribution[severity] || 0) + 1
         
-        // Monthly bug trend
+        // Time-based bug trend (supports week, month, quarter)
         if (created) {
-          const month = created.substring(0, 7)
-          if (!metrics.bugAnalysis.monthlyBugTrend.has(month)) {
-            metrics.bugAnalysis.monthlyBugTrend.set(month, { total: 0, resolved: 0, pending: 0 })
+          let timePeriod
+          switch (timeframe) {
+            case 'week':
+              timePeriod = filterService.getWeekFromDate(created)
+              break
+            case 'quarter':
+              timePeriod = filterService.getQuarterFromDate(created)
+              break
+            default: // month
+              timePeriod = created.substring(0, 7) // '2024-01'
           }
-          const monthData = metrics.bugAnalysis.monthlyBugTrend.get(month)
-          monthData.total += 1
+          
+
+          if (!metrics.bugAnalysis.monthlyBugTrend.has(timePeriod)) {
+            metrics.bugAnalysis.monthlyBugTrend.set(timePeriod, { total: 0, resolved: 0, pending: 0 })
+          }
+          const periodData = metrics.bugAnalysis.monthlyBugTrend.get(timePeriod)
+          periodData.total += 1
           
           if (issue.resolved) {
-            monthData.resolved += 1
+            periodData.resolved += 1
           } else {
-            monthData.pending += 1
+            periodData.pending += 1
           }
         }
       }
@@ -512,8 +569,8 @@ export const filterService = {
    * @param {Object} cacheData - Original cache data
    * @returns {Object} Recalculated chart data
    */
-  recalculateChartDataFromIndices: (indices, cacheData) => {
-    const metrics = filterService.recalculateMetricsFromIndices(indices, cacheData)
+  recalculateChartDataFromIndices: (indices, cacheData, timeframe = 'month') => {
+    const metrics = filterService.recalculateMetricsFromIndices(indices, cacheData, timeframe)
     
     const chartData = {
       teamContributionChart: {
@@ -527,11 +584,48 @@ export const filterService = {
       },
       bugTrendChart: {
         type: 'line',
-        data: Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
-          .map(([month, data]) => ({ month, ...data }))
-          .sort((a, b) => a.month.localeCompare(b.month)),
+        data: (() => {
+          const periodKey = timeframe === 'week' ? 'week' : timeframe === 'quarter' ? 'quarter' : 'month'
+          const bugTrendData = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
+            .filter(([period, data]) => period != null && data != null) // Filter out null/undefined periods
+            .map(([period, data]) => {
+              const result = { [periodKey]: String(period), ...data }
+              
+              // Add additional metadata for tooltips
+              if (timeframe === 'week') {
+                try {
+                  const weekRange = filterService.getWeekDateRange(period)
+                  result._weekStart = weekRange.startDate
+                  result._weekEnd = weekRange.endDate
+                  result._weekStartFormatted = filterService.formatDateDDMMYYYY(weekRange.startDate)
+                  result._weekEndFormatted = filterService.formatDateDDMMYYYY(weekRange.endDate)
+                } catch (error) {
+                  console.warn('Failed to get week range for period:', period, error)
+                  result._weekStartFormatted = 'Unknown'
+                  result._weekEndFormatted = 'Unknown'
+                }
+              }
+              
+              return result
+            })
+            .sort((a, b) => {
+              const periodA = a[periodKey]
+              const periodB = b[periodKey]
+              
+              // Safe comparison with null checks
+              if (!periodA || !periodB) return 0
+              if (typeof periodA.localeCompare === 'function') {
+                return periodA.localeCompare(periodB)
+              } else {
+                return String(periodA).localeCompare(String(periodB))
+              }
+            })
+          
+
+          return bugTrendData
+        })(),
         config: {
-          xAxisKey: 'month',
+          xAxisKey: timeframe === 'week' ? 'week' : timeframe === 'quarter' ? 'quarter' : 'month',
           lines: ['total', 'resolved', 'pending']
         }
       },
@@ -594,27 +688,7 @@ export const filterService = {
         (stats.contributions / metrics.teamContribution.totalContributions) * 100 : 0
     })).sort((a, b) => b.contributions - a.contributions)
     
-    // Calculate bug rate analysis - PRESERVE COMPREHENSIVE DATA FROM ORIGINAL CACHE
-    console.log('🔍 FILTER RECALC: Calculating bug rate analysis for developers:', 
-      metrics.teamContribution.developerStats.size)
-    
-    // DEBUG: Check what comprehensive data is available in cache
-    console.log('🔍 FILTER RECALC: Cache data structure:', {
-      hasCacheMetrics: !!cacheData.metrics,
-      hasBugRateAnalysis: !!cacheData.metrics?.bugRateAnalysis,
-      hasDevelopers: !!cacheData.metrics?.bugRateAnalysis?.developers,
-      developersType: cacheData.metrics?.bugRateAnalysis?.developers ? 
-        (Array.isArray(cacheData.metrics.bugRateAnalysis.developers) ? 'Array' : 'Map') : 'none',
-      developersCount: cacheData.metrics?.bugRateAnalysis?.developers ? 
-        (Array.isArray(cacheData.metrics.bugRateAnalysis.developers) ? 
-          cacheData.metrics.bugRateAnalysis.developers.length : 
-          cacheData.metrics.bugRateAnalysis.developers.size) : 0,
-      sampleDeveloperKeys: cacheData.metrics?.bugRateAnalysis?.developers ? 
-        (Array.isArray(cacheData.metrics.bugRateAnalysis.developers) ? 
-          (cacheData.metrics.bugRateAnalysis.developers[0] ? Object.keys(cacheData.metrics.bugRateAnalysis.developers[0]) : []) :
-          (cacheData.metrics.bugRateAnalysis.developers.size > 0 ? Object.keys(Array.from(cacheData.metrics.bugRateAnalysis.developers.values())[0]) : [])) : []
-    })
-    
+
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
       const bugRate = stats.contributions > 0 ? (stats.bugs / stats.contributions) * 100 : 0
       
@@ -631,23 +705,7 @@ export const filterService = {
           originalDeveloperData = cacheData.metrics.bugRateAnalysis.developers.get(developer)
         }
       }
-      
-      console.log(`🔍 FILTER RECALC: Developer ${developer} - found original data:`, 
-        !!originalDeveloperData, originalDeveloperData ? Object.keys(originalDeveloperData) : 'none')
-      
-      // SPECIFIC DEBUG: Check if comprehensive fields exist in original data
-      if (originalDeveloperData) {
-        console.log(`🔍 FILTER RECALC: ${developer} comprehensive check:`, {
-          hasTimeSpent: 'totalTimeSpentHours' in originalDeveloperData,
-          hasTimePerPoint: 'timePerStoryPoint' in originalDeveloperData,
-          hasSeverity: 'severityBreakdown' in originalDeveloperData,
-          hasRootCause: 'rootCauseBreakdown' in originalDeveloperData,
-          hasWeeklyData: 'weeklyTimeData' in originalDeveloperData,
-          timeSpentValue: originalDeveloperData.totalTimeSpentHours,
-          timePerPointValue: originalDeveloperData.timePerStoryPoint
-        })
-      }
-      
+
       // Create comprehensive developer object - use original data if available, otherwise basic data
       const comprehensiveDeveloperData = originalDeveloperData ? {
         // PRESERVE ALL ORIGINAL COMPREHENSIVE DATA
@@ -676,11 +734,6 @@ export const filterService = {
         reopenCount: 0,
         reopenRate: 0
       }
-      
-      console.log(`🔍 FILTER RECALC: Final data for ${developer}:`, {
-        hasComprehensiveFields: 'totalTimeSpentHours' in comprehensiveDeveloperData,
-        keys: Object.keys(comprehensiveDeveloperData)
-      })
       
       metrics.bugRateAnalysis.developers.set(developer, comprehensiveDeveloperData)
     })

@@ -1,7 +1,27 @@
 import React, { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Typography, Paper, useTheme } from '@mui/material'
-import { BarChart } from '@mui/x-charts/BarChart'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+import logger from '../../../../utils/logger'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const DeliveryEfficiencyChart = React.memo(({ 
   data = [], 
@@ -40,6 +60,138 @@ const DeliveryEfficiencyChart = React.memo(({
     })
   }, [data, maxProjects, theme])
 
+  const chartDatasets = useMemo(() => {
+    if (!chartData || chartData.length === 0) return { labels: [], datasets: [] }
+
+    logger.heatmap('DELIVERY_EFFICIENCY', 'Processing bar chart data', {
+      hasData: !!chartData,
+      dataLength: chartData.length,
+      maxProjects
+    })
+
+    const datasets = [{
+      label: 'Delivery Efficiency (%)',
+      data: chartData.map(project => project.efficiency),
+      backgroundColor: chartData.map(project => project.color),
+      borderColor: chartData.map(project => project.color),
+      borderWidth: 1
+    }]
+
+    const labels = chartData.map(project => project.projectName)
+
+    logger.heatmap('DELIVERY_EFFICIENCY', 'Chart datasets prepared', {
+      datasetsCount: datasets.length,
+      labelsCount: labels.length,
+      sampleData: {
+        efficiency: datasets[0].data.slice(0, 3),
+        labels: labels.slice(0, 3),
+        colors: chartData.slice(0, 3).map(p => p.color)
+      }
+    })
+
+    return { labels, datasets }
+  }, [chartData, maxProjects])
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: false
+      },
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#333',
+        bodyColor: '#333',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        cornerRadius: 4,
+        displayColors: false,
+        callbacks: {
+          title: function(context) {
+            const projectData = chartData[context[0].dataIndex]
+            return projectData?.fullName || 'Unknown Project'
+          },
+          label: function(context) {
+            const projectData = chartData[context.dataIndex]
+            if (!projectData) return []
+            
+            const onTimeRate = projectData.totalIssues > 0 
+              ? ((projectData.onTimeIssues / projectData.totalIssues) * 100).toFixed(1)
+              : '0'
+              
+            const completionRate = projectData.totalStoryPoints > 0
+              ? ((projectData.completedStoryPoints / projectData.totalStoryPoints) * 100).toFixed(1)
+              : '0'
+            
+            return [
+              `Efficiency: ${projectData.efficiency.toFixed(1)}%`,
+              `On-time Rate: ${onTimeRate}%`,
+              `Completion Rate: ${completionRate}%`,
+              `Issues: ${projectData.onTimeIssues}/${projectData.totalIssues}`,
+              `Story Points: ${projectData.completedStoryPoints}/${projectData.totalStoryPoints}`
+            ]
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Project',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          maxRotation: chartData.length > 5 ? 45 : 0,
+          minRotation: 0,
+          font: {
+            size: 10
+          }
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Efficiency (%)',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        min: 0,
+        max: 100,
+        beginAtZero: true,
+        ticks: {
+          stepSize: 10
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      }
+    },
+    onClick: (event, elements) => {
+      if (elements.length > 0 && onProjectClick) {
+        const element = elements[0]
+        const index = element.index
+        const project = chartData[index]
+        
+        if (project) {
+          onProjectClick(project.id, project)
+        }
+      }
+    }
+  }), [chartData, onProjectClick])
+
+  // Tooltip content now handled by chartOptions callbacks
+  // Keeping this for reference but no longer used
   const getTooltipContent = useCallback((params) => {
     if (!params || params.dataIndex === undefined) return null
     
@@ -78,6 +230,8 @@ const DeliveryEfficiencyChart = React.memo(({
     )
   }, [chartData])
 
+  // Bar click now handled by chartOptions onClick callback
+  // Keeping this for reference but no longer used
   const handleBarClick = useCallback((event, params) => {
     if (onProjectClick && params?.dataIndex !== undefined) {
       const project = chartData[params.dataIndex]
@@ -87,6 +241,8 @@ const DeliveryEfficiencyChart = React.memo(({
     }
   }, [onProjectClick, chartData])
 
+  // These are now handled by chartDatasets
+  // Keeping for reference but no longer used
   const series = useMemo(() => [{
     data: chartData.map(project => project.efficiency),
     label: 'Delivery Efficiency (%)'
@@ -124,36 +280,9 @@ const DeliveryEfficiencyChart = React.memo(({
           height: Math.max(height - 100, 300)
         }
       }}>
-        <BarChart
-          width={undefined}
-          height={height}
-          series={series}
-          xAxis={[{
-            data: xAxisData,
-            scaleType: 'band',
-            tickLabelStyle: {
-              angle: chartData.length > 5 ? -45 : 0,
-              textAnchor: chartData.length > 5 ? 'end' : 'middle'
-            }
-          }]}
-          yAxis={[{
-            label: 'Efficiency (%)',
-            min: 0,
-            max: 100
-          }]}
-          colors={chartData.map(project => project.color)}
-          margin={{ 
-            left: 60, 
-            right: 30, 
-            top: 20, 
-            bottom: chartData.length > 5 ? 100 : 60
-          }}
-          tooltip={{
-            trigger: 'item',
-            content: getTooltipContent
-          }}
-          onItemClick={handleBarClick}
-          grid={{ horizontal: true }}
+        <Bar 
+          data={chartDatasets}
+          options={chartOptions}
         />
       </Box>
 

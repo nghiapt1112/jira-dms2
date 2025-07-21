@@ -9,9 +9,17 @@ const getTimePeriodKey = (dateString, period) => {
   const date = new Date(dateString)
   switch (period) {
     case 'week':
-      const year = date.getFullYear()
-      const week = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
-      return `${year}-W${week.toString().padStart(2, '0')}`
+      // ISO week calculation - same as filterService.js
+      const thursday = new Date(date.getTime())
+      thursday.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 3)
+      
+      const year = thursday.getFullYear()
+      const firstThursday = new Date(year, 0, 4)
+      firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
+      
+      const weekNum = Math.floor((thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+      
+      return `${year}-W${weekNum.toString().padStart(2, '0')}`
     case 'quarter':
       const quarter = Math.ceil((date.getMonth() + 1) / 3)
       return `${date.getFullYear()}-Q${quarter}`
@@ -637,10 +645,6 @@ export const developerQualityService = {
     }
     developerQualityService.addToIndex(indices.byProject, projectName, index)  // Use project name instead of key
     
-    // Debug first few project indexing operations
-    if (index < 5) {
-      console.log(`🔍 INDEX: Adding project "${projectName}" (key: ${project}) to index ${index}`)
-    }
     developerQualityService.addToIndex(indices.byIssueType, issueType, index)
     developerQualityService.addToIndex(indices.byStatus, status, index)
     developerQualityService.addToIndex(indices.bySeverity, severity, index)
@@ -701,13 +705,22 @@ export const developerQualityService = {
   },
 
   /**
-   * Get week from date string
+   * Get week from date string using ISO week calculation
    */
   getWeekFromDate: (dateString) => {
     const date = new Date(dateString)
-    const year = date.getFullYear()
-    const week = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
-    return `${year}-W${week.toString().padStart(2, '0')}`
+    
+    // ISO week calculation - same as filterService.js
+    const thursday = new Date(date.getTime())
+    thursday.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 3)
+    
+    const year = thursday.getFullYear()
+    const firstThursday = new Date(year, 0, 4)
+    firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
+    
+    const weekNum = Math.floor((thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+    
+    return `${year}-W${weekNum.toString().padStart(2, '0')}`
   },
 
   /**
@@ -718,6 +731,47 @@ export const developerQualityService = {
     const year = date.getFullYear()
     const quarter = Math.ceil((date.getMonth() + 1) / 3)
     return `${year}-Q${quarter}`
+  },
+
+  /**
+   * Get week date range from week identifier
+   * @param {string} weekId - Week identifier (e.g., '2025-W01')
+   * @returns {Object} Object with startDate and endDate
+   */
+  getWeekDateRange: (weekId) => {
+    const [yearStr, weekStr] = weekId.split('-W')
+    const year = parseInt(yearStr)
+    const week = parseInt(weekStr)
+    
+    // Find first Thursday of the year
+    const firstThursday = new Date(year, 0, 4)
+    firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
+    
+    // Calculate the Thursday of the target week
+    const targetThursday = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000)
+    
+    // Calculate Monday (start of week)
+    const startDate = new Date(targetThursday.getTime())
+    startDate.setDate(targetThursday.getDate() - 3)
+    
+    // Calculate Sunday (end of week)
+    const endDate = new Date(targetThursday.getTime())
+    endDate.setDate(targetThursday.getDate() + 3)
+    
+    return { startDate, endDate }
+  },
+
+  /**
+   * Format date to DD/MM/YYYY
+   * @param {Date} date - Date object
+   * @returns {string} Formatted date string
+   */
+  formatDateDDMMYYYY: (date) => {
+    if (!date || !(date instanceof Date)) return 'Invalid Date'
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
   },
 
   /**
@@ -1256,32 +1310,85 @@ export const developerQualityService = {
     
     // Bug trend chart - use appropriate time period data
     try {
-      const timePeriod = filters?.timeframe || 'month'
+      // Use timePeriodType from team contribution chart config, defaulting to 'month'
+      const timePeriod = timePeriodType || 'month'
       const bugTrendKey = `${timePeriod}lyBugTrend`
       const bugTrendData = metrics.bugAnalysis[bugTrendKey] || metrics.bugAnalysis.monthlyBugTrend
       
       chartData.bugTrendChart.data = Array.isArray(bugTrendData) 
         ? bugTrendData 
         : Array.from(bugTrendData.entries())
-            .map(([period, data]) => ({ 
-              [timePeriod]: period,
-              period,
-              ...data 
-            }))
+            .map(([period, data]) => {
+              const result = { 
+                [timePeriod]: period,
+                period,
+                ...data 
+              }
+              
+              // Add week date range formatting for weekly data
+              if (timePeriod === 'week') {
+                try {
+                  const weekRange = developerQualityService.getWeekDateRange(period)
+                  result._weekStart = weekRange.startDate
+                  result._weekEnd = weekRange.endDate
+                  result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
+                  result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+                } catch (error) {
+                  console.warn('Failed to get week range for period:', period, error)
+                  result._weekStartFormatted = 'Unknown'
+                  result._weekEndFormatted = 'Unknown'
+                }
+              }
+              
+              return result
+            })
             .sort((a, b) => a.period.localeCompare(b.period))
       
-      // Store time period info for chart component
+      // Store time period info for chart component  
+      // Use same field naming logic as filterService
+      const periodKey = timePeriod === 'week' ? 'week' : timePeriod === 'quarter' ? 'quarter' : 'month'
       chartData.bugTrendChart.config = {
         ...(chartData.bugTrendChart.config || {}),
         timePeriod,
-        periodKey: timePeriod
+        periodKey
       }
     } catch (bugTrendError) {
       console.error('📊 ERROR: Bug trend chart processing failed:', bugTrendError)
       // Fallback to monthly data
+      const timePeriod = timePeriodType || 'month'
       chartData.bugTrendChart.data = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
-        .map(([month, data]) => ({ month, ...data }))
-        .sort((a, b) => a.month.localeCompare(b.month))
+        .map(([period, data]) => {
+          const result = { 
+            [timePeriod]: period,
+            period,
+            ...data 
+          }
+          
+          // Add week date range formatting for weekly data in fallback too
+          if (timePeriod === 'week') {
+            try {
+              const weekRange = developerQualityService.getWeekDateRange(period)
+              result._weekStart = weekRange.startDate
+              result._weekEnd = weekRange.endDate
+              result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
+              result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+            } catch (error) {
+              console.warn('Fallback: Failed to get week range for period:', period, error)
+              result._weekStartFormatted = 'Unknown'
+              result._weekEndFormatted = 'Unknown'
+            }
+          }
+          
+          return result
+        })
+        .sort((a, b) => a.period.localeCompare(b.period))
+      
+      // Add config for fallback case too
+      chartData.bugTrendChart.config = {
+        ...(chartData.bugTrendChart.config || {}),
+        timePeriod,
+        periodKey: timePeriod === 'week' ? 'week' : timePeriod === 'quarter' ? 'quarter' : 'month'
+      }
     }
     
     // Root cause chart

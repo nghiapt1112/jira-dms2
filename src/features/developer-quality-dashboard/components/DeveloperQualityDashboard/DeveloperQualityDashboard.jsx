@@ -1,8 +1,9 @@
 import React, { useMemo, useCallback, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Grid, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
-import { Refresh as RefreshIcon, CloudDownload as DownloadIcon } from '@mui/icons-material'
+import { Refresh as RefreshIcon, CloudDownload as DownloadIcon, BugReport as LogIcon } from '@mui/icons-material'
 import { memberConfiguration } from '../../../../constants/memberConfiguration'
+import logger from '../../../../utils/logger'
 
 import { useDeveloperQualityCache } from '../../hooks/useDeveloperQualityCache'
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
@@ -42,25 +43,10 @@ const DeveloperQualityDashboard = React.memo(() => {
   
   // Debug logging for filter changes
   useEffect(() => {
-    console.log('🔍 DASHBOARD: Filter state changed:', {
-      filters,
-      filteredDataExists: !!filteredData,
-      chartDataExists: !!filteredData?.filteredChartData,
-      teamContributionExists: !!filteredData?.filteredChartData?.teamContributionChart,
-      timestamp: new Date().toISOString()
-    })
   }, [filters, filteredData])
   
   // Debug logging for cache state
   useEffect(() => {
-    console.log('🔍 DASHBOARD: Cache state:', {
-      hasCache: !!cacheData,
-      isLoading,
-      error: !!error,
-      needsInitialization,
-      filteredDataExists: !!filteredData,
-      cacheKeys: cacheData ? Object.keys(cacheData) : []
-    })
   }, [cacheData, isLoading, error, needsInitialization, filteredData])
   
   // Check if single developer is selected for detail panel
@@ -71,17 +57,14 @@ const DeveloperQualityDashboard = React.memo(() => {
   
   // 2. Memoized values
   const handleFiltersChange = useCallback((newFilters) => {
-    console.log('🔧 DASHBOARD: handleFiltersChange called with:', newFilters)
-    
+
     // Support both function and direct object calls
     if (typeof newFilters === 'function') {
       // If it's a function, call it with current filters
       const updatedFilters = newFilters(filters)
-      console.log('🔧 DASHBOARD: Function-based filter update:', updatedFilters)
       updateFilters(updatedFilters)
     } else {
       // If it's a direct object, use it
-      console.log('🔧 DASHBOARD: Direct filter update:', newFilters)
       updateFilters(newFilters)
     }
   }, [updateFilters, filters])
@@ -94,21 +77,21 @@ const DeveloperQualityDashboard = React.memo(() => {
     updateStatusFilter(newStatusFilter)
   }, [updateStatusFilter])
 
+  const handleExportLogs = useCallback(() => {
+    logger.exportLogs()
+  }, [])
+
   // Temporary function to load test data for debugging
   const handleLoadTestData = useCallback(async () => {
     try {
-      console.log('📥 LOADING TEST DATA: Fetching Q1-2025 test data...')
       const response = await fetch('/api/test-data/Q1-2025-tickets-256KB.json')
       if (!response.ok) {
         // Fallback: try to load from static files or use mock data
-        console.log('📥 TEST DATA: Fallback to mock data')
         throw new Error('Test data not available from API')
       }
       const testData = await response.json()
-      console.log('📥 TEST DATA: Loaded', testData.length, 'issues')
       await loadData(testData)
     } catch (error) {
-      console.error('❌ TEST DATA: Failed to load test data:', error)
       // Load minimal mock data for testing filter options
       const mockData = [
         {
@@ -138,7 +121,6 @@ const DeveloperQualityDashboard = React.memo(() => {
           }
         }
       ]
-      console.log('📥 TEST DATA: Using mock data with', mockData.length, 'issues')
       await loadData(mockData)
     }
   }, [loadData])
@@ -183,14 +165,6 @@ const DeveloperQualityDashboard = React.memo(() => {
       </Box>
     )
   }
-  
-  // Debug the condition check
-  console.log('🔍 DASHBOARD: Condition check:', {
-    needsInitialization,
-    filteredData: !!filteredData,
-    cacheData: !!cacheData,
-    shouldShowNoData: needsInitialization || !filteredData
-  })
 
   if (needsInitialization || !filteredData) {
     return (
@@ -257,16 +231,28 @@ const DeveloperQualityDashboard = React.memo(() => {
           Developer Quality Dashboard
         </Typography>
         
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
-          onClick={handleRefresh}
-          disabled={isLoading}
-          title="Refresh data from server"
-        >
-          {isLoading ? 'Refreshing...' : 'Refresh Data'}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="small"
+            startIcon={<LogIcon />}
+            onClick={handleExportLogs}
+            title="Export debug logs to file"
+          >
+            Export Logs
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={isLoading}
+            title="Refresh data from server"
+          >
+            {isLoading ? 'Refreshing...' : 'Refresh Data'}
+          </Button>
+        </Box>
       </Box>
       
       <Paper 
@@ -308,6 +294,7 @@ const DeveloperQualityDashboard = React.memo(() => {
               metrics={filteredData.filteredMetrics}
               filteredData={filteredData}
               statusFilter={filters?.statusFilter || memberConfiguration.filterDefaults.statusFilter}
+              timeframe={filters?.timeframe || 'month'}
             />
           </Grid>
         )}
@@ -315,7 +302,13 @@ const DeveloperQualityDashboard = React.memo(() => {
         {/* Bug Trend Analysis */}
         <Grid item xs={12} md={6}>
           <BugTrendAnalysis
-            data={filteredData.filteredChartData.bugTrendChart}
+            data={{
+              ...filteredData.filteredChartData.bugTrendChart,
+              config: {
+                timePeriod: filters?.timeframe || 'month',
+                periodKey: filters?.timeframe === 'week' ? 'week' : 'month'
+              }
+            }}
             metrics={filteredData.filteredMetrics.bugAnalysis}
           />
         </Grid>

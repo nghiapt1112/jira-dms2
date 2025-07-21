@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
+import { getSeverityConfig } from '../../shared/constants/memberConfiguration'
 import {
   Box,
   Typography,
@@ -104,15 +105,70 @@ const ProjectHealthTable = React.memo(({
     }
   }, [])
 
-  const formatBugTooltip = useCallback((project) => {
-    const severityBreakdown = project.severityBreakdown || {}
-    const SEVERITY_WEIGHTS = {
-      Critical: 1.0,
-      Major: 0.7,
-      Medium: 0.5,
-      Low: 0.3,
-      Lowest: 0.1
+  // Standardized severity weights for consistent calculation across dashboards
+  const SEVERITY_WEIGHTS = {
+    Critical: 1.0,
+    Major: 0.7,
+    Minor: 0.5,
+    Low: 0.3,
+    Cosmetic: 0.1,
+    Unknown: 0.2
+  }
+
+  // Helper function to parse bug severity using configurable parsing logic
+  const parseBugSeverity = useCallback((bug, projectKey = null) => {
+    const severityConfig = getSeverityConfig(projectKey)
+    const { severityField, usePriorityFallback, severityMapping } = severityConfig
+    
+    let severityValue = null
+    if (severityField && bug.fields?.[severityField]) {
+      const customFieldValue = bug.fields[severityField]
+      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
     }
+    
+    if (!severityValue && usePriorityFallback && bug.fields?.priority?.name) {
+      severityValue = bug.fields.priority.name
+    }
+    
+    return (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
+  }, [])
+
+  // Calculate severity breakdown using standardized parsing
+  const calculateSeverityBreakdown = useCallback((bugs, projectKey = null) => {
+    const breakdown = {
+      Critical: 0,
+      Major: 0,
+      Minor: 0,
+      Low: 0,
+      Cosmetic: 0,
+      Unknown: 0
+    }
+    
+    if (!bugs || bugs.length === 0) return breakdown
+    
+    bugs.forEach(bug => {
+      const severity = parseBugSeverity(bug, projectKey)
+      breakdown[severity] = (breakdown[severity] || 0) + 1
+    })
+    
+    return breakdown
+  }, [parseBugSeverity])
+
+  // Calculate weighted bug rate using severity weights
+  const calculateWeightedBugRate = useCallback((bugs, totalIssues, projectKey = null) => {
+    if (!bugs || bugs.length === 0 || totalIssues === 0) return 0
+    
+    const weightedBugCount = bugs.reduce((total, bug) => {
+      const severity = parseBugSeverity(bug, projectKey)
+      const weight = SEVERITY_WEIGHTS[severity] || SEVERITY_WEIGHTS.Unknown
+      return total + weight
+    }, 0)
+    
+    return (weightedBugCount / totalIssues) * 100
+  }, [parseBugSeverity])
+
+  const formatBugTooltip = useCallback((project) => {
+    const severityBreakdown = project.severityBreakdown || calculateSeverityBreakdown(project.bugs, project.projectKey)
     
     return (
       <Box>
@@ -127,9 +183,9 @@ const ProjectHealthTable = React.memo(({
             switch (sev) {
               case 'Critical': return theme.palette.error.main
               case 'Major': return theme.palette.error.light
-              case 'Medium': return theme.palette.warning.main
+              case 'Minor': return theme.palette.warning.main
               case 'Low': return theme.palette.info.main
-              case 'Lowest': return theme.palette.success.main
+              case 'Cosmetic': return theme.palette.success.main
               default: return theme.palette.text.secondary
             }
           }
@@ -155,7 +211,7 @@ const ProjectHealthTable = React.memo(({
         )}
       </Box>
     )
-  }, [theme])
+  }, [theme, calculateSeverityBreakdown])
 
   const TableHeaderCell = ({ property, label, numeric = false, sortable = true }) => (
     <TableCell
@@ -247,7 +303,10 @@ const ProjectHealthTable = React.memo(({
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     Bug Rate (%)
-                    <Tooltip title="Weighted bug rate per 100 issues using severity weights: Critical(1.0), Major(0.7), Medium(0.5), Low(0.3), Minor(0.1)" arrow>
+                    <Tooltip title={`Weighted bug rate using configurable severity parsing and weights.
+Formula: (Σ(severity_weight × count) / total_issues) × 100
+Weights: Critical(1.0), Major(0.7), Minor(0.5), Low(0.3), Cosmetic(0.1), Unknown(0.2)
+Uses same parsing logic as Developer Quality Dashboard with project-specific overrides.`} arrow>
                       <InfoIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                     </Tooltip>
                   </Box>
@@ -259,7 +318,7 @@ const ProjectHealthTable = React.memo(({
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     Quality Score
-                    <Tooltip title="Quality Score = Math.max(1, 100 - weighted bug rate)" arrow>
+                    <Tooltip title="Quality Score = Math.max(1, 100 - weighted bug rate). Higher score indicates better code quality and fewer severity-weighted issues." arrow>
                       <InfoIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                     </Tooltip>
                   </Box>
@@ -335,12 +394,29 @@ const ProjectHealthTable = React.memo(({
                 </TableCell>
 
                 <TableCell align="right">
-                  <Tooltip title={`Bug Rate: ${(project.bugRate || 0).toFixed(2)}%`}>
+                  <Tooltip title={
+                    <Box>
+                      <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+                        Bug Rate Details:
+                      </Typography>
+                      <Typography variant="caption" sx={{ display: 'block' }}>
+                        Weighted Rate: {calculateWeightedBugRate(project.bugs, project.totalIssues || project.issues?.length || 0, project.projectKey).toFixed(2)}%
+                      </Typography>
+                      <Typography variant="caption" sx={{ display: 'block' }}>
+                        Simple Rate: {project.bugs && (project.totalIssues || project.issues?.length) ? 
+                          ((project.bugs.length / (project.totalIssues || project.issues.length)) * 100).toFixed(2) : 0}%
+                      </Typography>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+                        Uses severity-weighted calculation for more accurate quality assessment.
+                      </Typography>
+                    </Box>
+                  }>
                     <Typography 
                       variant="body2"
-                      color={(project.bugRate || 0) > 10 ? 'error' : 'text.primary'}
+                      color={calculateWeightedBugRate(project.bugs, project.totalIssues || project.issues?.length || 0, project.projectKey) > 15 ? 'error' : 
+                            calculateWeightedBugRate(project.bugs, project.totalIssues || project.issues?.length || 0, project.projectKey) > 10 ? 'warning' : 'text.primary'}
                     >
-                      {(project.bugRate || 0).toFixed(1)}%
+                      {calculateWeightedBugRate(project.bugs, project.totalIssues || project.issues?.length || 0, project.projectKey).toFixed(1)}%
                     </Typography>
                   </Tooltip>
                 </TableCell>
@@ -433,9 +509,10 @@ ProjectHealthTable.propTypes = {
     severityBreakdown: PropTypes.shape({
       Critical: PropTypes.number,
       Major: PropTypes.number,
-      Medium: PropTypes.number,
+      Minor: PropTypes.number,
       Low: PropTypes.number,
-      Lowest: PropTypes.number
+      Cosmetic: PropTypes.number,
+      Unknown: PropTypes.number
     })
   })),
   title: PropTypes.string,

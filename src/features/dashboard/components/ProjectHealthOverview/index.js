@@ -10,7 +10,7 @@ import {
 } from '@mui/material'
 import QualityVsDeliveryChart from './QualityVsDeliveryChart'
 import QualityVsHealthChart from './QualityVsHealthChart'
-import ProjectHealthTable from './ProjectHealthTable'
+import ProjectHealthTable from './ProjectHealthTable.jsx'
 
 const ProjectHealthOverview = React.memo(({ 
   data, 

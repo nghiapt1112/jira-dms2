@@ -42,16 +42,9 @@ export const useDeveloperQualityFilters = () => {
   const filteredData = useMemo(() => {
     const timer = performanceMonitor.startTimer('filterResponse')
     try {
-      console.log('🔄 HOOK: Recalculating filtered data due to dependency change')
       const result = getFilteredData()
       timer?.end()
       performanceMonitor.recordMetric('cacheHit', 1)
-      console.log('🔄 HOOK: Filtered data calculated:', {
-        hasResult: !!result,
-        hasChartData: !!result?.filteredChartData,
-        hasTeamChart: !!result?.filteredChartData?.teamContributionChart,
-        currentFilters: filters
-      })
       return result
     } catch (error) {
       timer?.end()

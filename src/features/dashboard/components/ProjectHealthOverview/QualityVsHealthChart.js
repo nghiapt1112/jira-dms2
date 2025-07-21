@@ -2,7 +2,20 @@ import React, { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Typography, Paper, useTheme, Modal, IconButton } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
-import { ScatterChart } from '@mui/x-charts/ScatterChart'
+import {
+  Chart as ChartJS,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  Title
+} from 'chart.js'
+import { Scatter } from 'react-chartjs-2'
+import logger from '../../../../utils/logger'
+
+// Register Chart.js components
+ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend, Title)
 
 const QualityVsHealthChart = React.memo(({ 
   data, 
@@ -57,7 +70,13 @@ const QualityVsHealthChart = React.memo(({
     return theme.palette.error.main
   }, [theme])
 
-  const chartSeries = useMemo(() => {
+  const chartDatasets = useMemo(() => {
+    logger.heatmap('QUALITY_HEALTH', 'Processing scatter chart data', {
+      hasData: !!data,
+      dataLength: data?.length,
+      chartDataLength: chartData.length
+    })
+
     const healthGroups = {
       healthy: { data: [], color: theme.palette.success.main, label: 'Healthy (≥80)' },
       moderate: { data: [], color: theme.palette.info.main, label: 'Moderate (60-79)' },
@@ -66,33 +85,170 @@ const QualityVsHealthChart = React.memo(({
     }
 
     chartData.forEach(point => {
+      // Convert to Chart.js scatter format
+      const scatterPoint = {
+        x: point.x,
+        y: point.y,
+        // Store original data for tooltips and clicks
+        _originalData: point
+      }
+      
       if (point.x >= 80) {
-        healthGroups.healthy.data.push(point)
+        healthGroups.healthy.data.push(scatterPoint)
       } else if (point.x >= 60) {
-        healthGroups.moderate.data.push(point)
+        healthGroups.moderate.data.push(scatterPoint)
       } else if (point.x >= 40) {
-        healthGroups.atRisk.data.push(point)
+        healthGroups.atRisk.data.push(scatterPoint)
       } else {
-        healthGroups.critical.data.push(point)
+        healthGroups.critical.data.push(scatterPoint)
       }
     })
 
-    return Object.values(healthGroups)
+    const datasets = Object.values(healthGroups)
       .filter(group => group.data.length > 0)
       .map(group => ({
-        data: group.data,
         label: group.label,
-        color: group.color
+        data: group.data,
+        backgroundColor: group.color,
+        borderColor: group.color,
+        pointRadius: (context) => {
+          const point = context.parsed?._originalData || context.raw?._originalData
+          // Scale point size based on effort/story points
+          return Math.max(Math.sqrt((point?.storyPoints || point?.size || 10) / 10), 6)
+        },
+        pointHoverRadius: (context) => {
+          const point = context.parsed?._originalData || context.raw?._originalData
+          return Math.max(Math.sqrt((point?.storyPoints || point?.size || 10) / 10), 6) + 2
+        }
       }))
-  }, [chartData, theme])
+
+    logger.heatmap('QUALITY_HEALTH', 'Chart datasets prepared', {
+      datasetsCount: datasets.length,
+      totalPoints: datasets.reduce((sum, ds) => sum + ds.data.length, 0),
+      sampleDataset: datasets[0] ? {
+        label: datasets[0].label,
+        pointCount: datasets[0].data.length,
+        samplePoint: datasets[0].data[0]
+      } : null
+    })
+
+    return datasets
+  }, [chartData, theme, data])
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: false
+      },
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#333',
+        bodyColor: '#333',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        cornerRadius: 4,
+        displayColors: false,
+        callbacks: {
+          title: function(context) {
+            const point = context[0]?.raw?._originalData
+            if (!point) return 'Unknown Project'
+            
+            const project = data.find(p => (p.id || p.projectKey) === point.id)
+            return project?.name || point.projectName || point.id || 'Unknown Project'
+          },
+          label: function(context) {
+            const point = context.raw._originalData
+            if (!point) return []
+            
+            const project = data.find(p => (p.id || p.projectKey) === point.id)
+            
+            return [
+              `Quality: ${(point.y || 0).toFixed(2)}%`,
+              `Health: ${(point.x || 0).toFixed(2)}%`,
+              `Effort: ${(point.storyPoints || 0).toFixed(2)} pts`,
+              `Bugs: ${project?.bugs?.length || 0}`,
+              `High Severity: ${point.highSeverityBugs || 0}`
+            ]
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        position: 'bottom',
+        min: 0,
+        max: 100,
+        title: {
+          display: true,
+          text: 'Health Score (%)',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          stepSize: 20
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      y: {
+        type: 'linear',
+        min: 0,
+        max: 100,
+        title: {
+          display: true,
+          text: 'Quality Score (%)',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          stepSize: 20
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      }
+    },
+    onClick: (event, elements) => {
+      if (elements.length > 0) {
+        const element = elements[0]
+        const datasetIndex = element.datasetIndex
+        const index = element.index
+        const point = chartDatasets[datasetIndex]?.data[index]
+        
+        if (point && point._originalData) {
+          setSelectedPoint(point._originalData)
+          setSelectedSeries(datasetIndex)
+          
+          if (onProjectClick) {
+            onProjectClick(point._originalData.id, point._originalData)
+          }
+        }
+      }
+    }
+  }), [data, chartDatasets, onProjectClick])
 
   const getTooltipContent = useCallback((params) => {
     if (!params || params.dataIndex === undefined || params.seriesIndex === undefined) return null
     
-    const seriesData = chartSeries[params.seriesIndex]?.data
+    const seriesData = chartDatasets[params.seriesIndex]?.data
     if (!seriesData) return null
     
-    const point = seriesData[params.dataIndex]
+    const point = seriesData[params.dataIndex]?._originalData
     if (!point) return null
 
     // Get project data for detailed info (following old source pattern)
@@ -156,13 +312,15 @@ const QualityVsHealthChart = React.memo(({
         </p>
       </div>
     )
-  }, [chartSeries, data])
+  }, [chartDatasets, data])
 
   const handlePointClick = useCallback((event, params) => {
+    // This is now handled by the chartOptions onClick callback
+    // Keeping this function for compatibility with the modal logic
     if (params?.dataIndex !== undefined && params?.seriesIndex !== undefined) {
-      const seriesData = chartSeries[params.seriesIndex]?.data
+      const seriesData = chartDatasets[params.seriesIndex]?.data
       if (seriesData) {
-        const point = seriesData[params.dataIndex]
+        const point = seriesData[params.dataIndex]?._originalData
         if (point) {
           // Set tooltip data
           setSelectedPoint(point)
@@ -175,7 +333,7 @@ const QualityVsHealthChart = React.memo(({
         }
       }
     }
-  }, [onProjectClick, chartSeries])
+  }, [onProjectClick, chartDatasets])
 
   if (!data || data.length === 0) {
     return (
@@ -204,118 +362,9 @@ const QualityVsHealthChart = React.memo(({
           height: Math.max(height - 100, 300)
         }
       }}>
-        <ScatterChart
-          width={undefined}
-          height={height}
-          series={chartSeries}
-          xAxis={[{
-            label: 'Health Score (%)',
-            min: 0,
-            max: 100,
-            tickNumber: 5
-          }]}
-          yAxis={[{
-            label: 'Quality Score (%)',
-            min: 0,
-            max: 100,
-            tickNumber: 5
-          }]}
-          margin={{ 
-            left: 80, 
-            right: 50, 
-            top: 20, 
-            bottom: 80,
-            [theme.breakpoints.down('sm')]: {
-              left: 60,
-              right: 30,
-              bottom: 60
-            }
-          }}
-          slots={{
-            tooltip: ({ active, payload }) => {
-              if (!active || !payload || !payload.length) return null
-              
-              // Use the same approach as the working click handler
-              const dataIndex = payload[0].dataIndex
-              const seriesIndex = payload[0].seriesIndex
-              
-              if (dataIndex === undefined || seriesIndex === undefined) return null
-              
-              const seriesData = chartSeries[seriesIndex]?.data
-              if (!seriesData) return null
-              
-              const point = seriesData[dataIndex]
-              if (!point) return null
-
-              // Get project data for detailed info (same as click handler logic)
-              const project = data.find(p => (p.id || p.projectKey) === point.id)
-              
-              // Project name resolution (matching old source logic)
-              const projectName = project?.name || point.projectName || point.id || 'Unknown Project'
-
-              // Simple styling matching old source
-              const tooltipStyles = {
-                backgroundColor: '#fff',
-                padding: '10px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                minWidth: '200px'
-              }
-
-              const labelStyle = {
-                margin: '0 0 5px',
-                fontWeight: 'bold',
-                fontSize: '14px'
-              }
-
-              const rowStyle = {
-                margin: '3px 0',
-                fontSize: '12px'
-              }
-
-              const keyStyle = {
-                display: 'inline-block',
-                width: '80px'
-              }
-
-              const valueStyle = {
-                fontWeight: 'bold'
-              }
-
-              return (
-                <div style={tooltipStyles}>
-                  <p style={labelStyle}>{projectName}</p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Quality:</span>
-                    <span style={valueStyle}>{(point.y || 0).toFixed(2)}%</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Health:</span>
-                    <span style={valueStyle}>{(point.x || 0).toFixed(2)}%</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Effort:</span>
-                    <span style={valueStyle}>{(point.storyPoints || 0).toFixed(2)} pts</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Bugs:</span>
-                    <span style={valueStyle}>{project?.bugs?.length || 0}</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>High Severity:</span>
-                    <span style={valueStyle}>{point.highSeverityBugs || 0}</span>
-                  </p>
-                </div>
-              )
-            }
-          }}
-          onItemClick={handlePointClick}
-          grid={{ horizontal: true, vertical: true }}
-          legend={{
-            direction: 'row',
-            position: { vertical: 'top', horizontal: 'right' }
-          }}
+        <Scatter 
+          data={{ datasets: chartDatasets }}
+          options={chartOptions}
         />
       </Box>
 
@@ -418,7 +467,7 @@ const QualityVsHealthChart = React.memo(({
           
           {selectedPoint && selectedSeries !== null && 
             getTooltipContent({ 
-              dataIndex: chartSeries[selectedSeries]?.data.findIndex(p => p.id === selectedPoint.id),
+              dataIndex: chartDatasets[selectedSeries]?.data.findIndex(p => p._originalData?.id === selectedPoint.id),
               seriesIndex: selectedSeries 
             })
           }

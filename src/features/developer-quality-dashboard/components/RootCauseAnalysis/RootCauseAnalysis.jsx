@@ -1,8 +1,28 @@
 import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Paper, Typography, Chip, List, ListItem, ListItemText } from '@mui/material'
-import { PieChart } from '@mui/x-charts/PieChart'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
 import { Psychology, TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material'
+import logger from '../../../../utils/logger'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const RootCauseAnalysis = React.memo(({ 
   data, 
@@ -14,32 +34,179 @@ const RootCauseAnalysis = React.memo(({
   
   // 2. Memoized values
   const chartData = useMemo(() => {
+    logger.heatmap('ROOT_CAUSE', 'Processing chart data', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : null,
+      hasDataArray: !!data?.data,
+      dataLength: data?.data?.length,
+      sampleData: data?.data?.[0]
+    })
+
     if (!data || !data.data || data.data.length === 0) return null
     
-    const colors = ['#1976d2', '#dc004e', '#2e7d32', '#ed6c02', '#9c27b0', '#ff9800']
+    // Color palette for root causes - using semantic colors
+    const getColorForCategory = (category, value, maxValue) => {
+      const intensity = maxValue > 0 ? value / maxValue : 0
+      
+      // Base colors for different root cause types
+      const categoryColors = {
+        'Implementation': '#1976d2',    // Blue
+        'Requirements': '#2e7d32',      // Green
+        'Testing': '#ed6c02',           // Orange
+        'Environment': '#9c27b0',       // Purple
+        'Communication': '#dc004e',     // Pink
+        'Process': '#795548',           // Brown
+        'Legacy': '#607d8b',            // Blue Grey
+        'Human': '#ff5722',             // Deep Orange
+        'Other': '#757575'              // Grey
+      }
+      
+      // Try to match category to color based on keywords
+      let baseColor = '#1976d2' // Default blue
+      for (const [key, color] of Object.entries(categoryColors)) {
+        if (category.toLowerCase().includes(key.toLowerCase())) {
+          baseColor = color
+          break
+        }
+      }
+      
+      // Adjust opacity based on value intensity
+      const alpha = Math.max(0.6, intensity)
+      const hex = baseColor.replace('#', '')
+      const r = parseInt(hex.substr(0, 2), 16)
+      const g = parseInt(hex.substr(2, 2), 16)
+      const b = parseInt(hex.substr(4, 2), 16)
+      
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+
+    const maxValue = Math.max(...data.data.map(item => item.value))
     
-    return data.data.map((item, index) => ({
-      id: index,
-      value: item.value,
-      label: item.name,
-      color: colors[index % colors.length]
-    }))
+    // Sort data by value for better visualization
+    const sortedData = [...data.data].sort((a, b) => b.value - a.value)
+
+    // Calculate total for percentage calculation
+    const totalIssues = sortedData.reduce((sum, item) => sum + item.value, 0)
+    
+    // Transform data for horizontal bar chart
+    const labels = sortedData.map(item => item.name)
+    const values = sortedData.map(item => totalIssues > 0 ? (item.value / totalIssues * 100) : 0)
+    const backgroundColors = sortedData.map(item => getColorForCategory(item.name, item.value, maxValue))
+
+    logger.heatmap('ROOT_CAUSE', 'Bar chart data prepared', {
+      dataCount: sortedData.length,
+      maxValue,
+      sampleData: sortedData[0],
+      totalValue: values.reduce((sum, val) => sum + val, 0),
+      labels: labels.slice(0, 5) // First 5 labels for debugging
+    })
+
+    return {
+      labels: labels,
+      datasets: [{
+        label: 'Percentage',
+        data: values,
+        backgroundColor: backgroundColors,
+        borderColor: backgroundColors.map(color => color.replace(/rgba\(([^)]+),\s*[\d.]+\)/, 'rgb($1)')),
+        borderWidth: 1,
+        borderRadius: 4,
+        // Store original data for tooltips
+        _originalData: sortedData
+      }]
+    }
   }, [data])
   
-  const chartConfig = useMemo(() => ({
-    height: height,
-    margin: { top: 20, right: 20, bottom: 20, left: 20 },
-    slotProps: {
+  const chartOptions = useMemo(() => ({
+    indexAxis: 'y', // Horizontal bar chart
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: false
+      },
       legend: {
-        direction: 'column',
-        position: {
-          vertical: 'middle',
-          horizontal: 'right'
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1,
+        cornerRadius: 6,
+        displayColors: false,
+        callbacks: {
+          title: function(context) {
+            return context[0]?.label || 'Unknown Category'
+          },
+          label: function(context) {
+            const percentage = context.parsed?.x || context.raw || 0
+            const dataset = context.dataset
+            const originalData = dataset._originalData?.[context.dataIndex]
+            const issueCount = originalData?.value || 0
+            
+            return [
+              `Percentage: ${percentage.toFixed(1)}%`,
+              `Issues: ${issueCount}`
+            ]
+          },
+          afterLabel: function(context) {
+            const percentage = context.parsed?.x || context.raw || 0
+            if (percentage === 0) return 'No issues found'
+            if (percentage <= 10) return 'Low priority'
+            if (percentage <= 25) return 'Moderate priority'
+            if (percentage <= 50) return 'High priority'
+            return 'Critical - needs immediate attention'
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Percentage (%)',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
         },
-        padding: 0
+        ticks: {
+          callback: function(value) {
+            return value.toFixed(1) + '%'
+          }
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Root Cause Categories',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          maxTicksLimit: 10, // Limit number of categories shown
+          font: {
+            size: 10
+          },
+          callback: function(value, index) {
+            const label = this.getLabelForValue(value)
+            // Truncate long labels
+            return label.length > 25 ? label.substring(0, 22) + '...' : label
+          }
+        },
+        grid: {
+          display: false
+        }
       }
     }
-  }), [height])
+  }), [])
   
   const categoryTrends = useMemo(() => {
     if (!metrics?.trends) return []
@@ -92,7 +259,7 @@ const RootCauseAnalysis = React.memo(({
   // 3. Callbacks (none needed)
   
   // 4. Early returns
-  if (!chartData || !metrics) {
+  if (!chartData || !chartData.datasets || !metrics) {
     return (
       <Paper 
         elevation={1} 
@@ -142,18 +309,39 @@ const RootCauseAnalysis = React.memo(({
       <Box sx={{ 
         height: { xs: Math.min(height, 300), sm: height },
         width: '100%',
-        mb: { xs: 2, sm: 3 },
-        display: 'flex',
-        justifyContent: 'center'
+        mb: { xs: 2, sm: 3 }
       }}>
-        <PieChart
-          series={[{
-            data: chartData,
-            highlightScope: { faded: 'global', highlighted: 'item' },
-            faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' }
-          }]}
-          {...chartConfig}
-        />
+        {chartData && chartData.datasets && chartData.datasets[0]?.data?.length > 0 ? (
+          <Bar 
+            data={chartData}
+            options={chartOptions}
+          />
+        ) : (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            height: '100%',
+            backgroundColor: 'grey.50',
+            borderRadius: 1
+          }}>
+            <Typography variant="body2" color="text.secondary">
+              Root Cause chart loading... (Check console for errors)
+            </Typography>
+          </Box>
+        )}
+      </Box>
+      
+      {/* Chart Guide */}
+      <Box sx={{ 
+        mb: { xs: 2, sm: 3 },
+        p: 1.5,
+        bgcolor: 'rgba(0, 0, 0, 0.02)',
+        borderRadius: 1
+      }}>
+        <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+          💡 Chart Guide: Bar length represents issue count. Hover over bars for details. Colors indicate category types.
+        </Typography>
       </Box>
       
       {/* Categories Summary */}
@@ -186,7 +374,7 @@ const RootCauseAnalysis = React.memo(({
                   px: 0,
                   py: 0.5,
                   borderLeft: 4,
-                  borderColor: chartData[index]?.color || 'primary.main',
+                  borderColor: chartData?.datasets?.[0]?.data?.[index]?.backgroundColor || 'primary.main',
                   pl: 1
                 }}
               >

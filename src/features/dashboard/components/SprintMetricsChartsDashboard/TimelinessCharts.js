@@ -8,8 +8,28 @@ import {
   Grid,
   useTheme 
 } from '@mui/material'
-import { BarChart } from '@mui/x-charts/BarChart'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
 import { Visibility as ViewIcon } from '@mui/icons-material'
+import logger from '../../../../utils/logger'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const TimelinessCharts = React.memo(({ 
   sprintTimelinessData = [],
@@ -22,12 +42,133 @@ const TimelinessCharts = React.memo(({
 }) => {
   const theme = useTheme()
 
-  const chartData = useMemo(() => {
+  const timelinessData = useMemo(() => {
     if (!sprintTimelinessData || sprintTimelinessData.length === 0) return null
 
     // Use processed sprint data instead of raw issues
     return processSprintTimelinessForCharts(sprintTimelinessData, projectTimelinessData, projectKey)
   }, [sprintTimelinessData, projectTimelinessData, projectKey])
+
+  const chartDatasets = useMemo(() => {
+    if (!timelinessData) return { labels: [], datasets: [] }
+
+    logger.heatmap('TIMELINESS', 'Processing bar chart data', {
+      hasData: !!timelinessData,
+      dataLength: timelinessData.chartData?.length,
+      sprintsCount: timelinessData.summary?.totalSprints
+    })
+
+    const datasets = [
+      {
+        label: 'On Time',
+        data: timelinessData.chartData.map(d => d.onTime),
+        backgroundColor: theme.palette.success.main,
+        borderColor: theme.palette.success.dark,
+        borderWidth: 1,
+        stack: 'timeliness'
+      },
+      {
+        label: 'Late',
+        data: timelinessData.chartData.map(d => d.late),
+        backgroundColor: theme.palette.error.main,
+        borderColor: theme.palette.error.dark,
+        borderWidth: 1,
+        stack: 'timeliness'
+      }
+    ]
+
+    const labels = timelinessData.xAxisData
+
+    logger.heatmap('TIMELINESS', 'Chart datasets prepared', {
+      datasetsCount: datasets.length,
+      labelsCount: labels.length,
+      sampleData: {
+        onTime: datasets[0].data.slice(0, 3),
+        late: datasets[1].data.slice(0, 3),
+        labels: labels.slice(0, 3)
+      }
+    })
+
+    return { labels, datasets }
+  }, [timelinessData, theme])
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: false
+      },
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#333',
+        bodyColor: '#333',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        cornerRadius: 4,
+        callbacks: {
+          title: function(context) {
+            return `Sprint: ${context[0].label}`
+          },
+          label: function(context) {
+            const sprintData = timelinessData?.chartData[context.dataIndex]
+            const value = context.parsed.y
+            const percentage = sprintData ? sprintData.percentage.toFixed(1) : 0
+            
+            return [
+              `${context.dataset.label}: ${value}`,
+              `Total Issues: ${sprintData?.total || 0}`,
+              `Timeliness Rate: ${percentage}%`
+            ]
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Sprint',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 0,
+          font: {
+            size: 10
+          }
+        }
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Issues Count',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1
+        }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  }), [timelinessData])
 
   const handleViewLateIssues = useCallback(() => {
     if (onViewDetails) {
@@ -51,7 +192,7 @@ const TimelinessCharts = React.memo(({
     )
   }
 
-  if (!chartData) {
+  if (!timelinessData) {
     return (
       <Paper elevation={1} sx={{ p: 2, width: '100%' }} {...props}>
         <Typography variant="h6">{title}</Typography>
@@ -80,7 +221,7 @@ const TimelinessCharts = React.memo(({
           size="small"
           startIcon={<ViewIcon />}
           onClick={handleViewLateIssues}
-          disabled={!chartData.summary || chartData.summary.totalLate === 0}
+          disabled={!timelinessData.summary || timelinessData.summary.totalLate === 0}
         >
           View Late Issues
         </Button>
@@ -91,36 +232,9 @@ const TimelinessCharts = React.memo(({
         <Typography variant="subtitle2" gutterBottom>
           Sprint Timeliness by Sprint
         </Typography>
-        <BarChart
-          width={undefined}
-          height={height - 100}
-          series={[
-            {
-              data: chartData.chartData.map(d => d.onTime),
-              label: 'On Time',
-              color: theme.palette.success.main,
-              stack: 'timeliness'
-            },
-            {
-              data: chartData.chartData.map(d => d.late),
-              label: 'Late',
-              color: theme.palette.error.main,
-              stack: 'timeliness'
-            }
-          ]}
-          xAxis={[{
-            data: chartData.xAxisData,
-            scaleType: 'band',
-            tickLabelStyle: {
-              angle: -45,
-              textAnchor: 'end'
-            }
-          }]}
-          yAxis={[{
-            label: 'Issues Count'
-          }]}
-          margin={{ left: 60, right: 30, top: 20, bottom: 80 }}
-          legend={{ direction: 'row', position: { vertical: 'top', horizontal: 'right' } }}
+        <Bar 
+          data={chartDatasets}
+          options={chartOptions}
         />
       </Box>
 
@@ -137,7 +251,7 @@ const TimelinessCharts = React.memo(({
       }}>
         <Box>
           <Typography variant="h6" color="success.main">
-            {chartData.summary.totalOnTime}
+            {timelinessData.summary.totalOnTime}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             On Time
@@ -146,7 +260,7 @@ const TimelinessCharts = React.memo(({
         
         <Box>
           <Typography variant="h6" color="error.main">
-            {chartData.summary.totalLate}
+            {timelinessData.summary.totalLate}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Late
@@ -155,7 +269,7 @@ const TimelinessCharts = React.memo(({
         
         <Box>
           <Typography variant="h6" color="primary">
-            {chartData.summary.overallTimelinessRate.toFixed(1)}%
+            {timelinessData.summary.overallTimelinessRate.toFixed(1)}%
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Overall Rate
@@ -164,7 +278,7 @@ const TimelinessCharts = React.memo(({
         
         <Box>
           <Typography variant="h6" color="info.main">
-            {chartData.summary.totalSprints}
+            {timelinessData.summary.totalSprints}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Sprints
@@ -173,7 +287,7 @@ const TimelinessCharts = React.memo(({
       </Box>
 
       {/* Insights */}
-      {chartData.summary.overallTimelinessRate < 70 && (
+      {timelinessData.summary.overallTimelinessRate < 70 && (
         <Box sx={{ 
           mt: 2, 
           p: 1.5, 

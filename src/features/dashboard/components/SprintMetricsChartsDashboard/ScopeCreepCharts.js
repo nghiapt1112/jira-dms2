@@ -7,8 +7,28 @@ import {
   Button,
   useTheme 
 } from '@mui/material'
-import { BarChart } from '@mui/x-charts/BarChart'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
 import { Visibility as ViewIcon } from '@mui/icons-material'
+import logger from '../../../../utils/logger'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const ScopeCreepCharts = React.memo(({ 
   sprintScopeCreepData = [],
@@ -21,12 +41,133 @@ const ScopeCreepCharts = React.memo(({
 }) => {
   const theme = useTheme()
 
-  const chartData = useMemo(() => {
+  const scopeCreepData = useMemo(() => {
     if (!sprintScopeCreepData || sprintScopeCreepData.length === 0) return null
 
     // Use processed sprint scope creep data instead of raw issues
     return processSprintScopeCreepForCharts(sprintScopeCreepData, projectScopeCreepData, projectKey)
   }, [sprintScopeCreepData, projectScopeCreepData, projectKey])
+
+  const chartDatasets = useMemo(() => {
+    if (!scopeCreepData) return { labels: [], datasets: [] }
+
+    logger.heatmap('SCOPE_CREEP', 'Processing bar chart data', {
+      hasData: !!scopeCreepData,
+      dataLength: scopeCreepData.chartData?.length,
+      sprintsCount: scopeCreepData.summary?.totalSprints
+    })
+
+    const datasets = [
+      {
+        label: 'Planned',
+        data: scopeCreepData.chartData.map(d => d.planned),
+        backgroundColor: theme.palette.success.main,
+        borderColor: theme.palette.success.dark,
+        borderWidth: 1,
+        stack: 'scope'
+      },
+      {
+        label: 'Added',
+        data: scopeCreepData.chartData.map(d => d.added),
+        backgroundColor: theme.palette.warning.main,
+        borderColor: theme.palette.warning.dark,
+        borderWidth: 1,
+        stack: 'scope'
+      }
+    ]
+
+    const labels = scopeCreepData.xAxisData
+
+    logger.heatmap('SCOPE_CREEP', 'Chart datasets prepared', {
+      datasetsCount: datasets.length,
+      labelsCount: labels.length,
+      sampleData: {
+        planned: datasets[0].data.slice(0, 3),
+        added: datasets[1].data.slice(0, 3),
+        labels: labels.slice(0, 3)
+      }
+    })
+
+    return { labels, datasets }
+  }, [scopeCreepData, theme])
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: false
+      },
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#333',
+        bodyColor: '#333',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        cornerRadius: 4,
+        callbacks: {
+          title: function(context) {
+            return `Sprint: ${context[0].label}`
+          },
+          label: function(context) {
+            const sprintData = scopeCreepData?.chartData[context.dataIndex]
+            const value = context.parsed.y
+            const percentage = sprintData ? sprintData.percentage.toFixed(1) : 0
+            
+            return [
+              `${context.dataset.label}: ${value}`,
+              `Total Issues: ${sprintData?.total || 0}`,
+              `Creep Rate: ${percentage}%`
+            ]
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Sprint',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 0,
+          font: {
+            size: 10
+          }
+        }
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Issues Count',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1
+        }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  }), [scopeCreepData])
 
   const handleViewScopeCreepIssues = useCallback(() => {
     if (onViewDetails) {
@@ -50,7 +191,7 @@ const ScopeCreepCharts = React.memo(({
     )
   }
 
-  if (!chartData) {
+  if (!scopeCreepData) {
     return (
       <Paper elevation={1} sx={{ p: 2, width: '100%' }} {...props}>
         <Typography variant="h6">{title}</Typography>
@@ -79,7 +220,7 @@ const ScopeCreepCharts = React.memo(({
           size="small"
           startIcon={<ViewIcon />}
           onClick={handleViewScopeCreepIssues}
-          disabled={!chartData.summary || chartData.summary.totalAdded === 0}
+          disabled={!scopeCreepData.summary || scopeCreepData.summary.totalAdded === 0}
         >
           View Added Issues
         </Button>
@@ -90,36 +231,9 @@ const ScopeCreepCharts = React.memo(({
         <Typography variant="subtitle2" gutterBottom>
           Scope Creep by Sprint
         </Typography>
-        <BarChart
-          width={undefined}
-          height={height - 100}
-          series={[
-            {
-              data: chartData.chartData.map(d => d.planned),
-              label: 'Planned',
-              color: theme.palette.success.main,
-              stack: 'scope'
-            },
-            {
-              data: chartData.chartData.map(d => d.added),
-              label: 'Added',
-              color: theme.palette.warning.main,
-              stack: 'scope'
-            }
-          ]}
-          xAxis={[{
-            data: chartData.xAxisData,
-            scaleType: 'band',
-            tickLabelStyle: {
-              angle: -45,
-              textAnchor: 'end'
-            }
-          }]}
-          yAxis={[{
-            label: 'Issues Count'
-          }]}
-          margin={{ left: 60, right: 30, top: 20, bottom: 80 }}
-          legend={{ direction: 'row', position: { vertical: 'top', horizontal: 'right' } }}
+        <Bar 
+          data={chartDatasets}
+          options={chartOptions}
         />
       </Box>
 
@@ -136,7 +250,7 @@ const ScopeCreepCharts = React.memo(({
       }}>
         <Box>
           <Typography variant="h6" color="success.main">
-            {chartData.summary.totalPlanned}
+            {scopeCreepData.summary.totalPlanned}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Planned
@@ -145,7 +259,7 @@ const ScopeCreepCharts = React.memo(({
         
         <Box>
           <Typography variant="h6" color="warning.main">
-            {chartData.summary.totalAdded}
+            {scopeCreepData.summary.totalAdded}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Added
@@ -154,7 +268,7 @@ const ScopeCreepCharts = React.memo(({
         
         <Box>
           <Typography variant="h6" color="primary">
-            {chartData.summary.overallScopeCreepRate.toFixed(1)}%
+            {scopeCreepData.summary.overallScopeCreepRate.toFixed(1)}%
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Creep Rate
@@ -163,7 +277,7 @@ const ScopeCreepCharts = React.memo(({
         
         <Box>
           <Typography variant="h6" color="info.main">
-            {chartData.summary.totalSprints}
+            {scopeCreepData.summary.totalSprints}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Sprints
@@ -172,7 +286,7 @@ const ScopeCreepCharts = React.memo(({
       </Box>
 
       {/* Insights */}
-      {chartData.summary.overallScopeCreepRate > 25 && (
+      {scopeCreepData.summary.overallScopeCreepRate > 25 && (
         <Box sx={{ 
           mt: 2, 
           p: 1.5, 

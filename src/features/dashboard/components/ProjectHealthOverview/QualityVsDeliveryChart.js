@@ -2,7 +2,20 @@ import React, { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Typography, Paper, Tooltip, useTheme, Modal, IconButton } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
-import { ScatterChart } from '@mui/x-charts/ScatterChart'
+import {
+  Chart as ChartJS,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip as ChartTooltip,
+  Legend,
+  Title
+} from 'chart.js'
+import { Scatter } from 'react-chartjs-2'
+import logger from '../../../../utils/logger'
+
+// Register Chart.js components
+ChartJS.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend, Title)
 
 const QualityVsDeliveryChart = React.memo(({ 
   data, 
@@ -13,7 +26,7 @@ const QualityVsDeliveryChart = React.memo(({
 }) => {
   const theme = useTheme()
   const [selectedPoint, setSelectedPoint] = React.useState(null)
-  const [tooltipPosition, setTooltipPosition] = React.useState({ x: 0, y: 0 })
+  const [selectedSeries, setSelectedSeries] = React.useState(null)
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return []
@@ -49,10 +62,192 @@ const QualityVsDeliveryChart = React.memo(({
     })
   }, [data])
 
+  const getColorByDelivery = useCallback((deliveryScore) => {
+    if (deliveryScore >= 80) return theme.palette.success.main
+    if (deliveryScore >= 60) return theme.palette.info.main
+    if (deliveryScore >= 40) return theme.palette.warning.main
+    return theme.palette.error.main
+  }, [theme])
+
+  const chartDatasets = useMemo(() => {
+    logger.heatmap('QUALITY_DELIVERY', 'Processing scatter chart data', {
+      hasData: !!data,
+      dataLength: data?.length,
+      chartDataLength: chartData.length
+    })
+
+    const deliveryGroups = {
+      excellent: { data: [], color: theme.palette.success.main, label: 'Excellent Delivery (≥80)' },
+      good: { data: [], color: theme.palette.info.main, label: 'Good Delivery (60-79)' },
+      moderate: { data: [], color: theme.palette.warning.main, label: 'Moderate Delivery (40-59)' },
+      poor: { data: [], color: theme.palette.error.main, label: 'Poor Delivery (<40)' }
+    }
+
+    chartData.forEach(point => {
+      // Convert to Chart.js scatter format
+      const scatterPoint = {
+        x: point.x,
+        y: point.y,
+        // Store original data for tooltips and clicks
+        _originalData: point
+      }
+      
+      if (point.x >= 80) {
+        deliveryGroups.excellent.data.push(scatterPoint)
+      } else if (point.x >= 60) {
+        deliveryGroups.good.data.push(scatterPoint)
+      } else if (point.x >= 40) {
+        deliveryGroups.moderate.data.push(scatterPoint)
+      } else {
+        deliveryGroups.poor.data.push(scatterPoint)
+      }
+    })
+
+    const datasets = Object.values(deliveryGroups)
+      .filter(group => group.data.length > 0)
+      .map(group => ({
+        label: group.label,
+        data: group.data,
+        backgroundColor: group.color,
+        borderColor: group.color,
+        pointRadius: (context) => {
+          const point = context.parsed?._originalData || context.raw?._originalData
+          // Scale point size based on effort/story points
+          return Math.max(Math.sqrt((point?.storyPoints || point?.size || 10) / 10), 6)
+        },
+        pointHoverRadius: (context) => {
+          const point = context.parsed?._originalData || context.raw?._originalData
+          return Math.max(Math.sqrt((point?.storyPoints || point?.size || 10) / 10), 6) + 2
+        }
+      }))
+
+    logger.heatmap('QUALITY_DELIVERY', 'Chart datasets prepared', {
+      datasetsCount: datasets.length,
+      totalPoints: datasets.reduce((sum, ds) => sum + ds.data.length, 0),
+      sampleDataset: datasets[0] ? {
+        label: datasets[0].label,
+        pointCount: datasets[0].data.length,
+        samplePoint: datasets[0].data[0]
+      } : null
+    })
+
+    return datasets
+  }, [chartData, theme, data])
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: false
+      },
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#333',
+        bodyColor: '#333',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        cornerRadius: 4,
+        displayColors: false,
+        callbacks: {
+          title: function(context) {
+            const point = context[0]?.raw?._originalData
+            if (!point) return 'Unknown Project'
+            
+            const project = data.find(p => (p.id || p.projectKey) === point.id)
+            return project?.name || point.projectName || point.id || 'Unknown Project'
+          },
+          label: function(context) {
+            const point = context.raw._originalData
+            if (!point) return []
+            
+            const project = data.find(p => (p.id || p.projectKey) === point.id)
+            
+            return [
+              `Quality: ${(point.y || 0).toFixed(2)}%`,
+              `Delivery: ${(point.x || 0).toFixed(2)}%`,
+              `Effort: ${(point.storyPoints || 0).toFixed(2)} pts`,
+              `Bugs: ${project?.bugs?.length || 0}`,
+              `High Severity: ${point.highSeverityBugs || 0}`
+            ]
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        position: 'bottom',
+        min: 0,
+        max: 100,
+        title: {
+          display: true,
+          text: 'Delivery Performance (%)',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          stepSize: 20
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      y: {
+        type: 'linear',
+        min: 0,
+        max: 100,
+        title: {
+          display: true,
+          text: 'Quality Score (%)',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          stepSize: 20
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      }
+    },
+    onClick: (event, elements) => {
+      if (elements.length > 0) {
+        const element = elements[0]
+        const datasetIndex = element.datasetIndex
+        const index = element.index
+        const point = chartDatasets[datasetIndex]?.data[index]
+        
+        if (point && point._originalData) {
+          setSelectedPoint(point._originalData)
+          setSelectedSeries(datasetIndex)
+          
+          if (onProjectClick) {
+            onProjectClick(point._originalData.id, point._originalData)
+          }
+        }
+      }
+    }
+  }), [data, chartDatasets, onProjectClick])
+
   const getTooltipContent = useCallback((params) => {
-    if (!params || params.dataIndex === undefined) return null
+    if (!params || params.dataIndex === undefined || params.seriesIndex === undefined) return null
     
-    const point = chartData[params.dataIndex]
+    const seriesData = chartDatasets[params.seriesIndex]?.data
+    if (!seriesData) return null
+    
+    const point = seriesData[params.dataIndex]?._originalData
     if (!point) return null
 
     // Get project data for detailed info (following old source pattern)
@@ -96,46 +291,48 @@ const QualityVsDeliveryChart = React.memo(({
         <p style={labelStyle}>{projectName}</p>
         <p style={rowStyle}>
           <span style={keyStyle}>Quality:</span>
-          <span style={valueStyle}>{(point.y || 0).toFixed(2)}%</span>
+          <span style={valueStyle}>{point.y.toFixed(2)}%</span>
         </p>
         <p style={rowStyle}>
           <span style={keyStyle}>Delivery:</span>
-          <span style={valueStyle}>{(point.x || 0).toFixed(2)}%</span>
+          <span style={valueStyle}>{point.x.toFixed(2)}%</span>
         </p>
         <p style={rowStyle}>
           <span style={keyStyle}>Effort:</span>
-          <span style={valueStyle}>{(point.storyPoints || 0).toFixed(2)} pts</span>
+          <span style={valueStyle}>{point.storyPoints.toFixed(2)} pts</span>
         </p>
         <p style={rowStyle}>
           <span style={keyStyle}>Bugs:</span>
-          <span style={valueStyle}>{point.bugs || 0}</span>
+          <span style={valueStyle}>{project?.bugs?.length || 0}</span>
         </p>
         <p style={rowStyle}>
           <span style={keyStyle}>High Severity:</span>
-          <span style={valueStyle}>{point.highSeverityBugs || 0}</span>
+          <span style={valueStyle}>{point.highSeverityBugs}</span>
         </p>
       </div>
     )
-  }, [chartData, data])
+  }, [chartDatasets, data])
 
   const handlePointClick = useCallback((event, params) => {
-    if (params?.dataIndex !== undefined) {
-      const point = chartData[params.dataIndex]
-      if (point) {
-        // Set tooltip data and position
-        setSelectedPoint(point)
-        setTooltipPosition({ 
-          x: event?.clientX || 0, 
-          y: event?.clientY || 0 
-        })
-        
-        // Also call original click handler
-        if (onProjectClick) {
-          onProjectClick(point.id, point)
+    // This is now handled by the chartOptions onClick callback
+    // Keeping this function for compatibility with the modal logic
+    if (params?.dataIndex !== undefined && params?.seriesIndex !== undefined) {
+      const seriesData = chartDatasets[params.seriesIndex]?.data
+      if (seriesData) {
+        const point = seriesData[params.dataIndex]?._originalData
+        if (point) {
+          // Set tooltip data
+          setSelectedPoint(point)
+          setSelectedSeries(params.seriesIndex)
+          
+          // Also call original click handler
+          if (onProjectClick) {
+            onProjectClick(point.id, point)
+          }
         }
       }
     }
-  }, [onProjectClick, chartData])
+  }, [onProjectClick, chartDatasets])
 
   if (!data || data.length === 0) {
     return (
@@ -164,113 +361,9 @@ const QualityVsDeliveryChart = React.memo(({
           height: Math.max(height - 100, 300)
         }
       }}>
-        <ScatterChart
-          width={undefined}
-          height={height}
-          series={[{
-            data: chartData,
-            label: 'Projects',
-            color: theme.palette.primary.main,
-          }]}
-          xAxis={[{
-            label: 'Delivery Performance (%)',
-            min: 0,
-            max: 100,
-            tickNumber: 5
-          }]}
-          yAxis={[{
-            label: 'Quality Score (%)',
-            min: 0,
-            max: 100,
-            tickNumber: 5
-          }]}
-          margin={{ 
-            left: 80, 
-            right: 50, 
-            top: 20, 
-            bottom: 80,
-            [theme.breakpoints.down('sm')]: {
-              left: 60,
-              right: 30,
-              bottom: 60
-            }
-          }}
-          slots={{
-            tooltip: ({ active, payload }) => {
-              if (!active || !payload || !payload.length) return null
-              
-              // Use the same approach as the working click handler
-              const dataIndex = payload[0].dataIndex
-              if (dataIndex === undefined) return null
-              
-              const point = chartData[dataIndex]
-              if (!point) return null
-
-              // Get project data for detailed info (same as click handler logic)
-              const project = data.find(p => (p.id || p.projectKey) === point.id)
-              
-              // Project name resolution (matching old source logic)
-              const projectName = project?.name || point.projectName || point.id || 'Unknown Project'
-
-              // Simple styling matching old source
-              const tooltipStyles = {
-                backgroundColor: '#fff',
-                padding: '10px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                minWidth: '200px'
-              }
-
-              const labelStyle = {
-                margin: '0 0 5px',
-                fontWeight: 'bold',
-                fontSize: '14px'
-              }
-
-              const rowStyle = {
-                margin: '3px 0',
-                fontSize: '12px'
-              }
-
-              const keyStyle = {
-                display: 'inline-block',
-                width: '80px'
-              }
-
-              const valueStyle = {
-                fontWeight: 'bold'
-              }
-
-              return (
-                <div style={tooltipStyles}>
-                  <p style={labelStyle}>{projectName}</p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Quality:</span>
-                    <span style={valueStyle}>{(point.y || 0).toFixed(2)}%</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Delivery:</span>
-                    <span style={valueStyle}>{(point.x || 0).toFixed(2)}%</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Effort:</span>
-                    <span style={valueStyle}>{(point.storyPoints || 0).toFixed(2)} pts</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>Bugs:</span>
-                    <span style={valueStyle}>{point.bugs || 0}</span>
-                  </p>
-                  <p style={rowStyle}>
-                    <span style={keyStyle}>High Severity:</span>
-                    <span style={valueStyle}>{point.highSeverityBugs || 0}</span>
-                  </p>
-                </div>
-              )
-            }
-          }}
-          onItemClick={handlePointClick}
-          grid={{ horizontal: true, vertical: true }}
+        <Scatter 
+          data={{ datasets: chartDatasets }}
+          options={chartOptions}
         />
       </Box>
 
@@ -344,7 +437,10 @@ const QualityVsDeliveryChart = React.memo(({
       {/* Enhanced Tooltip Modal */}
       <Modal
         open={!!selectedPoint}
-        onClose={() => setSelectedPoint(null)}
+        onClose={() => {
+          setSelectedPoint(null)
+          setSelectedSeries(null)
+        }}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -363,7 +459,10 @@ const QualityVsDeliveryChart = React.memo(({
           }}
         >
           <IconButton
-            onClick={() => setSelectedPoint(null)}
+            onClick={() => {
+              setSelectedPoint(null)
+              setSelectedSeries(null)
+            }}
             sx={{
               position: 'absolute',
               top: 8,
@@ -374,7 +473,12 @@ const QualityVsDeliveryChart = React.memo(({
             <CloseIcon />
           </IconButton>
           
-          {selectedPoint && getTooltipContent({ dataIndex: chartData.findIndex(p => p.id === selectedPoint.id) })}
+          {selectedPoint && selectedSeries !== null && 
+            getTooltipContent({ 
+              dataIndex: chartDatasets[selectedSeries]?.data.findIndex(p => p._originalData?.id === selectedPoint.id),
+              seriesIndex: selectedSeries 
+            })
+          }
         </Paper>
       </Modal>
     </Paper>

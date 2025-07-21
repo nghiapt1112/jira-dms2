@@ -184,33 +184,62 @@ export const useStore = create((set) => ({
 
 ## 📊 CHARTS (MANDATORY)
 
-**Use MUI X Charts Only:**
+**Use react-chartjs-2 FIRST (Best Performance):**
 
 ```javascript
-import { LineChart } from '@mui/x-charts/LineChart'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
+
+// Register only what you need (tree-shaking)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const Chart = React.memo(({ data, title, height = 400 }) => {
   const chartData = useMemo(() => ({
-    series: data.series,
-    xAxis: data.xAxis,
+    labels: data.labels,
+    datasets: data.datasets
   }), [data])
+  
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: { display: false },
+      legend: { position: 'top' }
+    }
+  }), [])
   
   return (
     <Paper elevation={1} sx={{ p: 2, width: '100%' }}>
-      <Typography variant="h6">{title}</Typography>
+      <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
       <Box sx={{ height }}>
-        <LineChart
-          series={chartData.series}
-          xAxis={chartData.xAxis}
-          height={height}
-        />
+        <Line data={chartData} options={chartOptions} />
       </Box>
     </Paper>
   )
 })
 ```
 
-**❌ FORBIDDEN**: Other chart libraries, no memoization, hardcoded sizes
+**Chart Library Priority (Performance-Based):**
+1. **react-chartjs-2** ✅ PREFERRED - Best performance, smallest bundle
+2. **MUI X Charts** 👍 ACCEPTABLE - Good integration with MUI
+3. **Recharts** ❌ AVOID - Poor large dataset performance
+
+**✅ REQUIRED Chart Patterns:**
+- Always register only needed Chart.js components
+- Use useMemo for chart data and options
+- Canvas rendering for large datasets (>1000 points)
+- Responsive design with maintainAspectRatio: false
+
+**❌ FORBIDDEN**: Other chart libraries, no memoization, hardcoded sizes, SVG for large datasets
 
 ---
 

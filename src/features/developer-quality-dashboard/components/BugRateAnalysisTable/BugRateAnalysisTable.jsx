@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
+import { getSeverityConfig } from '../../shared/constants/memberConfiguration'
 import {
   Box,
   Paper,
@@ -21,61 +22,233 @@ import {
   TrendingUp,
   TrendingDown,
   TrendingFlat,
-  Person as PersonIcon
+  Person as PersonIcon,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/icons-material'
+
+// Severity weights for consistent calculation across dashboards
+const SEVERITY_WEIGHTS = {
+  Critical: 1.0,
+  Major: 0.7,
+  Minor: 0.5,
+  Low: 0.3,
+  Cosmetic: 0.1,
+  Unknown: 0.2
+}
 
 const BugRateAnalysisTable = React.memo(({ 
   data, 
   onRowClick, 
   title = 'Bug Rate Analysis',
-  rowsPerPageOptions = [5, 10, 25]
+  rowsPerPageOptions = [5, 10, 25],
+  useWeightedCalculation = false, // New prop for calculation mode
+  onCalculationModeChange = null  // New prop for mode change callback
 }) => {
   // 1. Hooks first
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [orderBy, setOrderBy] = useState('bugRate')
   const [order, setOrder] = useState('desc')
+  const [internalWeightedMode, setInternalWeightedMode] = useState(useWeightedCalculation)
+  
+  // Helper function to parse bug severity using configurable parsing logic
+  const parseBugSeverity = useCallback((bug, projectKey = null) => {
+    const severityConfig = getSeverityConfig(projectKey)
+    const { severityField, usePriorityFallback, severityMapping } = severityConfig
+    
+    let severityValue = null
+    if (severityField && bug.fields?.[severityField]) {
+      const customFieldValue = bug.fields[severityField]
+      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
+    }
+    
+    if (!severityValue && usePriorityFallback && bug.fields?.priority?.name) {
+      severityValue = bug.fields.priority.name
+    }
+    
+    return (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
+  }, [])
+  
+  // Calculate weighted bug rate for a developer
+  const calculateWeightedBugRate = useCallback((developer) => {
+    if (!developer.severityBreakdown || developer.totalIssues === 0) return 0
+    
+    const weightedBugCount = Object.entries(developer.severityBreakdown)
+      .reduce((total, [severity, count]) => {
+        const weight = SEVERITY_WEIGHTS[severity] || SEVERITY_WEIGHTS.Unknown
+        return total + (count * weight)
+      }, 0)
+    
+    return (weightedBugCount / developer.totalIssues) * 100
+  }, [])
+  
+  // Determine which calculation mode to use
+  const currentCalculationMode = useWeightedCalculation || internalWeightedMode
   
   // 2. Memoized values
   const columns = useMemo(() => {
-    // EXISTING COLUMNS (unchanged)
+    // EXISTING COLUMNS with tooltips explaining calculations
     const currentColumns = [
-      { id: 'developer', label: 'Developer', sortable: true, align: 'left' },
-      { id: 'totalIssues', label: 'Total Issues', sortable: true, align: 'right' },
-      { id: 'bugs', label: 'Bugs', sortable: true, align: 'right' },
-      { id: 'bugRate', label: 'Bug Rate (%)', sortable: true, align: 'right' },
-      { id: 'trend', label: 'Trend', sortable: true, align: 'center' },
-      { id: 'projects', label: 'Projects', sortable: false, align: 'left' },
-      { id: 'performance', label: 'Performance', sortable: false, align: 'center' }
+      { 
+        id: 'developer', 
+        label: 'Developer', 
+        sortable: true, 
+        align: 'left',
+        tooltip: 'Name of the developer/team member'
+      },
+      { 
+        id: 'totalIssues', 
+        label: 'Total Issues', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Total number of issues (bugs + stories + tasks) assigned to this developer'
+      },
+      { 
+        id: 'bugs', 
+        label: 'Bugs', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Total number of bug-type issues assigned to this developer'
+      },
+      { 
+        id: 'bugRate', 
+        label: currentCalculationMode ? 'Weighted Bug Rate (%)' : 'Bug Rate (%)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: currentCalculationMode ? 
+          `Severity-weighted bug rate using configurable weights. Formula: (Σ(severity_weight × count) ÷ Total Issues) × 100.
+          Weights: Critical(1.0), Major(0.7), Minor(0.5), Low(0.3), Cosmetic(0.1), Unknown(0.2)` :
+          'Simple percentage of bug issues vs total issues. Formula: (Bugs ÷ Total Issues) × 100'
+      },
+      { 
+        id: 'trend', 
+        label: 'Trend', 
+        sortable: true, 
+        align: 'center',
+        tooltip: 'Bug rate trend over time: Improving (↓), Stable (→), or Declining (↑)'
+      },
+      { 
+        id: 'projects', 
+        label: 'Projects', 
+        sortable: false, 
+        align: 'left',
+        tooltip: 'List of projects this developer has worked on'
+      },
+      { 
+        id: 'performance', 
+        label: 'Performance', 
+        sortable: false, 
+        align: 'center',
+        tooltip: 'Performance rating based on bug rate benchmarks: Excellent (<10%), Good (10-15%), Needs Improvement (>15%)'
+      }
     ]
     
-    // NEW COLUMNS (appended safely)
+    // NEW COLUMNS with detailed calculation tooltips
     const newColumns = [
-      { id: 'reopenRate', label: 'Reopen Rate (%)', sortable: true, align: 'right' },
-      { id: 'avgResolutionTime', label: 'Avg Resolution (hrs)', sortable: true, align: 'right' },
-      { id: 'timeEfficiency', label: 'Efficiency (%)', sortable: true, align: 'right' },
-      { id: 'severityMix', label: 'Severity Mix', sortable: false, align: 'left' },
-      { id: 'topRootCause', label: 'Top Root Cause', sortable: false, align: 'left' }
+      { 
+        id: 'qualityEfficiency', 
+        label: 'Quality Efficiency (%)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Quality efficiency score based on weighted bug rate. Formula: Math.max(0, 100 - weighted_bug_rate). Higher % indicates better quality.'
+      },
+      { 
+        id: 'reopenRate', 
+        label: 'Reopen Rate (%)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Percentage of bugs that were reopened after being resolved. Formula: (Reopened Bugs ÷ Total Bugs) × 100'
+      },
+      { 
+        id: 'avgResolutionTime', 
+        label: 'Avg Resolution (hrs)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Average time in hours from bug creation to resolution. Only includes resolved bugs with valid timestamps.'
+      },
+      { 
+        id: 'timeEfficiency', 
+        label: 'Efficiency (%)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Time efficiency score based on resolution speed vs complexity. Higher % indicates faster resolution relative to issue complexity.'
+      },
+      { 
+        id: 'severityMix', 
+        label: 'Severity Mix', 
+        sortable: false, 
+        align: 'left',
+        tooltip: 'Distribution of bugs by severity level (Critical, High, Medium, Low). Shows count per severity.'
+      },
+      { 
+        id: 'topRootCause', 
+        label: 'Top Root Cause', 
+        sortable: false, 
+        align: 'left',
+        tooltip: 'Most frequent root cause category for this developer\'s bugs, with occurrence count'
+      }
     ]
     
-    // NEW TIME TRACKING COLUMNS (appended safely)
+    // TIME TRACKING COLUMNS with calculation explanations
     const timeTrackingColumns = [
-      { id: 'totalTimeSpent', label: 'Total Time (hrs)', sortable: true, align: 'right' },
-      { id: 'timePerStoryPoint', label: 'Time/SP (hrs)', sortable: true, align: 'right' },
-      { id: 'estimationAccuracy', label: 'Estimation Accuracy (%)', sortable: true, align: 'right' },
-      { id: 'timeTrackingEfficiency', label: 'Time Efficiency', sortable: false, align: 'center' }
+      { 
+        id: 'totalTimeSpent', 
+        label: 'Total Time (hrs)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Total logged time in hours across all issues. Based on JIRA time tracking data.'
+      },
+      { 
+        id: 'timePerStoryPoint', 
+        label: 'Time/SP (hrs)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Average hours spent per story point. Formula: Total Time ÷ Total Story Points. Lower is more efficient.'
+      },
+      { 
+        id: 'estimationAccuracy', 
+        label: 'Estimation Accuracy (%)', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'How accurate time estimates are vs actual time spent. 100% = perfect accuracy, >100% = over-estimated, <100% = under-estimated.'
+      },
+      { 
+        id: 'timeTrackingEfficiency', 
+        label: 'Time Efficiency', 
+        sortable: false, 
+        align: 'center',
+        tooltip: 'Overall time efficiency rating: Efficient (≤4h/SP), Average (4-8h/SP), Slow (>8h/SP)'
+      }
     ]
     
     // EXTENDED COLUMNS - INHERITS ALL + ADDS NEW
     return [...currentColumns, ...newColumns, ...timeTrackingColumns]
   }, [])
   
-  const sortedData = useMemo(() => {
+  const enhancedDevelopers = useMemo(() => {
     if (!data || !data.developers) return []
     
-    const sorted = [...data.developers].sort((a, b) => {
-      let aValue = a[orderBy]
-      let bValue = b[orderBy]
+    return data.developers.map(developer => {
+      const weightedBugRate = calculateWeightedBugRate(developer)
+      const qualityEfficiency = Math.max(0, 100 - weightedBugRate)
+      
+      return {
+        ...developer,
+        weightedBugRate,
+        qualityEfficiency,
+        // Use weighted rate if in weighted mode, otherwise simple rate
+        displayBugRate: currentCalculationMode ? weightedBugRate : developer.bugRate
+      }
+    })
+  }, [data, calculateWeightedBugRate, currentCalculationMode])
+  
+  const sortedData = useMemo(() => {
+    if (!enhancedDevelopers || enhancedDevelopers.length === 0) return []
+    
+    const sorted = [...enhancedDevelopers].sort((a, b) => {
+      let aValue = orderBy === 'bugRate' ? a.displayBugRate : a[orderBy]
+      let bValue = orderBy === 'bugRate' ? b.displayBugRate : b[orderBy]
       
       // Handle special cases
       if (orderBy === 'trend') {
@@ -96,7 +269,7 @@ const BugRateAnalysisTable = React.memo(({
     })
     
     return sorted
-  }, [data, orderBy, order])
+  }, [enhancedDevelopers, orderBy, order])
   
   const paginatedData = useMemo(() => {
     const startIndex = page * rowsPerPage
@@ -195,6 +368,14 @@ const BugRateAnalysisTable = React.memo(({
     return 'Slow'
   }, [])
   
+  // Helper function for quality efficiency color
+  const getQualityEfficiencyColor = useMemo(() => (efficiency) => {
+    if (efficiency >= 85) return 'success'
+    if (efficiency >= 70) return 'warning'
+    if (efficiency >= 50) return 'error'
+    return 'error'
+  }, [])
+  
   // 3. Callbacks
   const handleRequestSort = useCallback((property) => {
     const isAsc = orderBy === property && order === 'asc'
@@ -216,6 +397,16 @@ const BugRateAnalysisTable = React.memo(({
       onRowClick(developer)
     }
   }, [onRowClick])
+  
+  const handleCalculationModeToggle = useCallback((event, newMode) => {
+    if (newMode !== null) {
+      const isWeighted = newMode === 'weighted'
+      setInternalWeightedMode(isWeighted)
+      if (onCalculationModeChange) {
+        onCalculationModeChange(isWeighted)
+      }
+    }
+  }, [onCalculationModeChange])
   
   // 4. Early returns
   if (!data || !data.developers || data.developers.length === 0) {
@@ -272,6 +463,29 @@ const BugRateAnalysisTable = React.memo(({
           </Typography>
         </Box>
         
+        {/* Calculation Mode Toggle */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: { xs: 1, sm: 2 },
+          flexWrap: 'wrap'
+        }}>
+          <ToggleButtonGroup
+            value={currentCalculationMode ? 'weighted' : 'simple'}
+            exclusive
+            onChange={handleCalculationModeToggle}
+            aria-label="calculation mode"
+            size="small"
+          >
+            <ToggleButton value="simple" aria-label="simple calculation">
+              Simple
+            </ToggleButton>
+            <ToggleButton value="weighted" aria-label="weighted calculation">
+              Weighted
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+        
         {/* Summary Stats */}
         <Box sx={{ 
           display: 'flex', 
@@ -308,16 +522,40 @@ const BugRateAnalysisTable = React.memo(({
                     backgroundColor: 'grey.50'
                   }}
                 >
-                  {column.sortable ? (
-                    <TableSortLabel
-                      active={orderBy === column.id}
-                      direction={orderBy === column.id ? order : 'asc'}
-                      onClick={() => handleRequestSort(column.id)}
+                  {column.tooltip ? (
+                    <Tooltip 
+                      title={column.tooltip}
+                      placement="top"
+                      arrow
                     >
-                      {column.label}
-                    </TableSortLabel>
+                      <Box sx={{ cursor: 'help' }}>
+                        {column.sortable ? (
+                          <TableSortLabel
+                            active={orderBy === column.id}
+                            direction={orderBy === column.id ? order : 'asc'}
+                            onClick={() => handleRequestSort(column.id)}
+                          >
+                            {column.label}
+                          </TableSortLabel>
+                        ) : (
+                          column.label
+                        )}
+                      </Box>
+                    </Tooltip>
                   ) : (
-                    column.label
+                    <>
+                      {column.sortable ? (
+                        <TableSortLabel
+                          active={orderBy === column.id}
+                          direction={orderBy === column.id ? order : 'asc'}
+                          onClick={() => handleRequestSort(column.id)}
+                        >
+                          {column.label}
+                        </TableSortLabel>
+                      ) : (
+                        column.label
+                      )}
+                    </>
                   )}
                 </TableCell>
               ))}
@@ -366,11 +604,16 @@ const BugRateAnalysisTable = React.memo(({
                 
                 <TableCell align="right">
                   <Chip
-                    label={`${(row.bugRate || 0).toFixed(1)}%`}
+                    label={`${(row.displayBugRate || 0).toFixed(1)}%`}
                     size="small"
-                    color={getBugRateColor(row.bugRate || 0, data.benchmarks)}
+                    color={getBugRateColor(row.displayBugRate || 0, data.benchmarks)}
                     variant="outlined"
                   />
+                  {currentCalculationMode && (
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Simple: {(row.bugRate || 0).toFixed(1)}%
+                    </Typography>
+                  )}
                 </TableCell>
                 
                 <TableCell align="center">
@@ -409,6 +652,19 @@ const BugRateAnalysisTable = React.memo(({
                 </TableCell>
                 
                 {/* NEW COLUMNS - APPENDED SAFELY */}
+                <TableCell align="right">
+                  <Chip
+                    label={`${(row.qualityEfficiency || 0).toFixed(1)}%`}
+                    size="small"
+                    color={getQualityEfficiencyColor(row.qualityEfficiency || 0)}
+                  />
+                  {currentCalculationMode && (
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Weighted: {(row.weightedBugRate || 0).toFixed(1)}%
+                    </Typography>
+                  )}
+                </TableCell>
+                
                 <TableCell align="right">
                   <Chip
                     label={`${(row.reopenRate || 0).toFixed(1)}%`}
@@ -571,8 +827,16 @@ const BugRateAnalysisTable = React.memo(({
         <Box sx={{ 
           display: 'flex', 
           gap: { xs: 1, sm: 2 },
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          alignItems: 'center'
         }}>
+          <Typography 
+            variant="caption" 
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, fontWeight: 'bold' }}
+          >
+            Mode: {currentCalculationMode ? 'Weighted (Severity-based)' : 'Simple (Count-based)'}
+          </Typography>
           {data.benchmarks && Object.entries(data.benchmarks).map(([key, value]) => (
             <Typography 
               key={key}
@@ -598,7 +862,8 @@ BugRateAnalysisTable.propTypes = {
       bugs: PropTypes.number.isRequired,
       bugRate: PropTypes.number.isRequired,
       trend: PropTypes.oneOf(['improving', 'stable', 'declining']),
-      projects: PropTypes.arrayOf(PropTypes.string)
+      projects: PropTypes.arrayOf(PropTypes.string),
+      severityBreakdown: PropTypes.object
     })),
     teamAverage: PropTypes.number,
     benchmarks: PropTypes.shape({
@@ -609,7 +874,9 @@ BugRateAnalysisTable.propTypes = {
   }),
   onRowClick: PropTypes.func,
   title: PropTypes.string,
-  rowsPerPageOptions: PropTypes.arrayOf(PropTypes.number)
+  rowsPerPageOptions: PropTypes.arrayOf(PropTypes.number),
+  useWeightedCalculation: PropTypes.bool,
+  onCalculationModeChange: PropTypes.func
 }
 
 export default BugRateAnalysisTable 

@@ -39,7 +39,8 @@ const DeveloperDetailPanel = ({
   developerName, 
   metrics, 
   filteredData,
-  statusFilter = memberConfiguration.filterDefaults.statusFilter 
+  statusFilter = memberConfiguration.filterDefaults.statusFilter,
+  timeframe = 'month'
 }) => {
   // Extract comprehensive developer data from the bug rate analysis (contains all detailed metrics)
   const developerData = useMemo(() => {
@@ -241,6 +242,7 @@ const DeveloperDetailPanel = ({
           developerData={developerData}
           selectedDeveloper={developerData.developer || developerName}
           statusFilter={statusFilter}
+          timeframe={timeframe}
         />
       </Box>
 
@@ -277,13 +279,15 @@ DeveloperDetailPanel.propTypes = {
   developerName: PropTypes.string.isRequired,
   metrics: PropTypes.object,
   filteredData: PropTypes.object,
-  statusFilter: PropTypes.arrayOf(PropTypes.string)
+  statusFilter: PropTypes.arrayOf(PropTypes.string),
+  timeframe: PropTypes.oneOf(['week', 'month', 'quarter'])
 }
 
 DeveloperDetailPanel.defaultProps = {
   metrics: null,
   filteredData: null,
-  statusFilter: memberConfiguration.filterDefaults.statusFilter
+  statusFilter: memberConfiguration.filterDefaults.statusFilter,
+  timeframe: 'month'
 }
 
 export default React.memo(DeveloperDetailPanel)
