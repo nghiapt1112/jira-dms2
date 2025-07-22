@@ -1,6 +1,7 @@
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { hybridCacheService, indexedDBCache } from './indexedDBCache'
 import { getCurrentDate, isCacheExpired as isExpired } from '../../../shared/utils/dateUtils.js'
+import { parseSeverity } from '../../../shared/utils/severityParser.js'
 
 export const cacheService = {
   // Cache JIRA data using hybrid storage (IndexedDB for large data, localStorage for small)
@@ -131,6 +132,9 @@ export const cacheService = {
         },
         priority: {
           name: issue.fields.priority?.name
+        },
+        severity: {
+          name: parseSeverity(issue, issue.fields.project?.key).severity
         },
         assignee: {
           displayName: issue.fields.assignee?.displayName

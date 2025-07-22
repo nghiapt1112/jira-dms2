@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { getSeverityConfig, memberConfiguration } from '../../../../constants/memberConfiguration'
-import { getSeverityColor } from '../../../../shared/constants/severityConstants.js'
+import { memberConfiguration } from '../../../../constants/memberConfiguration'
+import { getSeverityColor, calculateWeightedSeverityScore } from '../../../../shared/constants/severityConstants.js'
+import { parseSeverity, parseBugCausedBy, parseBugCausedByBatch } from '../../../../shared/utils/severityParser.js'
+import { calculateReopenRate, calculateAverageResolutionTime } from '../../../../shared/utils/severityCalculations.js'
 import {
   Box,
   Paper,
@@ -28,15 +30,6 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material'
 
-// Severity weights for consistent calculation across dashboards
-const SEVERITY_WEIGHTS = {
-  Critical: 1.0,
-  Major: 0.7,
-  Minor: 0.5,
-  Low: 0.3,
-  Cosmetic: 0.1,
-  Unknown: 0.2
-}
 
 const BugRateAnalysisTable = React.memo(({ 
   data, 
@@ -53,33 +46,18 @@ const BugRateAnalysisTable = React.memo(({
   const [order, setOrder] = useState('desc')
   const [internalWeightedMode, setInternalWeightedMode] = useState(useWeightedCalculation)
   
-  // Helper function to parse bug severity using configurable parsing logic
+  // Helper function to parse bug severity using centralized parser
   const parseBugSeverity = useCallback((bug, projectKey = null) => {
-    const severityConfig = getSeverityConfig(projectKey)
-    const { severityField, usePriorityFallback, severityMapping } = severityConfig
-    
-    let severityValue = null
-    if (severityField && bug.fields?.[severityField]) {
-      const customFieldValue = bug.fields[severityField]
-      severityValue = typeof customFieldValue === 'object' ? customFieldValue.value : customFieldValue
-    }
-    
-    if (!severityValue && usePriorityFallback && bug.fields?.priority?.name) {
-      severityValue = bug.fields.priority.name
-    }
-    
-    return (severityValue && severityMapping[severityValue]) ? severityMapping[severityValue] : 'Unknown'
+    const result = parseSeverity(bug, projectKey)
+    return result.severity
   }, [])
   
-  // Calculate weighted bug rate for a developer
+  // Calculate weighted bug rate for a developer using centralized utilities
   const calculateWeightedBugRate = useCallback((developer) => {
     if (!developer.severityBreakdown || developer.totalIssues === 0) return 0
     
-    const weightedBugCount = Object.entries(developer.severityBreakdown)
-      .reduce((total, [severity, count]) => {
-        const weight = SEVERITY_WEIGHTS[severity] || SEVERITY_WEIGHTS.Unknown
-        return total + (count * weight)
-      }, 0)
+    // Use centralized severity score calculation
+    const weightedBugCount = calculateWeightedSeverityScore(developer.severityBreakdown)
     
     return (weightedBugCount / developer.totalIssues) * 100
   }, [])
@@ -113,6 +91,13 @@ const BugRateAnalysisTable = React.memo(({
         tooltip: 'Total number of bug-type issues assigned to this developer'
       },
       { 
+        id: 'bugsCausedBy', 
+        label: 'Bug Caused By', 
+        sortable: true, 
+        align: 'right',
+        tooltip: 'Total number of bugs actually caused by this developer (from customfield_10002, fallback to assignee). This represents actual bug causation rather than assignment.'
+      },
+      { 
         id: 'bugRate', 
         label: currentCalculationMode ? 'Weighted Bug Rate (%)' : 'Bug Rate (%)', 
         sortable: true, 
@@ -120,7 +105,7 @@ const BugRateAnalysisTable = React.memo(({
         tooltip: currentCalculationMode ? 
           `Severity-weighted bug rate using configurable weights. Formula: (Σ(severity_weight × count) ÷ Total Issues) × 100.
           Weights: Critical(1.0), Major(0.7), Minor(0.5), Low(0.3), Cosmetic(0.1), Unknown(0.2)` :
-          'Simple percentage of bug issues vs total issues. Formula: (Bugs ÷ Total Issues) × 100'
+          'Simple percentage of bug issues vs total issues. Formula: (Bug Caused By ÷ Total Issues) × 100'
       },
       { 
         id: 'trend', 
@@ -234,12 +219,42 @@ const BugRateAnalysisTable = React.memo(({
       const weightedBugRate = calculateWeightedBugRate(developer)
       const qualityEfficiency = Math.max(0, 100 - weightedBugRate)
       
+      // Calculate Bug Caused By metrics
+      let bugsCausedBy = 0
+      let bugRateCausedBy = 0
+      let reopenRate = 0
+      let avgResolutionTimeHours = 0
+      
+      if (developer.bugs && Array.isArray(developer.bugs)) {
+        // Parse Bug Caused By for all bugs and group by developer
+        const bugCausedByResults = parseBugCausedByBatch(developer.bugs)
+        const bugsCausedByCurrentDeveloper = bugCausedByResults.filter(
+          result => result.causedBy === developer.developer
+        ).length
+        
+        bugsCausedBy = bugsCausedByCurrentDeveloper
+        bugRateCausedBy = developer.totalIssues > 0 ? (bugsCausedBy / developer.totalIssues) * 100 : 0
+        
+        // Use centralized calculation functions
+        reopenRate = calculateReopenRate(developer.bugs)
+        avgResolutionTimeHours = calculateAverageResolutionTime(developer.bugs)
+      } else {
+        // Fallback to assigned bugs count if no detailed bug data
+        bugsCausedBy = developer.bugs || 0
+        bugRateCausedBy = developer.bugRate || 0
+      }
+      
       return {
         ...developer,
         weightedBugRate,
         qualityEfficiency,
-        // Use weighted rate if in weighted mode, otherwise simple rate
-        displayBugRate: currentCalculationMode ? weightedBugRate : developer.bugRate
+        // New Bug Caused By fields
+        bugsCausedBy,
+        bugRateCausedBy,
+        reopenRate,
+        avgResolutionTimeHours,
+        // Use bug caused by rate if available, otherwise fall back to assigned bug rate
+        displayBugRate: currentCalculationMode ? weightedBugRate : bugRateCausedBy
       }
     })
   }, [data, calculateWeightedBugRate, currentCalculationMode])
@@ -596,6 +611,24 @@ const BugRateAnalysisTable = React.memo(({
                 </TableCell>
                 
                 <TableCell align="right">
+                  <Typography 
+                    variant="body2"
+                    sx={{ 
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                      fontWeight: 'bold',
+                      color: 'primary.main'
+                    }}
+                  >
+                    {row.bugsCausedBy || 0}
+                  </Typography>
+                  {row.bugsCausedBy !== row.bugs && (
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Assigned: {row.bugs}
+                    </Typography>
+                  )}
+                </TableCell>
+                
+                <TableCell align="right">
                   <Chip
                     label={`${(row.displayBugRate || 0).toFixed(1)}%`}
                     size="small"
@@ -665,6 +698,9 @@ const BugRateAnalysisTable = React.memo(({
                     color={getReopenRateColor(row.reopenRate || 0)}
                     variant="outlined"
                   />
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.6rem' }}>
+                    Centralized calc
+                  </Typography>
                 </TableCell>
                 
                 <TableCell align="right">
@@ -673,6 +709,9 @@ const BugRateAnalysisTable = React.memo(({
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
                     {row.avgResolutionTimeHours ? `${row.avgResolutionTimeHours.toFixed(1)}h` : 'N/A'}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.6rem' }}>
+                    Centralized calc
                   </Typography>
                   {row.overdueCount > 0 && (
                     <Chip

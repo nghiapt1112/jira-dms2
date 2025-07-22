@@ -296,11 +296,13 @@ export const useJiraDataStore = create(
           
           const { data, metadata } = snapshotsResponse
           
-          store.setSnapshots(data.snapshots || [])
+          // Handle new API response structure
+          const snapshots = data.previousQuarters || data.snapshots || []
+          store.setSnapshots(snapshots)
           store.setCurrentQuarter(data.currentQuarter)
           store.setMetadata(metadata)
           
-          const totalSnapshots = (data.snapshots?.length || 0) + (data.currentQuarter ? 1 : 0)
+          const totalSnapshots = (snapshots.length || 0) + (data.currentQuarter && data.currentQuarter.recordCount > 0 ? 1 : 0)
           set({ totalSnapshots })
           
           if (totalSnapshots === 0) {
@@ -308,8 +310,8 @@ export const useJiraDataStore = create(
           }
           
           // Initialize download progress
-          const allSnapshots = [...(data.snapshots || [])]
-          if (data.currentQuarter) {
+          const allSnapshots = [...snapshots]
+          if (data.currentQuarter && data.currentQuarter.recordCount > 0) {
             allSnapshots.push({
               ...data.currentQuarter,
               quarter: 'Current',
@@ -329,90 +331,134 @@ export const useJiraDataStore = create(
           
           const allSnapshotData = []
           
-          // Download quarterly snapshots
-          if (data.snapshots && data.snapshots.length > 0) {
-            for (const snapshot of data.snapshots) {
-              const fileName = `Q${snapshot.quarter}-${snapshot.year}.json`
-              store.setCurrentDownloadingFile(fileName)
-              store.setCurrentDownload(`Q${snapshot.quarter} ${snapshot.year}`)
-              
-              // Update toast with current file
-              const fileIndex = data.snapshots.indexOf(snapshot) + 1
-              const totalFiles = data.snapshots.length + (data.currentQuarter ? 1 : 0)
-              toast.loading(`⬇️ Downloading ${fileName} (${fileIndex}/${totalFiles})`, {
-                id: toastId
-              })
-              
-              try {
-                // Update status to downloading
-                store.updateDownloadProgress(snapshot.url, { status: 'downloading' })
-                
-                const snapshotData = await s3DownloadService.downloadSnapshot(
-                  snapshot.url,
-                  (progress) => {
-                    store.updateDownloadProgress(snapshot.url, {
-                      percent: progress.percent,
-                      loaded: progress.loaded,
-                      total: progress.total,
-                      status: 'downloading'
-                    })
-                  }
-                )
-                
-                // Update status to completed
-                store.updateDownloadProgress(snapshot.url, { status: 'completed' })
-                
-                if (snapshotData && Array.isArray(snapshotData)) {
-                  allSnapshotData.push(...snapshotData)
-                }
-                
-                store.incrementCompletedSnapshots()
-              } catch (downloadError) {
-                console.error(`Failed to download Q${snapshot.quarter} ${snapshot.year}:`, downloadError)
-                store.updateDownloadProgress(snapshot.url, { 
-                  status: 'failed', 
-                  error: downloadError.message 
-                })
-                store.addFailedDownload(snapshot.url, downloadError.message)
-              }
-            }
+          // Download all snapshots (quarterly + current) in parallel
+          const allDownloads = [...snapshots]
+          if (data.currentQuarter && data.currentQuarter.recordCount > 0) {
+            allDownloads.push({
+              ...data.currentQuarter,
+              quarter: 'Current',
+              year: new Date().getFullYear()
+            })
           }
           
-          // Download current quarter if available
-          if (data.currentQuarter) {
-            const fileName = 'Current-Quarter.json'
-            store.setCurrentDownloadingFile(fileName)
-            store.setCurrentDownload('Current Quarter')
+          if (allDownloads.length > 0) {
+            console.log(`Starting parallel download of ${allDownloads.length} files`)
             
             try {
-              store.updateDownloadProgress(data.currentQuarter.url, { status: 'downloading' })
-              
-              const currentData = await s3DownloadService.downloadSnapshot(
-                data.currentQuarter.url,
-                (progress) => {
-                  store.updateDownloadProgress(data.currentQuarter.url, {
-                    percent: progress.percent,
-                    loaded: progress.loaded,
-                    total: progress.total,
-                    status: 'downloading'
+              const downloadResults = await s3DownloadService.downloadSnapshotsInParallel(
+                allDownloads,
+                (overallProgress) => {
+                  // Update toast with parallel download progress
+                  const {
+                    percent,
+                    completedFiles,
+                    totalFiles,
+                    activeDownloads,
+                    downloadSpeed,
+                    estimatedTimeRemaining
+                  } = overallProgress
+                  
+                  const speedText = downloadSpeed > 0 ? ` (${downloadSpeed.toFixed(1)} MB/s)` : ''
+                  const etaText = estimatedTimeRemaining ? ` - ETA: ${Math.ceil(estimatedTimeRemaining)}s` : ''
+                  
+                  if (activeDownloads > 0) {
+                    toast.loading(
+                      `⬇️ Downloading ${activeDownloads} files simultaneously ${percent}%${speedText}${etaText}`,
+                      { id: toastId }
+                    )
+                  } else {
+                    toast.loading(`⬇️ Downloaded ${completedFiles}/${totalFiles} files ${percent}%`, {
+                      id: toastId
+                    })
+                  }
+                  
+                  // Update overall progress in store
+                  store.setOverallProgress(percent)
+                  store.setCurrentOperation(
+                    `Downloading ${activeDownloads} files simultaneously (${completedFiles}/${totalFiles} complete)`
+                  )
+                  
+                  // Update individual file progress for UI
+                  allDownloads.forEach((download, index) => {
+                    const downloadId = `${download.year}-Q${download.quarter}`
+                    if (overallProgress.activeProgresses && overallProgress.activeProgresses[downloadId]) {
+                      store.updateDownloadProgress(download.url, {
+                        ...overallProgress.activeProgresses[downloadId],
+                        status: 'downloading'
+                      })
+                    }
                   })
                 }
               )
               
-              store.updateDownloadProgress(data.currentQuarter.url, { status: 'completed' })
+              // Process results from parallel downloads
+              let successCount = 0
+              let failedCount = 0
               
-              if (currentData && Array.isArray(currentData)) {
-                allSnapshotData.push(...currentData)
+              for (const result of downloadResults) {
+                if (result.status === 'success') {
+                  successCount++
+                  if (result.data && Array.isArray(result.data)) {
+                    allSnapshotData.push(...result.data)
+                  }
+                  // Update progress to completed
+                  store.updateDownloadProgress(result.url, { 
+                    status: 'completed',
+                    percent: 100
+                  })
+                  store.incrementCompletedSnapshots()
+                } else {
+                  failedCount++
+                  console.error(`Failed to download Q${result.quarter} ${result.year}:`, result.error)
+                  store.updateDownloadProgress(result.url, { 
+                    status: 'failed', 
+                    error: result.error 
+                  })
+                  store.addFailedDownload(result.url, result.error)
+                }
               }
               
-              store.incrementCompletedSnapshots()
-            } catch (downloadError) {
-              console.error('Failed to download current quarter:', downloadError)
-              store.updateDownloadProgress(data.currentQuarter.url, { 
-                status: 'failed', 
-                error: downloadError.message 
+              console.log(`Parallel download completed: ${successCount} successful, ${failedCount} failed`)
+              
+              if (failedCount > 0) {
+                toast.loading(`⚠️ Downloaded ${successCount}/${downloadResults.length} files (${failedCount} failed)`, {
+                  id: toastId,
+                  icon: '⚠️'
+                })
+              } else {
+                toast.loading(`✅ Downloaded ${successCount} files successfully`, {
+                  id: toastId,
+                  icon: '✅'
+                })
+              }
+              
+            } catch (parallelDownloadError) {
+              console.error('Parallel download failed, falling back to sequential:', parallelDownloadError)
+              
+              // Fallback to sequential download
+              toast.loading('⚠️ Parallel download failed, trying sequential download...', {
+                id: toastId,
+                icon: '⚠️'
               })
-              store.addFailedDownload(data.currentQuarter.url, downloadError.message)
+              
+              // Use the original sequential download logic as fallback
+              const sequentialResults = await s3DownloadService.downloadMultipleSnapshots(
+                allDownloads,
+                (progress) => {
+                  const fileName = `Q${progress.currentSnapshot} file`
+                  toast.loading(`⬇️ Sequential download: ${fileName} (${progress.currentSnapshot}/${progress.totalSnapshots})`, {
+                    id: toastId
+                  })
+                }
+              )
+              
+              // Process sequential results
+              for (const result of sequentialResults) {
+                if (result.status === 'success' && result.data && Array.isArray(result.data)) {
+                  allSnapshotData.push(...result.data)
+                  store.incrementCompletedSnapshots()
+                }
+              }
             }
           }
           

@@ -47,7 +47,8 @@ export const JIRA_CONSTANTS = {
       this.CUSTOM_FIELDS.ROOT_CAUSE,
       this.CUSTOM_FIELDS.BUG_SEVERITY,
       this.CUSTOM_FIELDS.START_DATE,
-      this.CUSTOM_FIELDS.BUG_CAUSED_BY
+      this.CUSTOM_FIELDS.BUG_CAUSED_BY,
+      this.CUSTOM_FIELDS.BUG_CAUSED_BY_NEW
     ]
     return [...standardFields, ...customFields].join(',')
   },
@@ -60,7 +61,8 @@ export const JIRA_CONSTANTS = {
     ROOT_CAUSE: 'customfield_10272',
     BUG_SEVERITY: 'customfield_10049',
     START_DATE: 'customfield_10015',
-    BUG_CAUSED_BY: 'customfield_10636'
+    BUG_CAUSED_BY: 'customfield_10636',
+    BUG_CAUSED_BY_NEW: 'customfield_10002' // New field for bug causation tracking
   },
   
   // API endpoints
@@ -75,7 +77,13 @@ export const JIRA_CONSTANTS = {
     MAX_RETRIES: 3,
     RETRY_DELAY: 2000, // 2 seconds
     CHUNK_SIZE: 1000000, // 1MB chunks
-    CONNECTION_SPEED: 1000000 // 1MB/s default
+    CONNECTION_SPEED: 1000000, // 1MB/s default
+    // Parallel download settings
+    MAX_CONCURRENT_DOWNLOADS: 3, // Number of simultaneous downloads
+    BANDWIDTH_LIMIT_MBPS: 10, // Total bandwidth limit in MB/s
+    PER_FILE_TIMEOUT: 300000, // 5 minutes per file
+    RETRY_WITH_BACKOFF: true, // Use exponential backoff for retries
+    ENABLE_PARALLEL_DOWNLOADS: true // Feature flag to enable/disable
   },
   
   // Cache settings

@@ -2,9 +2,7 @@ import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { getSeverityColor } from '../../../../shared/constants/severityConstants.js'
 import { Box, Paper, Typography, Chip } from '@mui/material'
-import { LineChart } from '@mui/x-charts/LineChart'
 import { ChartJSLineChart } from '../../../../components/charts/ChartJS'
-import { selectChartComponent } from '../../../../config/features'
 import { transformSeriesData } from '../../../../utils/dataTransformers'
 import { TrendingUp, TrendingDown, TrendingFlat, BugReport } from '@mui/icons-material'
 
@@ -17,8 +15,6 @@ const BugTrendAnalysis = React.memo(({
   // 1. Hooks first (none needed)
   
   // 2. Memoized values
-  const useChartJS = selectChartComponent('medium') === 'chartjs'
-  
   const chartData = useMemo(() => {
     console.log('🔍 BUG_TREND: Processing chart data', {
       hasData: !!data,
@@ -93,7 +89,6 @@ const BugTrendAnalysis = React.memo(({
     }
     
     console.log('🔍 BUG_TREND: Chart configuration prepared', {
-      useChartJS,
       dataLength: data.data.length,
       seriesKeys: muiData.series.map(s => s.dataKey),
       xAxisDataKey: periodKey,
@@ -106,76 +101,67 @@ const BugTrendAnalysis = React.memo(({
       }
     })
     
-    if (useChartJS) {
-      // Prepare data for Chart.js transformation - ensure it has the right structure
-      const chartJSData = data.data.map(item => {
-        // For weekly data, prioritize the actual week field over periodKey
-        let labelValue = item[periodKey]
-        if (timePeriod === 'week' && item.week) {
-          labelValue = item.week
-        } else if (timePeriod === 'quarter' && item.quarter) {
-          labelValue = item.quarter
-        } else if (timePeriod === 'month' && item.month) {
-          labelValue = item.month
-        }
-        
-        return {
-          ...item,
-          timePeriod: labelValue, // Use the correct period value for Chart.js labels
-          x: labelValue,
-          label: labelValue
-        }
-      })
-      
-      // Transform data for Chart.js
-      const transformedData = transformSeriesData(chartJSData, muiData.series)
-      
-      // Add original data reference for tooltips - attach to ALL datasets
-      if (transformedData.datasets && transformedData.datasets.length > 0) {
-        transformedData.datasets.forEach(dataset => {
-          // Use the original data.data which should have the formatted week dates
-          dataset._originalData = data.data // Use original data structure for tooltips
-        })
+    // Prepare data for Chart.js transformation - ensure it has the right structure
+    const chartJSData = data.data.map(item => {
+      // For weekly data, prioritize the actual week field over periodKey
+      let labelValue = item[periodKey]
+      if (timePeriod === 'week' && item.week) {
+        labelValue = item.week
+      } else if (timePeriod === 'quarter' && item.quarter) {
+        labelValue = item.quarter
+      } else if (timePeriod === 'month' && item.month) {
+        labelValue = item.month
       }
       
-      console.log('🔍 BUG_TREND: ChartJS data transformed', {
-        periodKey,
-        originalLength: data.data.length,
-        chartJSDataSample: chartJSData?.[0],
-        transformedLabels: transformedData?.labels?.slice(0, 10),
-        allTransformedLabels: transformedData?.labels,
-        transformedDatasetsCount: transformedData?.datasets?.length,
-        firstDatasetSample: transformedData?.datasets?.[0]?.data?.slice(0, 5),
-        hasOriginalData: !!transformedData?.datasets?.[0]?._originalData,
-        originalDataSample: data.data?.[0],
-        allOriginalDataKeys: data.data?.[0] ? Object.keys(data.data[0]) : [],
-        weekDataExists: data.data?.[0]?._weekStartFormatted ? 'YES' : 'NO',
-        allDatasets: transformedData?.datasets?.map(d => ({
-          label: d.label,
-          hasOriginalData: !!d._originalData,
-          originalDataLength: d._originalData?.length
-        })),
-        chartJSDataLabels: chartJSData.map(item => ({
-          timePeriod: item.timePeriod,
-          x: item.x, 
-          label: item.label,
-          periodKeyValue: item[periodKey],
-          weekField: item.week,
-          monthField: item.month,
-          quarterField: item.quarter,
-          allItemKeys: Object.keys(item)
-        }))
-      })
-      return transformedData
-    }
-    
-    console.log('🔍 BUG_TREND: Using MUI X-Charts', {
-      datasetLength: muiData.dataset.length,
-      seriesCount: muiData.series.length
+      return {
+        ...item,
+        timePeriod: labelValue, // Use the correct period value for Chart.js labels
+        x: labelValue,
+        label: labelValue
+      }
     })
     
-    return muiData
-  }, [data, useChartJS])
+    // Transform data for Chart.js
+    const transformedData = transformSeriesData(chartJSData, muiData.series)
+    
+    // Add original data reference for tooltips - attach to ALL datasets
+    if (transformedData.datasets && transformedData.datasets.length > 0) {
+      transformedData.datasets.forEach(dataset => {
+        // Use the original data.data which should have the formatted week dates
+        dataset._originalData = data.data // Use original data structure for tooltips
+      })
+    }
+    
+    console.log('🔍 BUG_TREND: ChartJS data transformed', {
+      periodKey,
+      originalLength: data.data.length,
+      chartJSDataSample: chartJSData?.[0],
+      transformedLabels: transformedData?.labels?.slice(0, 10),
+      allTransformedLabels: transformedData?.labels,
+      transformedDatasetsCount: transformedData?.datasets?.length,
+      firstDatasetSample: transformedData?.datasets?.[0]?.data?.slice(0, 5),
+      hasOriginalData: !!transformedData?.datasets?.[0]?._originalData,
+      originalDataSample: data.data?.[0],
+      allOriginalDataKeys: data.data?.[0] ? Object.keys(data.data[0]) : [],
+      weekDataExists: data.data?.[0]?._weekStartFormatted ? 'YES' : 'NO',
+      allDatasets: transformedData?.datasets?.map(d => ({
+        label: d.label,
+        hasOriginalData: !!d._originalData,
+        originalDataLength: d._originalData?.length
+      })),
+      chartJSDataLabels: chartJSData.map(item => ({
+        timePeriod: item.timePeriod,
+        x: item.x, 
+        label: item.label,
+        periodKeyValue: item[periodKey],
+        weekField: item.week,
+        monthField: item.month,
+        quarterField: item.quarter,
+        allItemKeys: Object.keys(item)
+      }))
+    })
+    return transformedData
+  }, [data])
   
   const chartConfig = useMemo(() => ({
     height: height,
@@ -298,125 +284,116 @@ const BugTrendAnalysis = React.memo(({
         width: '100%',
         mb: { xs: 2, sm: 3 }
       }}>
-        {useChartJS ? (
-          <ChartJSLineChart
-            data={chartData}
-            title=""
-            height={height}
-            options={{
-              plugins: {
-                legend: {
-                  position: 'top',
-                },
-                title: {
-                  display: false,
-                },
-                tooltip: {
-                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                  titleColor: 'white',
-                  bodyColor: 'white',
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                  borderWidth: 1,
-                  cornerRadius: 6,
-                  callbacks: {
-                    title: function(context) {
-                      console.log('🔍 BUG_TREND: Full tooltip context:', {
-                        context,
-                        contextLength: context?.length,
-                        firstItem: context?.[0],
-                        dataPoint: context?.[0] ? {
-                          dataIndex: context[0].dataIndex,
-                          label: context[0].label,
-                          parsed: context[0].parsed,
-                          dataset: {
-                            label: context[0].dataset?.label,
-                            hasOriginalData: !!context[0].dataset?._originalData,
-                            originalDataKeys: context[0].dataset?._originalData ? Object.keys(context[0].dataset._originalData[0] || {}) : null
-                          }
-                        } : null
-                      })
-                      
-                      if (!context || !context[0]) return 'No context'
-                      
-                      const dataPoint = context[0]
-                      const timePeriod = data.config?.timePeriod || 'month'
-                      const dataIndex = dataPoint.dataIndex
-                      
-                      console.log('🔍 BUG_TREND: Tooltip processing', {
-                        timePeriod,
-                        dataIndex,
-                        hasOriginalData: !!dataPoint.dataset._originalData,
-                        originalDataLength: dataPoint.dataset._originalData?.length,
-                        sampleOriginalData: dataPoint.dataset._originalData?.[dataIndex],
-                        allOriginalData: dataPoint.dataset._originalData
-                      })
-                      
-                      // For weekly data, show date range format
-                      if (timePeriod === 'week' && dataPoint.dataset._originalData) {
-                        const originalData = dataPoint.dataset._originalData[dataIndex]
-                        
-                        console.log('🔍 BUG_TREND: Weekly tooltip data', {
-                          originalData,
-                          hasWeekStart: !!originalData?._weekStartFormatted,
-                          hasWeekEnd: !!originalData?._weekEndFormatted,
-                          weekStart: originalData?._weekStartFormatted,
-                          weekEnd: originalData?._weekEndFormatted,
-                          total: originalData?.total
-                        })
-                        
-                        if (originalData && originalData._weekStartFormatted && originalData._weekEndFormatted) {
-                          const totalBugs = originalData.total || 0
-                          return `${originalData._weekStartFormatted}-${originalData._weekEndFormatted}, Total Bugs: ${totalBugs}`
-                        }
-                      }
-                      
-                      // Default format for month/quarter
-                      const label = dataPoint.label || ''
-                      const originalData = dataPoint.dataset._originalData?.[dataIndex]
-                      const totalBugs = originalData?.total || 0
-                      
-                      console.log('🔍 BUG_TREND: Default tooltip format', {
-                        label,
-                        totalBugs,
-                        originalData
-                      })
-                      
-                      return `${label}, Total Bugs: ${totalBugs}`
-                    },
-                    label: function(context) {
-                      const datasetLabel = context.dataset.label || ''
-                      const value = context.parsed?.y || 0
-                      return `${datasetLabel}: ${value}`
-                    }
-                  }
-                }
+        <ChartJSLineChart
+          data={chartData}
+          title=""
+          height={height}
+          options={{
+            plugins: {
+              legend: {
+                position: 'top',
               },
-              scales: {
-                x: {
-                  title: {
-                    display: true,
-                    text: data.config?.timePeriod ? 
-                      `${data.config.timePeriod.charAt(0).toUpperCase() + data.config.timePeriod.slice(1)}` : 
-                      'Month'
-                  }
-                },
-                y: {
-                  title: {
-                    display: true,
-                    text: 'Bug Count'
+              title: {
+                display: false,
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderWidth: 1,
+                cornerRadius: 6,
+                callbacks: {
+                  title: function(context) {
+                    console.log('🔍 BUG_TREND: Full tooltip context:', {
+                      context,
+                      contextLength: context?.length,
+                      firstItem: context?.[0],
+                      dataPoint: context?.[0] ? {
+                        dataIndex: context[0].dataIndex,
+                        label: context[0].label,
+                        parsed: context[0].parsed,
+                        dataset: {
+                          label: context[0].dataset?.label,
+                          hasOriginalData: !!context[0].dataset?._originalData,
+                          originalDataKeys: context[0].dataset?._originalData ? Object.keys(context[0].dataset._originalData[0] || {}) : null
+                        }
+                      } : null
+                    })
+                    
+                    if (!context || !context[0]) return 'No context'
+                    
+                    const dataPoint = context[0]
+                    const timePeriod = data.config?.timePeriod || 'month'
+                    const dataIndex = dataPoint.dataIndex
+                    
+                    console.log('🔍 BUG_TREND: Tooltip processing', {
+                      timePeriod,
+                      dataIndex,
+                      hasOriginalData: !!dataPoint.dataset._originalData,
+                      originalDataLength: dataPoint.dataset._originalData?.length,
+                      sampleOriginalData: dataPoint.dataset._originalData?.[dataIndex],
+                      allOriginalData: dataPoint.dataset._originalData
+                    })
+                    
+                    // For weekly data, show date range format
+                    if (timePeriod === 'week' && dataPoint.dataset._originalData) {
+                      const originalData = dataPoint.dataset._originalData[dataIndex]
+                      
+                      console.log('🔍 BUG_TREND: Weekly tooltip data', {
+                        originalData,
+                        hasWeekStart: !!originalData?._weekStartFormatted,
+                        hasWeekEnd: !!originalData?._weekEndFormatted,
+                        weekStart: originalData?._weekStartFormatted,
+                        weekEnd: originalData?._weekEndFormatted,
+                        total: originalData?.total
+                      })
+                      
+                      if (originalData && originalData._weekStartFormatted && originalData._weekEndFormatted) {
+                        const totalBugs = originalData.total || 0
+                        return `${originalData._weekStartFormatted}-${originalData._weekEndFormatted}, Total Bugs: ${totalBugs}`
+                      }
+                    }
+                    
+                    // Default format for month/quarter
+                    const label = dataPoint.label || ''
+                    const originalData = dataPoint.dataset._originalData?.[dataIndex]
+                    const totalBugs = originalData?.total || 0
+                    
+                    console.log('🔍 BUG_TREND: Default tooltip format', {
+                      label,
+                      totalBugs,
+                      originalData
+                    })
+                    
+                    return `${label}, Total Bugs: ${totalBugs}`
+                  },
+                  label: function(context) {
+                    const datasetLabel = context.dataset.label || ''
+                    const value = context.parsed?.y || 0
+                    return `${datasetLabel}: ${value}`
                   }
                 }
               }
-            }}
-          />
-        ) : (
-          <LineChart
-            dataset={chartData.dataset}
-            series={chartData.series}
-            xAxis={chartData.xAxis}
-            {...chartConfig}
-          />
-        )}
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: data.config?.timePeriod ? 
+                    `${data.config.timePeriod.charAt(0).toUpperCase() + data.config.timePeriod.slice(1)}` : 
+                    'Month'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Bug Count'
+                }
+              }
+            }
+          }}
+        />
       </Box>
       
       {/* Metrics Summary */}

@@ -267,6 +267,186 @@ export const s3DownloadService = {
       console.log('All downloads cancelled')
     }
   },
+
+  // Parallel download manager - Download multiple snapshots simultaneously
+  downloadSnapshotsInParallel: async (snapshots, onProgressCallback = null, options = {}) => {
+    const {
+      maxConcurrent = JIRA_CONSTANTS.DOWNLOAD_SETTINGS.MAX_CONCURRENT_DOWNLOADS,
+      enableParallel = JIRA_CONSTANTS.DOWNLOAD_SETTINGS.ENABLE_PARALLEL_DOWNLOADS,
+      bandwidthLimit = JIRA_CONSTANTS.DOWNLOAD_SETTINGS.BANDWIDTH_LIMIT_MBPS
+    } = options
+
+    // Fallback to sequential download if parallel is disabled
+    if (!enableParallel || snapshots.length === 1) {
+      console.log('Using sequential download (parallel disabled or single file)')
+      return await s3DownloadService.downloadMultipleSnapshots(snapshots, onProgressCallback)
+    }
+
+    console.log(`Starting parallel download of ${snapshots.length} snapshots (max concurrent: ${maxConcurrent})`)
+    
+    const results = []
+    const downloadQueue = [...snapshots]
+    const activeDownloads = new Map()
+    const downloadStats = {
+      totalFiles: snapshots.length,
+      completedFiles: 0,
+      failedFiles: 0,
+      startTime: Date.now(),
+      totalSize: s3DownloadService.calculateTotalSize(snapshots),
+      downloadedSize: 0
+    }
+
+    // Progress aggregation for all downloads
+    const aggregateProgress = () => {
+      const activeProgresses = Array.from(activeDownloads.values())
+      const totalLoaded = activeProgresses.reduce((sum, p) => sum + (p.loaded || 0), 0)
+      const totalSize = activeProgresses.reduce((sum, p) => sum + (p.total || 0), 0)
+      
+      const overallProgress = {
+        totalFiles: downloadStats.totalFiles,
+        completedFiles: downloadStats.completedFiles,
+        failedFiles: downloadStats.failedFiles,
+        activeDownloads: activeDownloads.size,
+        totalLoaded: totalLoaded + downloadStats.downloadedSize,
+        totalSize: downloadStats.totalSize,
+        percent: downloadStats.totalSize > 0 ? 
+          Math.round(((totalLoaded + downloadStats.downloadedSize) / downloadStats.totalSize) * 100) : 0,
+        estimatedTimeRemaining: s3DownloadService.calculateETA(
+          totalLoaded + downloadStats.downloadedSize, 
+          downloadStats.totalSize, 
+          downloadStats.startTime
+        ),
+        downloadSpeed: s3DownloadService.calculateDownloadSpeed(
+          totalLoaded + downloadStats.downloadedSize, 
+          downloadStats.startTime
+        )
+      }
+
+      if (onProgressCallback) {
+        onProgressCallback(overallProgress)
+      }
+    }
+
+    // Process download queue with concurrency control
+    const processQueue = async () => {
+      const promises = []
+
+      // Start downloads up to maxConcurrent limit
+      while (downloadQueue.length > 0 && activeDownloads.size < maxConcurrent) {
+        const snapshot = downloadQueue.shift()
+        const snapshotId = `${snapshot.year}-Q${snapshot.quarter}`
+        
+        console.log(`Starting download: Q${snapshot.quarter} ${snapshot.year}`)
+        
+        const downloadPromise = s3DownloadService.downloadSnapshotWithProgress(
+          snapshot,
+          (progress) => {
+            activeDownloads.set(snapshotId, progress)
+            aggregateProgress()
+          }
+        ).then(result => {
+          // Download completed successfully
+          activeDownloads.delete(snapshotId)
+          downloadStats.completedFiles++
+          downloadStats.downloadedSize += snapshot.fileSize || 0
+          
+          const successResult = {
+            ...snapshot,
+            data: result,
+            status: 'success',
+            downloadTime: Date.now() - downloadStats.startTime
+          }
+          results.push(successResult)
+          
+          console.log(`Completed: Q${snapshot.quarter} ${snapshot.year} (${result.length} issues)`)
+          aggregateProgress()
+          
+          return successResult
+        }).catch(error => {
+          // Download failed
+          activeDownloads.delete(snapshotId)
+          downloadStats.failedFiles++
+          
+          const failedResult = {
+            ...snapshot,
+            error: error.message,
+            status: 'failed',
+            downloadTime: Date.now() - downloadStats.startTime
+          }
+          results.push(failedResult)
+          
+          console.error(`Failed: Q${snapshot.quarter} ${snapshot.year} - ${error.message}`)
+          aggregateProgress()
+          
+          return failedResult
+        })
+
+        promises.push(downloadPromise)
+      }
+
+      // Wait for current batch to complete, then process remaining queue
+      if (promises.length > 0) {
+        await Promise.allSettled(promises)
+        
+        // Continue processing queue if there are more files
+        if (downloadQueue.length > 0) {
+          await processQueue()
+        }
+      }
+    }
+
+    try {
+      // Start processing the download queue
+      await processQueue()
+      
+      const summary = s3DownloadService.createDownloadSummary(results)
+      console.log(`Parallel download completed: ${summary.successfulDownloads}/${summary.totalSnapshots} successful`)
+      
+      return results
+    } catch (error) {
+      console.error('Parallel download error:', error)
+      throw error
+    }
+  },
+
+  // Download single snapshot with enhanced progress tracking
+  downloadSnapshotWithProgress: async (snapshot, onProgress = null) => {
+    const controller = new AbortController()
+    globalDownloadController = controller
+
+    try {
+      const data = await s3DownloadService.downloadSnapshot(
+        snapshot.url,
+        onProgress,
+        controller
+      )
+      
+      globalDownloadController = null
+      return data
+    } catch (error) {
+      globalDownloadController = null
+      throw error
+    }
+  },
+
+  // Calculate download speed in MB/s
+  calculateDownloadSpeed: (downloadedBytes, startTime) => {
+    const elapsedSeconds = (Date.now() - startTime) / 1000
+    if (elapsedSeconds === 0) return 0
+    
+    return (downloadedBytes / 1024 / 1024) / elapsedSeconds // MB/s
+  },
+
+  // Calculate estimated time remaining
+  calculateETA: (downloadedBytes, totalBytes, startTime) => {
+    if (downloadedBytes === 0 || totalBytes === 0) return null
+    
+    const elapsedSeconds = (Date.now() - startTime) / 1000
+    const speed = downloadedBytes / elapsedSeconds // bytes per second
+    const remainingBytes = totalBytes - downloadedBytes
+    
+    return remainingBytes / speed // seconds remaining
+  },
   
   // Check if downloads are active
   isDownloading: () => {

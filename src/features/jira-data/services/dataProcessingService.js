@@ -1,4 +1,5 @@
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
+import { parseSeverity } from '../../../shared/utils/severityParser.js'
 
 export const dataProcessingService = {
   // Process raw JIRA issues from S3 files
@@ -147,6 +148,7 @@ export const dataProcessingService = {
         issueType: issue.fields.issuetype?.name || 'Unknown Type',
         status: issue.fields.status?.name || 'Unknown Status',
         priority: issue.fields.priority?.name || 'None',
+        severity: parseSeverity(issue, issue.fields.project?.key).severity,
         assignee: issue.fields.assignee?.displayName || 'Unassigned',
         reporter: issue.fields.reporter?.displayName || 'Unknown',
         created: dataProcessingService.formatDate(issue.fields.created),

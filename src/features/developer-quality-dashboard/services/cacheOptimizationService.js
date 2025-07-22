@@ -1,4 +1,5 @@
 import { performanceMonitor } from '../utils/PerformanceMonitor'
+import { SEVERITY_LEVELS } from '../../../shared/constants/severityConstants.js'
 
 class CacheOptimizationService {
   constructor() {
@@ -88,7 +89,7 @@ class CacheOptimizationService {
       const commonFilters = [
         { developers: [], projects: [], issueTypes: ['Bug'] }, // All bugs
         { developers: [], projects: [], issueTypes: ['Story'] }, // All stories
-        { developers: [], projects: [], severities: ['Critical', 'High'] }, // High priority
+        { developers: [], projects: [], severities: [SEVERITY_LEVELS.CRITICAL, SEVERITY_LEVELS.MAJOR] }, // High priority
         { developers: [], projects: [], dateRange: 'last30days' }, // Recent items
       ]
 

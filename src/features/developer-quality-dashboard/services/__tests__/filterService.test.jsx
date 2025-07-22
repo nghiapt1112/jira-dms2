@@ -4,6 +4,7 @@
  */
 
 import { filterService } from '../filterService'
+import { SEVERITY_LEVELS } from '../../../../shared/constants/severityConstants.js'
 
 describe('filterService', () => {
   // Mock cache data
@@ -27,9 +28,9 @@ describe('filterService', () => {
         ['In Progress', [3, 4, 5]]
       ]),
       bySeverity: new Map([
-        ['High', [0, 2]],
-        ['Medium', [1, 3]],
-        ['Low', [4, 5]]
+        [SEVERITY_LEVELS.MAJOR, [0, 2]],
+        [SEVERITY_LEVELS.MINOR, [1, 3]],
+        [SEVERITY_LEVELS.LOW, [4, 5]]
       ]),
       byRootCause: new Map([
         ['Logic Error', [0, 2]],
@@ -51,7 +52,7 @@ describe('filterService', () => {
         assignee: 'John Doe',
         project: 'PROJ-A',
         issueType: 'Bug',
-        severity: 'Major',
+        severity: SEVERITY_LEVELS.MAJOR,
         rootCause: 'Logic Error',
         created: '2024-01-15T10:00:00.000Z',
         resolved: '2024-01-20T10:00:00.000Z'
@@ -62,7 +63,7 @@ describe('filterService', () => {
         assignee: 'Jane Smith',
         project: 'PROJ-A',
         issueType: 'Story',
-        severity: 'Minor',
+        severity: SEVERITY_LEVELS.MINOR,
         rootCause: 'Integration Issue',
         created: '2024-01-16T10:00:00.000Z',
         resolved: null
@@ -73,7 +74,7 @@ describe('filterService', () => {
         assignee: 'John Doe',
         project: 'PROJ-A',
         issueType: 'Bug',
-        severity: 'Major',
+        severity: SEVERITY_LEVELS.MAJOR,
         rootCause: 'Logic Error',
         created: '2024-01-17T10:00:00.000Z',
         resolved: '2024-01-22T10:00:00.000Z'
@@ -84,7 +85,7 @@ describe('filterService', () => {
         assignee: 'Jane Smith',
         project: 'PROJ-B',
         issueType: 'Story',
-        severity: 'Minor',
+        severity: SEVERITY_LEVELS.MINOR,
         rootCause: 'Integration Issue',
         created: '2024-02-01T10:00:00.000Z',
         resolved: null
@@ -95,7 +96,7 @@ describe('filterService', () => {
         assignee: 'John Doe',
         project: 'PROJ-B',
         issueType: 'Bug',
-        severity: 'Low',
+        severity: SEVERITY_LEVELS.LOW,
         rootCause: 'Performance',
         created: '2024-02-02T10:00:00.000Z',
         resolved: '2024-02-05T10:00:00.000Z'
@@ -106,7 +107,7 @@ describe('filterService', () => {
         assignee: 'Bob Wilson',
         project: 'PROJ-B',
         issueType: 'Story',
-        severity: 'Low',
+        severity: SEVERITY_LEVELS.LOW,
         rootCause: 'Performance',
         created: '2024-02-03T10:00:00.000Z',
         resolved: null
@@ -190,7 +191,7 @@ describe('filterService', () => {
     })
 
     it('should filter by severity correctly', () => {
-      const filters = { severities: ['High'] }
+      const filters = { severities: [SEVERITY_LEVELS.MAJOR] }
       const result = filterService.getFilteredIndices(filters, mockCacheData.indices)
       
       expect(result).toEqual(new Set([0, 2]))
@@ -320,8 +321,8 @@ describe('filterService', () => {
       expect(result.teamContribution.topContributors[0].contributions).toBe(3)
       
       expect(result.bugAnalysis.totalBugs).toBe(3) // All 3 issues are bugs for John Doe
-      expect(result.bugAnalysis.severityDistribution.Major).toBe(2)
-      expect(result.bugAnalysis.severityDistribution.Low).toBe(1)
+      expect(result.bugAnalysis.severityDistribution[SEVERITY_LEVELS.MAJOR]).toBe(2)
+      expect(result.bugAnalysis.severityDistribution[SEVERITY_LEVELS.LOW]).toBe(1)
     })
 
     it('should handle empty indices', () => {
@@ -496,7 +497,7 @@ describe('filterService', () => {
       const filters = {
         developers: ['John Doe'],
         projects: ['PROJ-A'],
-        severities: ['High']
+        severities: [SEVERITY_LEVELS.MAJOR]
       }
       const summary = filterService.getFilterSummary(filters)
       
@@ -512,7 +513,7 @@ describe('filterService', () => {
         developers: ['John Doe', 'Jane Smith'],
         projects: ['PROJ-A'],
         issueTypes: ['Bug', 'Story'],
-        severities: ['Major', 'Minor']
+        severities: [SEVERITY_LEVELS.MAJOR, SEVERITY_LEVELS.MINOR]
       }
       
       const result = filterService.applyFilters(filters, mockCacheData)

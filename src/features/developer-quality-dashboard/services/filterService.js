@@ -5,6 +5,7 @@
  */
 
 import { memberConfiguration } from '../../../constants/memberConfiguration'
+import { initializeSeverityBreakdown } from '../../../shared/constants/severityConstants.js'
 
 export const filterService = {
   /**
@@ -454,13 +455,7 @@ export const filterService = {
       },
       bugAnalysis: {
         totalBugs: 0,
-        severityDistribution: {
-          Critical: 0,
-          High: 0,
-          Medium: 0,
-          Low: 0,
-          Unknown: 0
-        },
+        severityDistribution: initializeSeverityBreakdown(),
         monthlyBugTrend: new Map(), // Will be renamed dynamically based on timeframe
       },
       rootCauseAnalysis: {

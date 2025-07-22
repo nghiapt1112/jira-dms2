@@ -6,6 +6,8 @@
 
 import { getReopenDetectionConfig, getSeverityConfig } from '../../../constants/memberConfiguration.js'
 import { calculateSeverityBreakdown } from '../../../shared/utils/severityCalculations.js'
+import { parseSeverity } from '../../../shared/utils/severityParser.js'
+import { SEVERITY_LEVELS } from '../../../shared/constants/severityConstants.js'
 
 /**
  * Calculate reopen rate based on issue changelog
@@ -83,10 +85,11 @@ export const calculateReopenMetrics = (issue, projectKey = null) => {
  * @param {Object} issue - JIRA issue object
  * @returns {Object} Resolution time analysis data
  */
-export const calculateResolutionTimeMetrics = (issue) => {
+export const calculateResolutionTimeMetrics = (issue, projectKey = null) => {
   const created = issue.fields?.created
   const resolved = issue.fields?.resolutiondate
-  const severity = issue.fields?.priority?.name || 'Unknown'
+  const severityResult = parseSeverity(issue, projectKey)
+  const severity = severityResult.severity
 
   if (!created || !resolved) {
     return {
@@ -103,16 +106,17 @@ export const calculateResolutionTimeMetrics = (issue) => {
   const resolutionTimeHours = timeDiffMs / (1000 * 60 * 60)
   const resolutionTimeDays = timeDiffMs / (1000 * 60 * 60 * 24)
 
-  // Define SLA targets by severity (in hours)
+  // Define SLA targets by severity (in hours) using centralized constants
   const slaTargets = {
-    'Critical': 4,    // 4 hours
-    'High': 24,       // 1 day
-    'Medium': 72,     // 3 days
-    'Low': 168,       // 1 week
-    'Unknown': 72     // Default to 3 days
+    [SEVERITY_LEVELS.CRITICAL]: 4,    // 4 hours
+    [SEVERITY_LEVELS.MAJOR]: 24,      // 1 day
+    [SEVERITY_LEVELS.MINOR]: 72,      // 3 days
+    [SEVERITY_LEVELS.LOW]: 168,       // 1 week
+    [SEVERITY_LEVELS.COSMETIC]: 168,  // 1 week
+    [SEVERITY_LEVELS.UNKNOWN]: 72     // Default to 3 days
   }
 
-  const slaTarget = slaTargets[severity] || slaTargets['Unknown']
+  const slaTarget = slaTargets[severity] || slaTargets[SEVERITY_LEVELS.MINOR]
   const isOverdue = resolutionTimeHours > slaTarget
   
   // Calculate efficiency score (0-100, higher is better)

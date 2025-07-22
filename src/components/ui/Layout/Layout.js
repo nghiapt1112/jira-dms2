@@ -19,16 +19,6 @@ const Layout = React.memo(({ children }) => {
   // Get the actual sidebar open state
   const sidebarIsOpen = isOpen // Use the actual state for both mobile and desktop
   
-  const getMainStyles = () => {
-    // Main content always uses full width - no margin calculations
-    return {
-      flexGrow: 1,
-      width: '100%', // Always full width
-      p: 2,
-      mt: 8, // Account for AppBar height
-    }
-  }
-  
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <CssBaseline />
@@ -36,12 +26,32 @@ const Layout = React.memo(({ children }) => {
       {/* Sidebar with overlay behavior */}
       <Sidebar />
       
-      {/* Main content - always full width */}
+      {/* Main content - always full width with proper spacing */}
       <Box
         component="main"
-        sx={getMainStyles()}
+        sx={{
+          flexGrow: 1,
+          width: '100%', // Always full width
+          display: 'flex',
+          flexDirection: 'column',
+        }}
       >
-        {children}
+        {/* MUI's recommended way to add spacing for fixed AppBar */}
+        <Toolbar />
+        
+        {/* Additional spacing for StagewiseToolbar */}
+        <Box sx={{ height: 48 }} />
+        
+        {/* Content container with proper padding */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            p: 2,
+            minHeight: 0, // Allow content to shrink if needed
+          }}
+        >
+          {children}
+        </Box>
       </Box>
 
       {/* Global Cache Management Popover */}

@@ -1,9 +1,7 @@
 import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Typography } from '@mui/material'
-import { BarChart, ResponsiveChartContainer, BarPlot, LinePlot, ChartsXAxis, ChartsYAxis, ChartsLegend, ChartsTooltip } from '@mui/x-charts'
 import { ChartJSHybridChart } from '../../../../components/charts/ChartJS'
-import { selectChartComponent } from '../../../../config/features'
 
 /**
  * DeveloperAnalysisChart - Dedicated component for single developer analysis
@@ -102,9 +100,6 @@ const DeveloperAnalysisChart = ({
     }
   }, [storyPointsData, timeTrackingData, selectedDeveloper])
 
-  // Determine which chart implementation to use
-  const useChartJS = selectChartComponent('hybrid') === 'chartjs'
-
   // Early return if no data
   if (!chartData || !selectedDeveloper) {
     return (
@@ -139,103 +134,28 @@ const DeveloperAnalysisChart = ({
         Individual Analysis - {selectedDeveloper}
       </Typography>
 
-      {chartData.timeTrackingSeries && useChartJS ? (
-        // Use Chart.js for hybrid chart (bars + line)
-        <ChartJSHybridChart
-          data={chartData.dataset}
-          title={`Analysis - ${selectedDeveloper}`}
-          height={height}
-          barSeries={chartData.barSeries}
-          lineSeries={chartData.timeTrackingSeries.map(series => ({
-            dataKey: series.dataKey,
-            label: series.label,
-            color: series.color
-          }))}
-          options={{
-            leftAxisLabel: 'Story Points',
-            rightAxisLabel: 'Hours Logged',
-            leftAxisUnit: '',
-            rightAxisUnit: 'h',
-            plugins: {
-              title: {
-                display: false
-              }
+      <ChartJSHybridChart
+        data={chartData.dataset}
+        title={`Analysis - ${selectedDeveloper}`}
+        height={height}
+        barSeries={chartData.barSeries}
+        lineSeries={chartData.timeTrackingSeries ? chartData.timeTrackingSeries.map(series => ({
+          dataKey: series.dataKey,
+          label: series.label,
+          color: series.color
+        })) : []}
+        options={{
+          leftAxisLabel: 'Story Points',
+          rightAxisLabel: chartData.timeTrackingSeries ? 'Hours Logged' : '',
+          leftAxisUnit: '',
+          rightAxisUnit: 'h',
+          plugins: {
+            title: {
+              display: false
             }
-          }}
-        />
-      ) : chartData.timeTrackingSeries ? (
-        // Use MUI X Charts for hybrid chart (bars + line)
-        <ResponsiveChartContainer
-          dataset={chartData.dataset}
-          series={[
-            // Bar series for Story Points
-            {
-              dataKey: selectedDeveloper,
-              label: `${selectedDeveloper} (Story Points)`,
-              color: '#1976d2',
-              type: 'bar',
-              yAxisKey: 'left'
-            },
-            // Line series for Time Tracking
-            ...chartData.timeTrackingSeries.map(series => ({
-              ...series,
-              type: 'line',
-              yAxisKey: 'right'
-            }))
-          ]}
-          xAxis={chartData.xAxis}
-          yAxis={[
-            {
-              id: 'left',
-              label: 'Story Points',
-              position: 'left'
-            },
-            {
-              id: 'right', 
-              label: 'Hours Logged',
-              position: 'right'
-            }
-          ]}
-          height={height}
-          margin={{
-            top: 20,
-            right: 20,
-            bottom: chartData.dataset.length > 6 ? 80 : 60,
-            left: 80,
-            ...chartConfig.margin
-          }}
-          grid={{ horizontal: true }}
-          {...chartConfig}
-        >
-          <BarPlot />
-          <LinePlot />
-          <ChartsXAxis />
-          <ChartsYAxis axisId="left" />
-          <ChartsYAxis axisId="right" />
-          <ChartsLegend />
-          <ChartsTooltip />
-        </ResponsiveChartContainer>
-      ) : (
-        // Fallback to simple bar chart if no time tracking data
-        <BarChart
-          dataset={chartData.dataset}
-          series={chartData.barSeries}
-          xAxis={chartData.xAxis}
-          yAxis={[{ 
-            label: 'Story Points'
-          }]}
-          height={height}
-          margin={{
-            top: 20,
-            right: 20,
-            bottom: chartData.dataset.length > 6 ? 80 : 60,
-            left: 80,
-            ...chartConfig.margin
-          }}
-          grid={{ horizontal: true }}
-          {...chartConfig}
-        />
-      )}
+          }
+        }}
+      />
     </Box>
   )
 }

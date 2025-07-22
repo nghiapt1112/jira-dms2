@@ -332,6 +332,218 @@ const calculateTrendDirection = (bugs) => {
 }
 
 /**
+ * Calculate reopen rate for a set of bugs
+ * @param {Array} bugs - Array of JIRA bug objects
+ * @returns {number} - Reopen rate as percentage (0-100)
+ */
+export const calculateReopenRate = (bugs) => {
+  if (!Array.isArray(bugs) || bugs.length === 0) {
+    return 0
+  }
+
+  try {
+    let reopenedBugs = 0
+    
+    bugs.forEach(bug => {
+      // Check if bug has been reopened by examining status history or resolution
+      const status = bug.fields?.status?.name?.toLowerCase()
+      const resolution = bug.fields?.resolution?.name?.toLowerCase()
+      
+      // Look for indicators of reopening
+      // 1. Status contains "reopen" or "reopened"
+      // 2. Status is "open" or "in progress" but has a resolution (indicating it was resolved and reopened)
+      // 3. Check changelog/history if available
+      if (status && (
+        status.includes('reopen') || 
+        status.includes('reopened') ||
+        ((status === 'open' || status === 'in progress') && resolution)
+      )) {
+        reopenedBugs += 1
+      }
+      
+      // Alternative: Check changelog for reopen transitions
+      if (bug.changelog?.histories) {
+        const hasReopenTransition = bug.changelog.histories.some(history => {
+          return history.items?.some(item => 
+            item.field === 'status' && 
+            item.toString?.toLowerCase().includes('reopen')
+          )
+        })
+        
+        if (hasReopenTransition) {
+          reopenedBugs += 1
+        }
+      }
+    })
+
+    return (reopenedBugs / bugs.length) * 100
+    
+  } catch (error) {
+    console.warn('Reopen rate calculation failed:', error)
+    return 0
+  }
+}
+
+/**
+ * Calculate average resolution time for bugs in hours
+ * @param {Array} bugs - Array of JIRA bug objects
+ * @returns {number} - Average resolution time in hours (0 if no resolved bugs)
+ */
+export const calculateAverageResolutionTime = (bugs) => {
+  if (!Array.isArray(bugs) || bugs.length === 0) {
+    return 0
+  }
+
+  try {
+    let totalResolutionTime = 0
+    let resolvedBugCount = 0
+
+    bugs.forEach(bug => {
+      const created = bug.fields?.created
+      const resolutionDate = bug.fields?.resolutiondate
+      
+      // Only include bugs that have been resolved
+      if (created && resolutionDate) {
+        const createdTime = new Date(created)
+        const resolvedTime = new Date(resolutionDate)
+        
+        // Validate dates
+        if (isValidDate(createdTime) && isValidDate(resolvedTime) && resolvedTime >= createdTime) {
+          const resolutionTimeMs = resolvedTime - createdTime
+          const resolutionTimeHours = resolutionTimeMs / (1000 * 60 * 60) // Convert to hours
+          
+          totalResolutionTime += resolutionTimeHours
+          resolvedBugCount += 1
+        }
+      }
+    })
+
+    return resolvedBugCount > 0 ? totalResolutionTime / resolvedBugCount : 0
+    
+  } catch (error) {
+    console.warn('Average resolution time calculation failed:', error)
+    return 0
+  }
+}
+
+/**
+ * Calculate comprehensive bug resolution metrics
+ * @param {Array} bugs - Array of JIRA bug objects
+ * @returns {Object} - Bug resolution metrics
+ */
+export const calculateBugResolutionMetrics = (bugs) => {
+  if (!Array.isArray(bugs) || bugs.length === 0) {
+    return {
+      totalBugs: 0,
+      resolvedBugs: 0,
+      reopenedBugs: 0,
+      resolutionRate: 0,
+      reopenRate: 0,
+      averageResolutionTimeHours: 0,
+      medianResolutionTimeHours: 0,
+      overdueCount: 0,
+      slaBreaches: 0
+    }
+  }
+
+  try {
+    const reopenRate = calculateReopenRate(bugs)
+    const averageResolutionTimeHours = calculateAverageResolutionTime(bugs)
+    
+    const resolutionTimes = []
+    let resolvedBugs = 0
+    let overdueCount = 0
+    let reopenedBugs = 0
+    
+    bugs.forEach(bug => {
+      const created = bug.fields?.created
+      const resolutionDate = bug.fields?.resolutiondate
+      const status = bug.fields?.status?.name?.toLowerCase()
+      
+      // Count resolved bugs
+      if (resolutionDate) {
+        resolvedBugs += 1
+        
+        // Calculate resolution time for median
+        if (created) {
+          const createdTime = new Date(created)
+          const resolvedTime = new Date(resolutionDate)
+          
+          if (isValidDate(createdTime) && isValidDate(resolvedTime)) {
+            const resolutionTimeHours = (resolvedTime - createdTime) / (1000 * 60 * 60)
+            if (resolutionTimeHours >= 0) {
+              resolutionTimes.push(resolutionTimeHours)
+            }
+          }
+        }
+      }
+      
+      // Count overdue bugs (not resolved and older than 7 days)
+      if (!resolutionDate && created) {
+        const createdTime = new Date(created)
+        const daysDiff = (Date.now() - createdTime) / (1000 * 60 * 60 * 24)
+        if (daysDiff > 7) {
+          overdueCount += 1
+        }
+      }
+      
+      // Count reopened bugs (simple check)
+      if (status && (status.includes('reopen') || status.includes('reopened'))) {
+        reopenedBugs += 1
+      }
+    })
+    
+    // Calculate median resolution time
+    let medianResolutionTimeHours = 0
+    if (resolutionTimes.length > 0) {
+      resolutionTimes.sort((a, b) => a - b)
+      const mid = Math.floor(resolutionTimes.length / 2)
+      medianResolutionTimeHours = resolutionTimes.length % 2 === 0
+        ? (resolutionTimes[mid - 1] + resolutionTimes[mid]) / 2
+        : resolutionTimes[mid]
+    }
+    
+    const resolutionRate = bugs.length > 0 ? (resolvedBugs / bugs.length) * 100 : 0
+    
+    return {
+      totalBugs: bugs.length,
+      resolvedBugs,
+      reopenedBugs,
+      resolutionRate,
+      reopenRate,
+      averageResolutionTimeHours,
+      medianResolutionTimeHours,
+      overdueCount,
+      slaBreaches: overdueCount // Simple approximation
+    }
+    
+  } catch (error) {
+    console.warn('Bug resolution metrics calculation failed:', error)
+    return {
+      totalBugs: bugs.length,
+      resolvedBugs: 0,
+      reopenedBugs: 0,
+      resolutionRate: 0,
+      reopenRate: 0,
+      averageResolutionTimeHours: 0,
+      medianResolutionTimeHours: 0,
+      overdueCount: 0,
+      slaBreaches: 0,
+      error: error.message
+    }
+  }
+}
+
+/**
+ * Helper function to validate date objects
+ * @param {Date} date - Date object to validate
+ * @returns {boolean} - True if valid date
+ */
+const isValidDate = (date) => {
+  return date instanceof Date && !isNaN(date.getTime())
+}
+
+/**
  * Batch calculate metrics for multiple entities (developers, projects, etc.)
  * @param {Array} entities - Array of entity objects with bugs and totalIssues
  * @param {string|null} projectKey - Project key for project-specific configuration (optional)

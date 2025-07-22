@@ -7,6 +7,7 @@
 
 import { getSeverityConfig } from '../../constants/memberConfiguration.js'
 import { SEVERITY_LEVELS, isValidSeverity } from '../constants/severityConstants.js'
+import { JIRA_CONSTANTS } from '../../constants/jiraConstants.js'
 
 /**
  * Parse severity from a JIRA issue using configurable project-specific logic
@@ -75,6 +76,7 @@ export const parseSeverity = (issue, projectKey = null) => {
     // Step 3: Map the severity value to standardized levels
     let mappedSeverity = SEVERITY_LEVELS.UNKNOWN
     let confidence = 'low'
+    let defaultUsed = false
 
     if (severityValue && severityMapping[severityValue]) {
       mappedSeverity = severityMapping[severityValue]
@@ -92,10 +94,19 @@ export const parseSeverity = (issue, projectKey = null) => {
       }
     }
 
-    // Validate the mapped severity
-    if (!isValidSeverity(mappedSeverity)) {
-      mappedSeverity = SEVERITY_LEVELS.UNKNOWN
-      confidence = 'low'
+    // Step 4: Apply configurable default severity instead of Unknown
+    if (!isValidSeverity(mappedSeverity) || mappedSeverity === SEVERITY_LEVELS.UNKNOWN) {
+      const defaultSeverity = severityConfig.defaultSeverity || SEVERITY_LEVELS.MINOR
+      if (isValidSeverity(defaultSeverity)) {
+        mappedSeverity = defaultSeverity
+        confidence = 'low'
+        source = source === 'none' ? 'default_fallback' : source
+        defaultUsed = true
+      } else {
+        // Fallback to UNKNOWN if configured default is invalid
+        mappedSeverity = SEVERITY_LEVELS.UNKNOWN
+        confidence = 'low'
+      }
     }
 
     return {
@@ -105,6 +116,7 @@ export const parseSeverity = (issue, projectKey = null) => {
       confidence,
       projectKey,
       fallbackUsed,
+      defaultUsed,
       // Additional metadata for debugging
       customField: severityField,
       customFieldValue: issue.fields[severityField],
@@ -197,6 +209,7 @@ const parseSeverityWithConfig = (issue, severityConfig, projectKey = null) => {
     // Map to standardized levels
     let mappedSeverity = SEVERITY_LEVELS.UNKNOWN
     let confidence = 'low'
+    let defaultUsed = false
 
     if (severityValue && severityMapping[severityValue]) {
       mappedSeverity = severityMapping[severityValue]
@@ -214,10 +227,19 @@ const parseSeverityWithConfig = (issue, severityConfig, projectKey = null) => {
       }
     }
 
-    // Validate mapped severity
-    if (!isValidSeverity(mappedSeverity)) {
-      mappedSeverity = SEVERITY_LEVELS.UNKNOWN
-      confidence = 'low'
+    // Apply configurable default severity instead of Unknown
+    if (!isValidSeverity(mappedSeverity) || mappedSeverity === SEVERITY_LEVELS.UNKNOWN) {
+      const defaultSeverity = severityConfig.defaultSeverity || SEVERITY_LEVELS.MINOR
+      if (isValidSeverity(defaultSeverity)) {
+        mappedSeverity = defaultSeverity
+        confidence = 'low'
+        source = source === 'none' ? 'default_fallback' : source
+        defaultUsed = true
+      } else {
+        // Fallback to UNKNOWN if configured default is invalid
+        mappedSeverity = SEVERITY_LEVELS.UNKNOWN
+        confidence = 'low'
+      }
     }
 
     return {
@@ -226,7 +248,8 @@ const parseSeverityWithConfig = (issue, severityConfig, projectKey = null) => {
       source,
       confidence,
       projectKey,
-      fallbackUsed
+      fallbackUsed,
+      defaultUsed
     }
 
   } catch (error) {
@@ -351,4 +374,188 @@ export const validateSeverityConfig = (projectKey = null) => {
       config: null
     }
   }
+}
+
+/**
+ * Parse "Bug Caused By" field from a JIRA issue with assignee fallback
+ * @param {Object} issue - JIRA issue object
+ * @returns {Object} - Parsed bug caused by information
+ */
+export const parseBugCausedBy = (issue) => {
+  // Input validation
+  if (!issue || !issue.fields) {
+    return {
+      causedBy: null,
+      source: 'invalid_input',
+      confidence: 'low',
+      fallbackUsed: false,
+      rawValue: null,
+      customFieldValue: null,
+      assigneeValue: null
+    }
+  }
+
+  try {
+    const customFieldValue = issue.fields[JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_CAUSED_BY_NEW]
+    const assigneeValue = issue.fields.assignee?.displayName || issue.fields.assignee?.name
+    
+    let causedBy = null
+    let source = 'none'
+    let confidence = 'low'
+    let fallbackUsed = false
+    let rawValue = null
+
+    // Step 1: Try to get value from customfield_10002 (Bug Caused By)
+    if (customFieldValue) {
+      // Handle different possible structures for custom field
+      if (typeof customFieldValue === 'object' && customFieldValue !== null) {
+        causedBy = customFieldValue.displayName || customFieldValue.name || customFieldValue.value || null
+      } else if (typeof customFieldValue === 'string') {
+        causedBy = customFieldValue
+      }
+      
+      if (causedBy) {
+        source = 'custom_field'
+        confidence = 'high'
+        rawValue = customFieldValue
+      }
+    }
+
+    // Step 2: Fallback to assignee if custom field is empty or null
+    if (!causedBy && assigneeValue) {
+      causedBy = assigneeValue
+      source = 'assignee_fallback'
+      confidence = 'medium'
+      fallbackUsed = true
+      rawValue = assigneeValue
+    }
+
+    // Step 3: Final fallback to "Unknown" if both are empty
+    if (!causedBy) {
+      causedBy = 'Unknown'
+      source = 'default_fallback'
+      confidence = 'low'
+      rawValue = null
+    }
+
+    return {
+      causedBy,
+      source,
+      confidence,
+      fallbackUsed,
+      rawValue,
+      customFieldValue,
+      assigneeValue,
+      // Additional metadata for debugging
+      issueKey: issue.key || 'unknown'
+    }
+
+  } catch (error) {
+    // Error handling - log but don't crash
+    console.warn(`Bug Caused By parsing failed for issue ${issue.key || 'unknown'}:`, error)
+    
+    return {
+      causedBy: 'Unknown',
+      source: 'error',
+      confidence: 'low',
+      fallbackUsed: false,
+      rawValue: null,
+      customFieldValue: null,
+      assigneeValue: null,
+      error: error.message
+    }
+  }
+}
+
+/**
+ * Parse Bug Caused By from multiple issues efficiently (batch processing)
+ * @param {Array} issues - Array of JIRA issue objects
+ * @returns {Array} - Array of parsed bug caused by information objects
+ */
+export const parseBugCausedByBatch = (issues) => {
+  if (!Array.isArray(issues)) {
+    return []
+  }
+
+  return issues.map(issue => parseBugCausedBy(issue))
+}
+
+/**
+ * Get Bug Caused By parsing statistics for a set of issues
+ * Useful for monitoring and debugging bug causation data quality
+ * @param {Array} issues - Array of JIRA issue objects
+ * @returns {Object} - Parsing statistics
+ */
+export const getBugCausedByStats = (issues) => {
+  if (!Array.isArray(issues) || issues.length === 0) {
+    return {
+      totalIssues: 0,
+      customFieldUsed: 0,
+      assigneeFallbackUsed: 0,
+      unknownCausedBy: 0,
+      errors: 0,
+      customFieldRate: 0,
+      fallbackRate: 0,
+      sourceBreakdown: {},
+      confidenceBreakdown: {},
+      uniqueCausedByCount: 0,
+      mostCommonCausedBy: null
+    }
+  }
+
+  const parseResults = parseBugCausedByBatch(issues)
+  const causedByFrequency = {}
+  
+  const stats = parseResults.reduce((acc, result) => {
+    acc.totalIssues += 1
+    
+    // Track source usage
+    if (result.source === 'custom_field') {
+      acc.customFieldUsed += 1
+    } else if (result.source === 'assignee_fallback') {
+      acc.assigneeFallbackUsed += 1
+    } else if (result.source === 'default_fallback') {
+      acc.unknownCausedBy += 1
+    }
+    
+    if (result.error) {
+      acc.errors += 1
+    }
+    
+    // Track source breakdown
+    acc.sourceBreakdown[result.source] = (acc.sourceBreakdown[result.source] || 0) + 1
+    
+    // Track confidence breakdown
+    acc.confidenceBreakdown[result.confidence] = (acc.confidenceBreakdown[result.confidence] || 0) + 1
+    
+    // Track caused by frequency
+    if (result.causedBy && result.causedBy !== 'Unknown') {
+      causedByFrequency[result.causedBy] = (causedByFrequency[result.causedBy] || 0) + 1
+    }
+    
+    return acc
+  }, {
+    totalIssues: 0,
+    customFieldUsed: 0,
+    assigneeFallbackUsed: 0,
+    unknownCausedBy: 0,
+    errors: 0,
+    sourceBreakdown: {},
+    confidenceBreakdown: {}
+  })
+
+  // Calculate rates
+  stats.customFieldRate = stats.totalIssues > 0 ? (stats.customFieldUsed / stats.totalIssues) * 100 : 0
+  stats.fallbackRate = stats.totalIssues > 0 ? (stats.assigneeFallbackUsed / stats.totalIssues) * 100 : 0
+
+  // Find most common caused by
+  stats.uniqueCausedByCount = Object.keys(causedByFrequency).length
+  if (stats.uniqueCausedByCount > 0) {
+    stats.mostCommonCausedBy = Object.entries(causedByFrequency)
+      .sort(([,a], [,b]) => b - a)[0]
+  } else {
+    stats.mostCommonCausedBy = null
+  }
+
+  return stats
 } 

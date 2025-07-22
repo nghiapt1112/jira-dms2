@@ -100,7 +100,7 @@ export const developerQualityService = {
         assignee: issue.fields?.assignee?.displayName || 'Unassigned',
         status: status,
         issueType: issueType,
-        severity: issue.fields?.priority?.name || 'Unknown',
+        severity: parseSeverity(issue, issue.fields?.project?.key).severity,
         project: issue.fields?.project?.name || issue.fields?.project?.key || 'Unknown',
         rootCause: rootCause,
         created: issue.fields?.created || null,
@@ -436,7 +436,7 @@ export const developerQualityService = {
       
       // NEW: Process resolution time
       if (resolved && created) {
-        const resolutionMetrics = calculateResolutionTimeMetrics(issue)
+        const resolutionMetrics = calculateResolutionTimeMetrics(issue, project)
         if (resolutionMetrics.resolutionTimeHours !== null) {
           devStats.resolutionTimes.push(resolutionMetrics)  // NEW FIELD
           if (resolutionMetrics.isOverdue) {
@@ -620,7 +620,9 @@ export const developerQualityService = {
     const projectName = issue.fields?.project?.name || project  // Use project name for indexing
     const issueType = issue.fields?.issuetype?.name || 'Unknown'
     const status = issue.fields?.status?.name || 'Unknown'
-    const severity = issue.fields?.priority?.name || 'Unknown'
+    const severityResult = parseSeverity(issue, issue.fields?.project?.key)
+    const severity = severityResult.severity
+    
     const rootCause = developerQualityService.extractRootCause(issue)
     const created = issue.fields?.created
     

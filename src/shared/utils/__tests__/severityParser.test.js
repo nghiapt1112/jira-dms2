@@ -119,7 +119,7 @@ describe('severityParser', () => {
       expect(result.confidence).toBe('medium') // Case-insensitive fallback
     })
 
-    test('returns Unknown for unmapped severity values', () => {
+    test('returns default severity (Minor) for unmapped severity values', () => {
       const issue = {
         key: 'TEST-123',
         fields: {
@@ -132,10 +132,11 @@ describe('severityParser', () => {
 
       const result = parseSeverity(issue)
       
-      expect(result.severity).toBe('Unknown')
+      expect(result.severity).toBe('Minor')
       expect(result.rawValue).toBe('UnmappedSeverity')
       expect(result.source).toBe('custom_field')
       expect(result.confidence).toBe('low')
+      expect(result.defaultUsed).toBe(true)
     })
 
     test('handles missing custom field and priority', () => {
@@ -149,11 +150,12 @@ describe('severityParser', () => {
 
       const result = parseSeverity(issue)
       
-      expect(result.severity).toBe('Unknown')
+      expect(result.severity).toBe('Minor')
       expect(result.rawValue).toBe(null)
-      expect(result.source).toBe('none')
+      expect(result.source).toBe('default_fallback')
       expect(result.confidence).toBe('low')
       expect(result.fallbackUsed).toBe(false)
+      expect(result.defaultUsed).toBe(true)
     })
 
     test('handles invalid issue input', () => {
@@ -169,7 +171,8 @@ describe('severityParser', () => {
         usePriorityFallback: false,
         severityMapping: {
           'Critical': 'Critical'
-        }
+        },
+        defaultSeverity: 'Minor'
       })
 
       const issue = {
@@ -184,9 +187,10 @@ describe('severityParser', () => {
 
       const result = parseSeverity(issue)
       
-      expect(result.severity).toBe('Unknown')
+      expect(result.severity).toBe('Minor')
       expect(result.fallbackUsed).toBe(false)
-      expect(result.source).toBe('none')
+      expect(result.source).toBe('default_fallback')
+      expect(result.defaultUsed).toBe(true)
     })
 
     test('includes debug metadata in result', () => {
@@ -267,7 +271,7 @@ describe('severityParser', () => {
         },
         {
           key: 'TEST-3',
-          fields: { customfield_10049: null, priority: { name: 'Medium' } }
+          fields: { customfield_10049: null, π: { name: 'Medium' } }
         }
       ]
 
@@ -318,15 +322,15 @@ describe('severityParser', () => {
       const stats = getSeverityParsingStats(issues)
       
       expect(stats.totalIssues).toBe(5)
-      expect(stats.successfulParses).toBe(3) // Critical, High, Medium
-      expect(stats.unknownSeverities).toBe(2) // UnmappedValue, null/null
+      expect(stats.successfulParses).toBe(5) // All issues now get valid severities (Critical, High, Medium, Minor, Minor)
+      expect(stats.unknownSeverities).toBe(0) // No unknowns with default fallback
       expect(stats.fallbackUsed).toBe(1) // Medium from priority
-      expect(stats.successRate).toBe(60) // 3/5 * 100
+      expect(stats.successRate).toBe(100) // 5/5 * 100
       expect(stats.fallbackRate).toBe(20) // 1/5 * 100
       
-      expect(stats.sourceBreakdown.custom_field).toBe(3)
-      expect(stats.sourceBreakdown.priority_fallback).toBe(1)
-      expect(stats.sourceBreakdown.none).toBe(1)
+      expect(stats.sourceBreakdown.custom_field).toBe(3) // Critical, High, UnmappedValue
+      expect(stats.sourceBreakdown.priority_fallback).toBe(1) // Medium
+      expect(stats.sourceBreakdown.default_fallback).toBe(1) // null/null case
       
       expect(stats.confidenceBreakdown.high).toBe(2) // Critical, High
       expect(stats.confidenceBreakdown.medium).toBe(1) // Medium from priority

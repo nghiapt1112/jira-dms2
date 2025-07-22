@@ -6,7 +6,7 @@ import { useChartTheme, mergeChartOptions } from '../../../utils/chartTheme';
 import { defaultChartOptions } from '../../../config/chartjs.config';
 
 const ChartJSLineChart = React.memo(({ 
-  data = [], 
+  data = null, 
   title = 'Line Chart', 
   height = 400, 
   options = {},
@@ -16,27 +16,50 @@ const ChartJSLineChart = React.memo(({
   const chartTheme = useChartTheme();
 
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) return { labels: [], datasets: [] };
-    
-    return {
-      labels: data.map(item => item.x),
-      datasets: [
-        {
-          label: title || 'Data',
-          data: data.map(item => item.y),
-          backgroundColor: `${chartTheme.colors.primary}20`,
-          borderColor: chartTheme.colors.primary,
-          borderWidth: 2,
-          pointBackgroundColor: chartTheme.colors.primary,
+    // Handle Chart.js format (with labels and datasets)
+    if (data && typeof data === 'object' && data.labels && data.datasets) {
+      return {
+        labels: data.labels,
+        datasets: data.datasets.map(dataset => ({
+          backgroundColor: `${dataset.borderColor || chartTheme.colors.primary}20`,
+          borderColor: dataset.borderColor || chartTheme.colors.primary,
+          borderWidth: dataset.borderWidth || 2,
+          pointBackgroundColor: dataset.borderColor || chartTheme.colors.primary,
           pointBorderColor: chartTheme.colors.background,
           pointBorderWidth: 2,
           pointRadius: 4,
           pointHoverRadius: 6,
-          fill: false,
-          tension: 0.1,
-        },
-      ],
-    };
+          fill: dataset.fill || false,
+          tension: dataset.tension || 0.1,
+          ...dataset, // Preserve original dataset properties
+        }))
+      };
+    }
+    
+    // Handle simple array format (legacy support)
+    if (Array.isArray(data) && data.length > 0) {
+      return {
+        labels: data.map(item => item.x),
+        datasets: [
+          {
+            label: title || 'Data',
+            data: data.map(item => item.y),
+            backgroundColor: `${chartTheme.colors.primary}20`,
+            borderColor: chartTheme.colors.primary,
+            borderWidth: 2,
+            pointBackgroundColor: chartTheme.colors.primary,
+            pointBorderColor: chartTheme.colors.background,
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: false,
+            tension: 0.1,
+          },
+        ],
+      };
+    }
+    
+    return { labels: [], datasets: [] };
   }, [data, title, chartTheme]);
 
   const chartOptions = useMemo(() => {
@@ -55,7 +78,7 @@ const ChartJSLineChart = React.memo(({
     }, theme);
   }, [options, theme]);
 
-  if (!data || data.length === 0) {
+  if (!chartData || !chartData.labels || chartData.labels.length === 0) {
     return (
       <Paper elevation={1} sx={{ p: 2, width: '100%' }} {...props}>
         <Typography variant="h6">{title}</Typography>
@@ -82,10 +105,18 @@ const ChartJSLineChart = React.memo(({
 });
 
 ChartJSLineChart.propTypes = {
-  data: PropTypes.arrayOf(PropTypes.shape({
-    x: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    y: PropTypes.number.isRequired,
-  })),
+  data: PropTypes.oneOfType([
+    // Chart.js format
+    PropTypes.shape({
+      labels: PropTypes.array.isRequired,
+      datasets: PropTypes.arrayOf(PropTypes.object).isRequired,
+    }),
+    // Legacy simple array format
+    PropTypes.arrayOf(PropTypes.shape({
+      x: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      y: PropTypes.number.isRequired,
+    })),
+  ]),
   title: PropTypes.string,
   height: PropTypes.number,
   options: PropTypes.object,

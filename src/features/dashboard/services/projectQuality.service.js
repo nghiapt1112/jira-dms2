@@ -1,3 +1,6 @@
+import { parseSeverity } from '../../../shared/utils/severityParser.js'
+import { SEVERITY_LEVELS, initializeSeverityBreakdown } from '../../../shared/constants/severityConstants.js'
+
 export const projectQualityService = {
   calculateQualityMetrics: (project) => {
     if (!project || !project.issues) {
@@ -36,39 +39,31 @@ export const projectQualityService = {
   analyzeBugSeverityDistribution: (bugs) => {
     if (!bugs || bugs.length === 0) {
       return {
-        critical: 0,
-        high: 0,
-        medium: 0,
-        low: 0,
+        [SEVERITY_LEVELS.CRITICAL]: 0,
+        [SEVERITY_LEVELS.MAJOR]: 0,
+        [SEVERITY_LEVELS.MINOR]: 0,
+        [SEVERITY_LEVELS.LOW]: 0,
+        [SEVERITY_LEVELS.COSMETIC]: 0,
         total: 0,
         severityScore: 0
       }
     }
 
     const distribution = bugs.reduce((acc, bug) => {
-      const priority = bug.fields?.priority?.name || 'Medium'
+      // Use centralized severity parser instead of custom logic
+      const severityResult = parseSeverity(bug, bug.fields?.project?.key)
+      const severity = severityResult.severity
       
-      switch (priority.toLowerCase()) {
-        case 'critical':
-        case 'highest':
-          acc.critical += 1
-          break
-        case 'high':
-          acc.high += 1
-          break
-        case 'medium':
-          acc.medium += 1
-          break
-        case 'low':
-        case 'lowest':
-          acc.low += 1
-          break
-        default:
-          acc.medium += 1
+      // Use centralized severity levels
+      if (acc[severity] !== undefined) {
+        acc[severity] += 1
+      } else {
+        // Fallback to Minor for unknown values (matches severityParser default)
+        acc[SEVERITY_LEVELS.MINOR] += 1
       }
       
       return acc
-    }, { critical: 0, high: 0, medium: 0, low: 0 })
+    }, initializeSeverityBreakdown())
 
     const total = bugs.length
     const severityScore = calculateSeverityScore(distribution, total)
@@ -78,10 +73,11 @@ export const projectQualityService = {
       total,
       severityScore: parseFloat(severityScore.toFixed(2)),
       percentages: {
-        critical: parseFloat(((distribution.critical / total) * 100).toFixed(1)),
-        high: parseFloat(((distribution.high / total) * 100).toFixed(1)),
-        medium: parseFloat(((distribution.medium / total) * 100).toFixed(1)),
-        low: parseFloat(((distribution.low / total) * 100).toFixed(1))
+        [SEVERITY_LEVELS.CRITICAL]: parseFloat(((distribution[SEVERITY_LEVELS.CRITICAL] / total) * 100).toFixed(1)),
+        [SEVERITY_LEVELS.MAJOR]: parseFloat(((distribution[SEVERITY_LEVELS.MAJOR] / total) * 100).toFixed(1)),
+        [SEVERITY_LEVELS.MINOR]: parseFloat(((distribution[SEVERITY_LEVELS.MINOR] / total) * 100).toFixed(1)),
+        [SEVERITY_LEVELS.LOW]: parseFloat(((distribution[SEVERITY_LEVELS.LOW] / total) * 100).toFixed(1)),
+        [SEVERITY_LEVELS.COSMETIC]: parseFloat(((distribution[SEVERITY_LEVELS.COSMETIC] / total) * 100).toFixed(1))
       }
     }
   },
@@ -328,12 +324,19 @@ const calculateTechnicalDebt = (project) => {
 const calculateSeverityScore = (distribution, total) => {
   if (total === 0) return 100
 
-  const weights = { critical: 10, high: 5, medium: 2, low: 1 }
+  const weights = { 
+    [SEVERITY_LEVELS.CRITICAL]: 10, 
+    [SEVERITY_LEVELS.MAJOR]: 5, 
+    [SEVERITY_LEVELS.MINOR]: 2, 
+    [SEVERITY_LEVELS.LOW]: 1,
+    [SEVERITY_LEVELS.COSMETIC]: 1
+  }
+  
   const weightedSum = Object.entries(distribution).reduce((sum, [severity, count]) => {
     return sum + (count * (weights[severity] || 1))
   }, 0)
 
-  const maxPossibleScore = total * weights.critical
+  const maxPossibleScore = total * weights[SEVERITY_LEVELS.CRITICAL]
   const severityScore = 100 - ((weightedSum / maxPossibleScore) * 100)
 
   return Math.max(severityScore, 0)

@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useDeveloperQualityFilters } from '../useDeveloperQualityFilters'
 import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 import { filterService } from '../../services/filterService'
+import { SEVERITY_LEVELS } from '../../../../shared/constants/severityConstants.js'
 
 // Mock dependencies
 jest.mock('../../store/developerQualityStore')
@@ -34,7 +35,7 @@ describe('useDeveloperQualityFilters', () => {
     projects: ['PROJ-A', 'PROJ-B', 'PROJ-C'],
     issueTypes: ['Bug', 'Story', 'Task'],
     statuses: ['Done', 'In Progress', 'To Do'],
-    severities: ['Critical', 'Major', 'Minor', 'Low', 'Cosmetic'],
+    severities: [SEVERITY_LEVELS.CRITICAL, SEVERITY_LEVELS.MAJOR, SEVERITY_LEVELS.MINOR, SEVERITY_LEVELS.LOW, SEVERITY_LEVELS.COSMETIC],
     rootCauses: ['Logic Error', 'Integration Issue', 'Performance']
   }
 
@@ -480,7 +481,7 @@ describe('useDeveloperQualityFilters', () => {
         ...mockFilters,
         developers: ['john.doe', 'jane.smith'],
         projects: ['PROJ-A'],
-        severities: ['High', 'Critical', 'Medium']
+        severities: [SEVERITY_LEVELS.MAJOR, SEVERITY_LEVELS.CRITICAL, SEVERITY_LEVELS.MINOR]
       }
 
       useDeveloperQualityStore.mockReturnValue({

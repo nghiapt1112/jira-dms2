@@ -597,7 +597,23 @@ export const memberConfiguration = {
         "High": "Major",
         "Medium": "Minor",
         "Low": "Low",
-        "Lowest": "Cosmetic"
+        "Lowest": "Cosmetic",
+        
+        // Additional mappings from Project Overview (merged from BUG_SEVERITY_CONFIG)
+        "CRITICAL": "Critical",
+        "MAJOR": "Major",
+        "MEDIUM": "Minor", // Standardized to Minor like existing Medium
+        "MODERATE": "Minor",
+        "LOW": "Low",
+        "LOWEST": "Cosmetic", // Mapped to Cosmetic like existing Lowest
+        "MINOR": "Cosmetic",
+        "BLOCKER": "Critical",
+        "P1": "Critical",
+        "P2": "Major", 
+        "P3": "Minor",
+        "P4": "Low",
+        "P5": "Cosmetic",
+        "TRIVIAL": "Low"
       },
       
       // Standard severity levels used in dashboard
@@ -611,7 +627,10 @@ export const memberConfiguration = {
         "Low": 0.3,
         "Cosmetic": 0.1,
         "Unknown": 0.2
-      }
+      },
+      
+      // Default severity to use when no mapping is found (instead of "Unknown")
+      defaultSeverity: "Minor"
     },
     
     // Project-specific configurations (override default)
