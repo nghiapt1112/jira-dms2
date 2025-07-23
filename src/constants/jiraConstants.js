@@ -88,10 +88,11 @@ export const JIRA_CONSTANTS = {
   
   // Cache settings
   CACHE_SETTINGS: {
-    EXPIRY_HOURS: 24,
+    EXPIRY_HOURS: 168, // 7 days (increased from 24 hours)
     MAX_SIZE_MB: 500, // Increased from 100MB to 500MB
     STORAGE_KEY: 'jira_data_cache',
-    METADATA_KEY: 'jira_data_metadata'
+    METADATA_KEY: 'jira_data_metadata',
+    ALLOW_STALE_DATA: true // Allow loading stale data with warning
   },
   
   // Issue types

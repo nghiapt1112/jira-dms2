@@ -95,7 +95,10 @@ class IndexedDBCache {
   }
 
   async getCachedData(key, maxAgeHours = 24) {
+    console.log(`🔍 indexedDBCache.getCachedData: key=${key}, maxAge=${maxAgeHours}h`)
+    
     if (!this.db) {
+      console.log('🔍 IndexedDB not initialized, initializing...')
       await this.init()
     }
 
@@ -103,6 +106,7 @@ class IndexedDBCache {
     
     try {
       // Get the data
+      console.log('🔍 Getting data from IndexedDB store...')
       const issuesStore = transaction.objectStore(STORE_NAME)
       const dataEntry = await new Promise((resolve, reject) => {
         const request = issuesStore.get(key)
@@ -111,17 +115,23 @@ class IndexedDBCache {
       })
       
       if (!dataEntry) {
+        console.log('❌ No data entry found in IndexedDB')
         return null
       }
       
+      console.log(`✅ Found data entry in IndexedDB: ${dataEntry.data.length} issues`)
+      
       // Check if data is still fresh
       const ageHours = (Date.now() - dataEntry.timestamp) / (1000 * 60 * 60)
+      console.log(`🔍 IndexedDB data age: ${ageHours.toFixed(1)}h (limit: ${maxAgeHours}h)`)
+      
       if (ageHours > maxAgeHours) {
-        console.log(`⏰ Cached data is ${ageHours.toFixed(1)}h old, treating as stale`)
+        console.log(`⏰ IndexedDB cached data is ${ageHours.toFixed(1)}h old, treating as stale`)
         return null
       }
       
       // Get metadata
+      console.log('🔍 Getting metadata from IndexedDB...')
       const metadataStore = transaction.objectStore(METADATA_STORE)
       const metadata = await new Promise((resolve, reject) => {
         const request = metadataStore.get(key)
@@ -140,6 +150,7 @@ class IndexedDBCache {
       
     } catch (error) {
       console.error('❌ Failed to retrieve from IndexedDB:', error)
+      console.error('Error details:', error.stack)
       return null
     }
   }
@@ -276,14 +287,32 @@ export const hybridCacheService = {
   },
 
   async getCachedData(key, maxAgeHours = 24) {
+    console.log(`🔍 hybridCacheService.getCachedData: key=${key}, maxAge=${maxAgeHours}h`)
+    
     // Try localStorage first (faster)
     try {
+      console.log('🔍 Checking localStorage...')
       const cached = localStorage.getItem(key)
       if (cached) {
+        console.log('✅ Found data in localStorage, parsing...')
         const parsed = JSON.parse(cached)
         const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60)
         
+        console.log(`🔍 localStorage data age: ${ageHours.toFixed(1)}h (limit: ${maxAgeHours}h)`)
+        
         if (ageHours <= maxAgeHours) {
+          // Check if localStorage data is empty - if so, try IndexedDB first
+          if (parsed.data && parsed.data.length === 0) {
+            console.log(`⚠️ localStorage has empty data (0 issues), checking IndexedDB first...`)
+            const indexedDBResult = await indexedDBCache.getCachedData(key, maxAgeHours)
+            if (indexedDBResult && indexedDBResult.data.length > 0) {
+              console.log(`✅ Using IndexedDB data instead: ${indexedDBResult.data.length} issues`)
+              return indexedDBResult
+            } else {
+              console.log(`❌ IndexedDB also empty, using localStorage empty data`)
+            }
+          }
+          
           console.log(`✅ Retrieved from localStorage cache (${ageHours.toFixed(1)}h old)`)
           return {
             data: parsed.data,
@@ -291,14 +320,28 @@ export const hybridCacheService = {
             timestamp: parsed.timestamp,
             age: ageHours
           }
+        } else {
+          console.log(`❌ localStorage data too old: ${ageHours.toFixed(1)}h > ${maxAgeHours}h`)
         }
+      } else {
+        console.log('❌ No data found in localStorage')
       }
     } catch (error) {
       console.warn('⚠️ localStorage read failed:', error)
     }
     
     // Fall back to IndexedDB
-    return await indexedDBCache.getCachedData(key, maxAgeHours)
+    console.log('🔍 Falling back to IndexedDB...')
+    const result = await indexedDBCache.getCachedData(key, maxAgeHours)
+    if (result) {
+      console.log(`🔍 IndexedDB result: ${result.data.length} issues`)
+      if (result.data.length > 0) {
+        console.log('🎉 Found data in IndexedDB! This should be used instead of empty localStorage')
+      }
+    } else {
+      console.log('🔍 IndexedDB result: null')
+    }
+    return result
   },
 
   async clearCache(olderThanHours = null) {

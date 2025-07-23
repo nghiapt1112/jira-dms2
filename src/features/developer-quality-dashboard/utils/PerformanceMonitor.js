@@ -2,9 +2,9 @@ class PerformanceMonitor {
   constructor() {
     this.metrics = new Map()
     this.thresholds = {
-      filterResponse: 1, // 1ms
+      filterResponse: 100, // 100ms (realistic for 13k+ records)
       chartRender: 200, // 200ms
-      cacheHit: 1, // 1ms
+      cacheHit: 10, // 10ms (realistic for cache operations)
       memoryUsage: 100 * 1024 * 1024 // 100MB
     }
     this.isEnabled = process.env.NODE_ENV === 'development'

@@ -804,12 +804,12 @@ export const developerQualityService = {
       metrics.teamContribution.developerStats.entries()
     ).map(([developer, stats]) => ({
       developer,
-      contributions: stats.contributions,
-      storyPoints: stats.storyPoints,
+      contributions: stats.contributions || 0,
+      storyPoints: stats.storyPoints || 0,
       percentage: (stats.contributions / metrics.teamContribution.totalContributions) * 100,
       storyPointsPercentage: ((stats.storyPoints || 0) / (metrics.teamContribution.totalStoryPoints || 1)) * 100,
       statusBreakdown: Object.fromEntries(stats.statusBreakdown)
-    })).sort((a, b) => b.storyPoints - a.storyPoints) // Sort by story points instead of contributions
+    })).sort((a, b) => (b.storyPoints || 0) - (a.storyPoints || 0)) // Sort by story points instead of contributions
     
     // Calculate bug rate analysis - EXTENDED VERSION
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
@@ -1318,11 +1318,18 @@ export const developerQualityService = {
               // Add week date range formatting for weekly data
               if (timePeriod === 'week') {
                 try {
-                  const weekRange = developerQualityService.getWeekDateRange(period)
-                  result._weekStart = weekRange.startDate
-                  result._weekEnd = weekRange.endDate
-                  result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
-                  result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+                  // Check if period is in the expected format (YYYY-WXX)
+                  if (typeof period === 'number' || !period.toString().includes('-W')) {
+                    // Skip week range calculation for numeric periods
+                    result._weekStartFormatted = `Week ${period}`
+                    result._weekEndFormatted = `Week ${period}`
+                  } else {
+                    const weekRange = developerQualityService.getWeekDateRange(period)
+                    result._weekStart = weekRange.startDate
+                    result._weekEnd = weekRange.endDate
+                    result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
+                    result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+                  }
                 } catch (error) {
                   console.warn('Failed to get week range for period:', period, error)
                   result._weekStartFormatted = 'Unknown'
@@ -1357,11 +1364,18 @@ export const developerQualityService = {
           // Add week date range formatting for weekly data in fallback too
           if (timePeriod === 'week') {
             try {
-              const weekRange = developerQualityService.getWeekDateRange(period)
-              result._weekStart = weekRange.startDate
-              result._weekEnd = weekRange.endDate
-              result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
-              result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+              // Check if period is in the expected format (YYYY-WXX)
+              if (typeof period === 'number' || !period.toString().includes('-W')) {
+                // Skip week range calculation for numeric periods
+                result._weekStartFormatted = `Week ${period}`
+                result._weekEndFormatted = `Week ${period}`
+              } else {
+                const weekRange = developerQualityService.getWeekDateRange(period)
+                result._weekStart = weekRange.startDate
+                result._weekEnd = weekRange.endDate
+                result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
+                result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+              }
             } catch (error) {
               console.warn('Fallback: Failed to get week range for period:', period, error)
               result._weekStartFormatted = 'Unknown'

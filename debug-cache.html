@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Cache</title>
+</head>
+<body>
+    <h1>Debug Cache Test</h1>
+    <button onclick="listAllDatabases()">List All Databases</button>
+    <button onclick="testIndexedDB()">Test JIRA IndexedDB</button>
+    <button onclick="testLocalStorage()">Test localStorage</button>
+    <button onclick="clearAll()">Clear All Cache</button>
+    <div id="results"></div>
+
+    <script>
+        const JIRA_DB_NAME = 'jira_data_cache'
+        const JIRA_STORE_NAME = 'issues'
+        const JIRA_CACHE_KEY = 'jira_data_cache'
+        
+        const DEV_QUALITY_DB_NAME = 'developer-quality-dashboard'
+        const ZUSTAND_PERSIST_KEY = 'developer-quality-storage'
+
+        function log(message) {
+            const div = document.getElementById('results')
+            div.innerHTML += '<div>' + message + '</div>'
+            console.log(message)
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = ''
+        }
+
+        async function testIndexedDB() {
+            clearResults()
+            log('🔍 Testing JIRA IndexedDB...')
+            
+            try {
+                const request = indexedDB.open(JIRA_DB_NAME)
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result
+                    log('✅ JIRA IndexedDB connection successful')
+                    
+                    const transaction = db.transaction([JIRA_STORE_NAME], 'readonly')
+                    const store = transaction.objectStore(JIRA_STORE_NAME)
+                    const getRequest = store.get(JIRA_CACHE_KEY)
+                    
+                    getRequest.onsuccess = () => {
+                        const result = getRequest.result
+                        if (result) {
+                            log(`✅ Found JIRA data in IndexedDB: ${result.data.length} issues`)
+                            log(`📅 Data timestamp: ${new Date(result.timestamp).toISOString()}`)
+                            log(`⏰ Data age: ${((Date.now() - result.timestamp) / (1000 * 60 * 60)).toFixed(1)} hours`)
+                        } else {
+                            log('❌ No JIRA data found in IndexedDB')
+                        }
+                    }
+                    
+                    getRequest.onerror = () => {
+                        log('❌ Error getting JIRA data from IndexedDB: ' + getRequest.error)
+                    }
+                }
+                
+                request.onerror = () => {
+                    log('❌ Error opening JIRA IndexedDB: ' + request.error)
+                }
+            } catch (error) {
+                log('❌ JIRA IndexedDB test failed: ' + error.message)
+            }
+            
+            // Also test the developer quality dashboard DB
+            setTimeout(() => testDevQualityDB(), 1000)
+        }
+        
+        async function testDevQualityDB() {
+            log('🔍 Testing Developer Quality IndexedDB...')
+            
+            try {
+                const request = indexedDB.open(DEV_QUALITY_DB_NAME)
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result
+                    log('✅ Developer Quality IndexedDB found')
+                    log(`📊 Object stores: ${Array.from(db.objectStoreNames).join(', ')}`)
+                    
+                    if (db.objectStoreNames.contains('keyvaluepairs')) {
+                        const transaction = db.transaction(['keyvaluepairs'], 'readonly')
+                        const store = transaction.objectStore('keyvaluepairs')
+                        const getRequest = store.get(ZUSTAND_PERSIST_KEY)
+                        
+                        getRequest.onsuccess = () => {
+                            const result = getRequest.result
+                            if (result && result.state) {
+                                log(`✅ Found Zustand persist data`)
+                                if (result.state.filters) {
+                                    log(`🎯 Filters stored: ${JSON.stringify(result.state.filters, null, 2)}`)
+                                }
+                            } else {
+                                log('❌ No Zustand persist data found')
+                            }
+                        }
+                    }
+                }
+                
+                request.onerror = () => {
+                    log('❌ Error opening Developer Quality IndexedDB: ' + request.error)
+                }
+            } catch (error) {
+                log('❌ Developer Quality IndexedDB test failed: ' + error.message)
+            }
+        }
+        
+        async function listAllDatabases() {
+            clearResults()
+            log('📋 Listing all IndexedDB databases...')
+            
+            if ('databases' in indexedDB) {
+                try {
+                    const databases = await indexedDB.databases()
+                    log(`Found ${databases.length} databases:`)
+                    databases.forEach(db => {
+                        log(`  - ${db.name} (version ${db.version})`)
+                    })
+                } catch (error) {
+                    log('❌ Error listing databases: ' + error.message)
+                }
+            } else {
+                log('⚠️ indexedDB.databases() not supported in this browser')
+            }
+            
+            setTimeout(() => testIndexedDB(), 1000)
+        }
+
+        async function testLocalStorage() {
+            clearResults()
+            log('🔍 Testing localStorage...')
+            
+            // Check JIRA cache key
+            try {
+                const cached = localStorage.getItem(JIRA_CACHE_KEY)
+                if (cached) {
+                    const parsed = JSON.parse(cached)
+                    log(`✅ Found JIRA data in localStorage: ${parsed.data.length} issues`)
+                    log(`📅 Data timestamp: ${new Date(parsed.timestamp).toISOString()}`)
+                    log(`⏰ Data age: ${((Date.now() - parsed.timestamp) / (1000 * 60 * 60)).toFixed(1)} hours`)
+                } else {
+                    log('❌ No JIRA data found in localStorage')
+                }
+            } catch (error) {
+                log('❌ localStorage JIRA test failed: ' + error.message)
+            }
+            
+            // List all localStorage keys
+            log('📋 All localStorage keys:')
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i)
+                const value = localStorage.getItem(key)
+                log(`  - ${key}: ${value.length} chars`)
+                if (key.includes('jira') || key.includes('developer')) {
+                    try {
+                        const parsed = JSON.parse(value)
+                        if (parsed.data && Array.isArray(parsed.data)) {
+                            log(`    └─ Contains ${parsed.data.length} items`)
+                        }
+                    } catch (e) {
+                        // Not JSON, skip
+                    }
+                }
+            }
+        }
+
+        async function clearAll() {
+            log('🧹 Clearing all cache...')
+            
+            // Clear localStorage
+            localStorage.removeItem(CACHE_KEY)
+            log('✅ localStorage cleared')
+            
+            // Clear IndexedDB
+            try {
+                const request = indexedDB.deleteDatabase(DB_NAME)
+                request.onsuccess = () => log('✅ IndexedDB cleared')
+                request.onerror = () => log('❌ Error clearing IndexedDB')
+            } catch (error) {
+                log('❌ Error clearing IndexedDB: ' + error.message)
+            }
+        }
+
+        // Auto-test on load
+        window.onload = () => {
+            listAllDatabases()
+        }
+    </script>
+</body>
+</html>

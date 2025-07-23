@@ -43,28 +43,60 @@ export const cacheService = {
   // Get cached JIRA data
   getCachedJiraData: async () => {
     try {
+      console.log('🔍 getCachedJiraData: Starting cache retrieval...')
       const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
       const maxAgeHours = JIRA_CONSTANTS.CACHE_SETTINGS.EXPIRY_HOURS
+      const allowStaleData = JIRA_CONSTANTS.CACHE_SETTINGS.ALLOW_STALE_DATA
       
-      // Use hybrid cache service to get data
-      const result = await hybridCacheService.getCachedData(cacheKey, maxAgeHours)
+      console.log(`🔍 Cache settings: key=${cacheKey}, maxAge=${maxAgeHours}h, allowStale=${allowStaleData}`)
+      
+      // First try to get data within expiry time
+      console.log('🔍 Attempting to load fresh cached data...')
+      let result = await hybridCacheService.getCachedData(cacheKey, maxAgeHours)
+      
+      if (result) {
+        console.log(`✅ Found fresh cached data: ${result.data.length} issues, ${result.age.toFixed(1)}h old`)
+        if (result.data.length === 0) {
+          console.warn('⚠️ Cache contains 0 issues - this may indicate empty or corrupted cache')
+          console.log('🔍 Cache metadata:', result.metadata)
+          console.log('🔍 Cache timestamp:', new Date(result.timestamp).toISOString())
+        }
+      } else {
+        console.log('❌ No fresh cached data found')
+      }
+      
+      // If no fresh data but stale data is allowed, try to get any cached data
+      if (!result && allowStaleData) {
+        console.log('🔄 Attempting to load stale cached data...')
+        // Try with a very large maxAge to get any cached data
+        result = await hybridCacheService.getCachedData(cacheKey, 365 * 24) // 1 year
+        
+        if (result) {
+          console.warn(`⚠️ Found stale cache data: ${result.data.length} issues, ${result.age.toFixed(1)}h old`)
+        } else {
+          console.log('❌ No stale cached data found either')
+        }
+      }
       
       if (!result) {
-        console.log('No cached data found or cache expired')
+        console.log('❌ No cached data found at all')
         return null
       }
       
-      console.log(`✅ Loaded ${result.data.length} issues from cache (${result.age.toFixed(1)}h old)`)
+      const isStale = result.age > maxAgeHours
+      console.log(`✅ Returning cached data: ${result.data.length} issues (${result.age.toFixed(1)}h old)${isStale ? ' [STALE]' : ' [FRESH]'}`)
       
       return {
         data: result.data,
         metadata: result.metadata,
         timestamp: result.timestamp,
-        age: result.age
+        age: result.age,
+        isStale
       }
       
     } catch (error) {
-      console.error('Failed to load cached data:', error)
+      console.error('❌ Failed to load cached data:', error)
+      console.error('Error details:', error.stack)
       // Clear corrupted cache
       await cacheService.clearCache()
       return null

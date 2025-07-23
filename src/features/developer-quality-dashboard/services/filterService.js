@@ -584,16 +584,29 @@ export const filterService = {
           const bugTrendData = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
             .filter(([period, data]) => period != null && data != null) // Filter out null/undefined periods
             .map(([period, data]) => {
-              const result = { [periodKey]: String(period), ...data }
+              const result = { 
+                [periodKey]: String(period), 
+                ...data,
+                bugs: data.total || 0  // Map 'total' to 'bugs' for PropTypes compatibility
+              }
               
               // Add additional metadata for tooltips
               if (timeframe === 'week') {
                 try {
-                  const weekRange = filterService.getWeekDateRange(period)
-                  result._weekStart = weekRange.startDate
-                  result._weekEnd = weekRange.endDate
-                  result._weekStartFormatted = filterService.formatDateDDMMYYYY(weekRange.startDate)
-                  result._weekEndFormatted = filterService.formatDateDDMMYYYY(weekRange.endDate)
+                  // Check if period is in the expected format (YYYY-WXX)
+                  let weekId = period
+                  if (typeof period === 'number' || !period.toString().includes('-W')) {
+                    // Convert numeric period to week format if needed
+                    // For now, skip week range calculation for numeric periods
+                    result._weekStartFormatted = `Week ${period}`
+                    result._weekEndFormatted = `Week ${period}`
+                  } else {
+                    const weekRange = filterService.getWeekDateRange(weekId)
+                    result._weekStart = weekRange.startDate
+                    result._weekEnd = weekRange.endDate
+                    result._weekStartFormatted = filterService.formatDateDDMMYYYY(weekRange.startDate)
+                    result._weekEndFormatted = filterService.formatDateDDMMYYYY(weekRange.endDate)
+                  }
                 } catch (error) {
                   console.warn('Failed to get week range for period:', period, error)
                   result._weekStartFormatted = 'Unknown'
@@ -678,10 +691,12 @@ export const filterService = {
     ).map(([developer, stats]) => ({
       developer,
       name: developer, // For chart compatibility
-      contributions: stats.contributions,
+      contributions: stats.contributions || 0,
+      storyPoints: stats.storyPoints || 0, // Add storyPoints for PropTypes compatibility
       percentage: metrics.teamContribution.totalContributions > 0 ? 
-        (stats.contributions / metrics.teamContribution.totalContributions) * 100 : 0
-    })).sort((a, b) => b.contributions - a.contributions)
+        (stats.contributions / metrics.teamContribution.totalContributions) * 100 : 0,
+      storyPointsPercentage: ((stats.storyPoints || 0) / (metrics.teamContribution.totalStoryPoints || 1)) * 100
+    })).sort((a, b) => (b.storyPoints || 0) - (a.storyPoints || 0)) // Sort by story points
     
 
     metrics.teamContribution.developerStats.forEach((stats, developer) => {
@@ -750,7 +765,13 @@ export const filterService = {
     // Convert monthlyBugTrend Map to array for component consumption
     if (metrics.bugAnalysis && metrics.bugAnalysis.monthlyBugTrend instanceof Map) {
       metrics.bugAnalysis.monthlyBugTrend = Array.from(metrics.bugAnalysis.monthlyBugTrend.entries())
-        .map(([month, data]) => ({ month, ...data }))
+        .map(([month, data]) => ({ 
+          month, 
+          bugs: data.total || 0,  // Map 'total' to 'bugs' for PropTypes compatibility
+          resolved: data.resolved || 0,
+          pending: data.pending || 0,
+          total: data.total || 0  // Keep total for backward compatibility
+        }))
         .sort((a, b) => a.month.localeCompare(b.month))
     }
   },

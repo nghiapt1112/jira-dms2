@@ -255,8 +255,8 @@ export const useDeveloperQualityStore = create(
           // Pass all filter parameters in one call
           const filtered = filterService.applyFilters(filters, data)
           
-          
-          get().setFilteredData(filtered)
+          // Don't call setFilteredData during render - this causes React warnings
+          // The filtered data will be stored when needed by other functions
           return filtered
         } catch (error) {
           console.error('Failed to apply filters:', error)

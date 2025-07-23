@@ -583,6 +583,19 @@ export const useJiraDataStore = create(
               lastFetched: cachedData.timestamp,
               processedRecords: cachedData.data.length
             })
+            
+            // Show warning if data is stale
+            if (cachedData.isStale) {
+              const { toast } = await import('react-hot-toast')
+              toast.warning(
+                `Loading cached data from ${new Date(cachedData.timestamp).toLocaleDateString()}. Consider refreshing for latest data.`,
+                {
+                  duration: 6000,
+                  position: 'top-center'
+                }
+              )
+            }
+            
             return true
           }
           

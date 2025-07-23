@@ -30,8 +30,12 @@ export const useJiraData = () => {
   
   // Initialize cache loading on mount
   useEffect(() => {
+    console.log(`🔍 useJiraData useEffect: allIssues.length=${allIssues.length}, isLoading=${isLoading}, error=${error}`)
     if (allIssues.length === 0 && !isLoading && !error) {
+      console.log('🔍 Conditions met, calling loadFromCache...')
       loadFromCache()
+    } else {
+      console.log('🔍 Conditions not met for loading cache')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allIssues.length, isLoading, error])
