@@ -6,17 +6,21 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
 } from 'chart.js'
-import { Bar } from 'react-chartjs-2'
+import { Chart } from 'react-chartjs-2'
 
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
@@ -61,19 +65,22 @@ const getWeekDateRange = (weekString) => {
 /**
  * TeamOverviewChart - Dedicated component for displaying team-wide story points comparison
  * Shows story points as stacked bars for all developers in the team
+ * When a single project is selected, displays a velocity line showing total story points per time period
  * 
  * @param {Object} props - Component props
  * @param {Array} props.data - Chart data array with timePeriod and developer story points
  * @param {Object} props.metrics - Metrics object containing team statistics
  * @param {number} props.height - Chart height in pixels
  * @param {Object} props.chartConfig - Chart configuration object
+ * @param {Object} props.filters - Filter object containing project, developer, and other filter arrays
  * @returns {JSX.Element} Team overview chart component
  */
 const TeamOverviewChart = ({ 
   data, 
   metrics, 
   height = 400,
-  chartConfig = {}
+  chartConfig = {},
+  filters = {}
 }) => {
   // Generate Chart.js data structure
   const chartData = useMemo(() => {
@@ -112,20 +119,49 @@ const TeamOverviewChart = ({
       data: data.map(item => item[developer] || 0),
       backgroundColor: colors[index % colors.length],
       borderColor: colors[index % colors.length],
-      borderWidth: 1
+      borderWidth: 1,
+      type: 'bar'
     }))
+
+    // Add velocity line if single project is selected
+    const isSingleProject = filters.projects && filters.projects.length === 1
+    if (isSingleProject) {
+      const velocityData = data.map(item => {
+        const totalStoryPoints = developersArray.reduce((sum, dev) => sum + (item[dev] || 0), 0)
+        return totalStoryPoints
+      })
+
+      datasets.push({
+        label: `${filters.projects[0]} Velocity`,
+        data: velocityData,
+        type: 'line',
+        borderColor: '#1976d2',
+        backgroundColor: '#1976d2',
+        borderWidth: 3,
+        pointBackgroundColor: '#1976d2',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: false,
+        tension: 0.1,
+        yAxisID: 'y1'
+      })
+    }
 
     console.log('📊 TEAM OVERVIEW: Generated chart data', {
       developersCount: developersArray.length,
       datasetsCount: datasets.length,
-      dataPointsCount: data.length
+      dataPointsCount: data.length,
+      isSingleProject,
+      projectName: isSingleProject ? filters.projects[0] : null
     })
 
     return {
       labels: data.map(item => item.timePeriod),
       datasets: datasets
     }
-  }, [data])
+  }, [data, filters])
 
   // Chart.js configuration
   const chartOptions = useMemo(() => {
@@ -169,11 +205,15 @@ const TeamOverviewChart = ({
             afterTitle: function(tooltipItems) {
               if (tooltipItems.length === 0) return ''
               
-              // Calculate total story points for this period
-              const total = tooltipItems.reduce((sum, item) => sum + (item.parsed.y || 0), 0)
+              // Calculate total story points for this period (excluding velocity line)
+              const barItems = tooltipItems.filter(item => item.dataset.type !== 'line')
+              const total = barItems.reduce((sum, item) => sum + (item.parsed.y || 0), 0)
               return `Total: ${total} story points`
             },
             label: function(context) {
+              if (context.dataset.type === 'line') {
+                return `${context.dataset.label}: ${context.parsed.y} points (Velocity)`
+              }
               return `${context.dataset.label}: ${context.parsed.y} points`
             }
           }
@@ -212,10 +252,20 @@ const TeamOverviewChart = ({
               size: 11
             }
           }
+        },
+        y1: {
+          type: 'linear',
+          display: false,
+          beginAtZero: true,
+          // Position on right side but hidden to share scale with main y-axis
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          }
         }
       }
     }
-  }, [data])
+  }, [data, filters])
 
   // Early return if no data
   if (!chartData || !data || data.length === 0) {
@@ -239,7 +289,8 @@ const TeamOverviewChart = ({
       height: { xs: Math.min(height, 300), sm: height },
       width: '100%'
     }}>
-      <Bar 
+      <Chart 
+        type="bar"
         data={chartData}
         options={chartOptions}
         height={height}
@@ -259,7 +310,17 @@ TeamOverviewChart.propTypes = {
     topContributors: PropTypes.array
   }),
   height: PropTypes.number,
-  chartConfig: PropTypes.object
+  chartConfig: PropTypes.object,
+  filters: PropTypes.shape({
+    projects: PropTypes.arrayOf(PropTypes.string),
+    developers: PropTypes.arrayOf(PropTypes.string),
+    issueTypes: PropTypes.arrayOf(PropTypes.string),
+    statuses: PropTypes.arrayOf(PropTypes.string),
+    severities: PropTypes.arrayOf(PropTypes.string),
+    rootCauses: PropTypes.arrayOf(PropTypes.string),
+    timeframe: PropTypes.oneOf(['week', 'month', 'quarter']),
+    statusFilter: PropTypes.arrayOf(PropTypes.string)
+  })
 }
 
 export default TeamOverviewChart

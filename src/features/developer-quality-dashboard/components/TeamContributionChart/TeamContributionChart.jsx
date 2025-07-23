@@ -168,6 +168,7 @@ const TeamContributionChart = React.memo(({
         metrics={metrics}
         height={height}
         chartConfig={chartConfig}
+        filters={filters}
       />
       
       {/* Metrics Summary */}
