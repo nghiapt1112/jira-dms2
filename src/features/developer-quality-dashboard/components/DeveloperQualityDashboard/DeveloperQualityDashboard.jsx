@@ -16,6 +16,7 @@ import BugTrendAnalysis from '../BugTrendAnalysis'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import DeveloperRootCauseAnalysis from '../DeveloperRootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
+import useUrlFilterSync from '../../hooks/useUrlFilterSync'
 
 const DeveloperQualityDashboard = React.memo(() => {
   // 1. Hooks first
@@ -39,7 +40,13 @@ const DeveloperQualityDashboard = React.memo(() => {
     updateStatusFilter,
     filteredData
   } = useDeveloperQualityFilters()
-  const { loadData } = useDeveloperQualityStore()
+  const { loadData, setFilters } = useDeveloperQualityStore()
+  
+  // URL Filter Synchronization - Safe integration with existing filter system
+  const urlSyncStatus = useUrlFilterSync(filters, setFilters, {
+    enableUrlSync: true,
+    logOperations: true
+  })
   
   // Performance controls state
   const [performanceControls, setPerformanceControls] = useState({
@@ -47,9 +54,11 @@ const DeveloperQualityDashboard = React.memo(() => {
     performanceFilter: 'all'
   })
   
-  // Debug logging for filter changes
+  // Debug logging for filter changes and URL sync
   useEffect(() => {
-  }, [filters, filteredData])
+    console.log('🔄 DeveloperQualityDashboard: Filters changed:', filters)
+    console.log('🔄 URL Sync Status:', urlSyncStatus)
+  }, [filters, filteredData, urlSyncStatus])
   
   // Debug logging for cache state
   useEffect(() => {
