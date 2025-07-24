@@ -20,73 +20,59 @@ export const memberConfiguration = {
   developers: [
     {
       jiraId: "712020:92de1f44-d98b-40dc-b39e-244fff709123",
-      name: "Andra Satria",
-      level: "senior"
+      name: "Andra Satria"
     },
     {
       jiraId: "640e83ba0e6828ab2023c2c8",
-      name: "Tuan Hoang",
-      level: "senior"
+      name: "Tuan Hoang"
     },
     {
       jiraId: "633aa8ba97148a8301fe15d8",
-      name: "Duy Tang",
-      level: "senior"
+      name: "Duy Tang"
     },
     {
       jiraId: "712020:c07a6ad0-1c54-42ac-a6eb-e633afcac934",
-      name: "Imat Marasigan",
-      level: "senior"
+      name: "Imat Marasigan"
     },
     {
       jiraId: "712020:37dc1b3c-25a9-486b-8c72-67eadab8d890",
-      name: "Renal Apriansyah",
-      level: "senior"
+      name: "Renal Apriansyah"
     },
     {
       jiraId: "712020:2f30ba06-ef74-4415-90a8-38edfd27a0f2",
-      name: "Ryan Vincent Lamaroza",
-      level: "senior"
+      name: "Ryan Vincent Lamaroza"
     },
     {
       jiraId: "712020:888f0056-80d3-4461-b6f1-75c565d9f5f6",
-      name: "Junio Akarda",
-      level: "senior"
+      name: "Junio Akarda"
     },
     {
       jiraId: "712020:17939990-fd0c-4762-88fb-964622d2ca62",
-      name: "Asep Mochamad Setyadi (Omat)",
-      level: "middle"
+      name: "Asep Mochamad Setyadi (Omat)"
     },
     {
       jiraId: "639fffc2d3aeefa4053ffc71",
-      name: "Minh Tran",
-      level: "middle"
+      name: "Minh Tran"
     },
     {
       jiraId: "712020:be95c273-96eb-4c77-8e76-774348fd3309",
-      name: "David Duy Nguyen",
-      level: "middle"
+      name: "David Duy Nguyen"
     },
     {
       jiraId: "641923ad9d2bc6c90a8ad5fe",
-      name: "Minh Ta",
-      level: "middle"
+      name: "Minh Ta"
     },
     {
       jiraId: "712020:7ce2c4d5-26c0-4cb9-aa12-84ca3b33edcd",
-      name: "Vincent Yapranz",
-      level: "middle"
+      name: "Vincent Yapranz"
     },
     {
       jiraId: "712020:5aec5bd8-b56d-4408-bc6f-4f1c3359704b",
-      name: "Izal Fathoni",
-      level: "middle"
+      name: "Izal Fathoni"
     },
     {
       jiraId: "712020:a406f86b-ff65-41e2-8bdb-333302c8527d",
-      name: "Henry Phung",
-      level: "senior"
+      name: "Henry Phung"
     },
     // {
     //   jiraId: "6248f229247a4b00691ef245",
@@ -102,18 +88,15 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:0b3363e6-0706-4f3e-8827-df1c68d9bbd1",
-      name: "Yudanis Taqwin Rohman",
-      level: "middle"
+      name: "Yudanis Taqwin Rohman"
     },
     {
       jiraId: "712020:864b6a6b-15b1-4a4b-9e06-0ab535ae801e",
-      name: "Faishal Abdur Rahman",
-      level: "middle"
+      name: "Faishal Abdur Rahman"
     },
     {
       jiraId: "622ef04c1c09d2007012d7a1",
-      name: "nhat nguyen",
-      level: "senior"
+      name: "nhat nguyen"
     },
     // {
     //   jiraId: "62d9430273bd9d67b289f146",
@@ -121,23 +104,19 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:4fd87d3d-95a6-4076-90fc-20c8209c28e4",
-      name: "Welly Winata",
-      level: "middle"
+      name: "Welly Winata"
     },
     {
       jiraId: "62f0dde0432ef494c8cb4ad4",
-      name: "Luan Nguyen",
-      level: "senior"
+      name: "Luan Nguyen"
     },
     {
       jiraId: "62ea08f032850ea2a32431df",
-      name: "Manh Nguyen",
-      level: "middle"
+      name: "Manh Nguyen"
     },
     {
       jiraId: "6302fbce7cfac1bfa6f955aa",
-      name: "Imamul Akhyar",
-      level: "middle"
+      name: "Imamul Akhyar"
     },
     // {
     //   jiraId: "712020:a366aa70-1ac4-42b0-a8d5-29cdbb6d5ec4",
@@ -145,18 +124,15 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:b8e485f2-11b3-4bdf-b711-ffb64749eaaf",
-      name: "Ilham Fadhilah",
-      level: "senior"
+      name: "Ilham Fadhilah"
     },
     {
       jiraId: "712020:6fed283c-6e2b-469f-a243-1c63577247ee",
-      name: "Edward Viet Ha Quoc",
-      level: "middle"
+      name: "Edward Viet Ha Quoc"
     },
     {
       jiraId: "62ea1e6a1323922c61e1df5a",
-      name: "Jay Movaliya",
-      level: "senior"
+      name: "Jay Movaliya"
     },
     // {
     //   jiraId: "712020:f629b77e-d90f-4cac-b900-525723edaa7d",
@@ -164,13 +140,11 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:0f277024-cf66-492a-ae1c-59b22024bd8f",
-      name: "Aris Dwi Suryono",
-      level: "middle"
+      name: "Aris Dwi Suryono"
     },
     {
       jiraId: "712020:226ec21c-b5df-40d0-854c-bffd8b33d3f8",
-      name: "Thanh Nguyen Dai",
-      level: "middle"
+      name: "Thanh Nguyen Dai"
     },
     // {
     //   jiraId: "712020:aa91326f-ffab-470c-948e-029d01abb43a",
@@ -178,13 +152,11 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:612e04bc-27d3-4b0a-973e-b505f7d99258",
-      name: "hung.pham",
-      level: "senior"
+      name: "hung.pham"
     },
     {
       jiraId: "712020:14b91211-2d77-4340-830f-ee141d1d6c72",
-      name: "Toan Nguyen Nhut",
-      level: "middle"
+      name: "Toan Nguyen Nhut"
     },
     // {
     //   jiraId: "62ea1df525abc07e51c5c690",
@@ -196,8 +168,7 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "624a984e7a3f9e006ab4ab77",
-      name: "Huynh Bui",
-      level: "senior"
+      name: "Huynh Bui"
     },
     // {
     //   jiraId: "712020:ce33b206-2d02-4395-b00f-16b4910d50b9",
@@ -213,8 +184,7 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:721366a3-973e-47b2-ada2-70804f2bbed0",
-      name: "Ahmad Alfan",
-      level: "middle"
+      name: "Ahmad Alfan"
     },
     // {
     //   jiraId: "627892a28dd5f30068544344",
@@ -254,8 +224,7 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:7be2e871-0c1b-4961-9785-4fa836473d75",
-      name: "ilham.akbar",
-      level: "middle"
+      name: "ilham.akbar"
     },
     // {
     //   jiraId: "62dfddb9a855c6955879df03",
@@ -267,18 +236,15 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:ff028045-1d74-419b-9f78-af368e59bd5a",
-      name: "Alina Truong",
-      level: "middle"
+      name: "Alina Truong"
     },
     {
       jiraId: "712020:1ee68a66-f5f5-461f-b006-2db22e59a318",
-      name: "steve.tuanphan",
-      level: "middle"
+      name: "steve.tuanphan"
     },
     {
       jiraId: "712020:ab69b708-cd6e-4d3e-8eab-6cc15b628f8d",
-      name: "Ryan Risdian Ciptayadi",
-      level: "middle"
+      name: "Ryan Risdian Ciptayadi"
     },
     // {
     //   jiraId: "712020:8c3c247d-1008-418e-a62b-309a4eda0b34",
@@ -378,8 +344,7 @@ export const memberConfiguration = {
     // },
     {
       jiraId: "712020:80bc4a1d-85f6-4c68-9725-acdca43623fa",
-      name: "Phan Trung",
-      level: "middle"
+      name: "Phan Trung"
     },
     // {
     //   jiraId: "5c89dc71279ad179046dd626",
@@ -464,33 +429,33 @@ export const memberConfiguration = {
   
   // Array of project objects - these will be pre-populated in project filters
   projects: [
-    { key: "BCP", name: "Borderless City Project", pointType: "HOURS_BASE"  },
-    { key: "CF", name: "Calbee-FfF" , pointType: "STORYPOINT_BASE" },
-    { key: "DAICO", name: "Daicolo" , pointType: "HOURS_BASE" },
-    { key: "DAAI", name: "Daicolo-AIFeatures" , pointType: "HOURS_BASE" },
-    { key: "ENT", name: "Enterprise Team" , pointType: "HOURS_BASE" },
-    { key: "HG", name: "Hiruta GoDump" , pointType: "HOURS_BASE" },
-    { key: "IP", name: "Internal PJ" , pointType: "HOURS_BASE" },
-    { key: "IS", name: "Ishibashi Gakki" , pointType: "STORYPOINT_BASE" },
-    { key: "KB", name: "Kuribara" , pointType: "HOURS_BASE" },
-    { key: "MIT", name: "Mitaden" , pointType: "HOURS_BASE" },
-    { key: "NKR2", name: "NikkenRentacom_2" , pointType: "HOURS_BASE" },
-    { key: "OOPS", name: "Oops" , pointType: "HOURS_BASE" },
-    { key: "PMAX", name: "PROMAX" , pointType: "HOURS_BASE" },
-    { key: "PDS", name: "Product Design" , pointType: "HOURS_BASE" },
-    { key: "RAG", name: "RAG" , pointType: "HOURS_BASE" },
-    { key: "SG", name: "SCOP-GO" , pointType: "HOURS_BASE" },
-    { key: "STU", name: "SD - Time Utilization " , pointType: "HOURS_BASE" },
-    { key: "SIP", name: "SD Internal Project" , pointType: "HOURS_BASE" },
-    { key: "SEK", name: "Sekisuiheim" , pointType: "HOURS_BASE" },
-    { key: "TG", name: "TOHO GAS" , pointType: "HOURS_BASE" },
-    { key: "TOUC", name: "TOUCH" , pointType: "HOURS_BASE" },
-    { key: "TIT", name: "Titans" , pointType: "HOURS_BASE" },
-    { key: "TS", name: "Tokyu-Stay" , pointType: "HOURS_BASE" },
-    { key: "WON", name: "WonderTable" , pointType: "HOURS_BASE" },
-    { key: "YUB", name: "Yubisui" , pointType: "STORYPOINT_BASE" },
-    { key: "YUIM", name: "Yuime" , pointType: "STORYPOINT_BASE" },
-    { key: "ECHO", name: "echo", pointType: "HOURS_BASE"  }
+    { key: "BCP", name: "Borderless City Project" },
+    { key: "CF", name: "Calbee-FfF" },
+    { key: "DAICO", name: "Daicolo" },
+    { key: "DAAI", name: "Daicolo-AIFeatures" },
+    { key: "ENT", name: "Enterprise Team" },
+    { key: "HG", name: "Hiruta GoDump" },
+    { key: "IP", name: "Internal PJ" },
+    { key: "IS", name: "Ishibashi Gakki" },
+    { key: "KB", name: "Kuribara" },
+    { key: "MIT", name: "Mitaden" },
+    { key: "NKR2", name: "NikkenRentacom_2" },
+    { key: "OOPS", name: "Oops" },
+    { key: "PMAX", name: "PROMAX" },
+    { key: "PDS", name: "Product Design" },
+    { key: "RAG", name: "RAG" },
+    { key: "SG", name: "SCOP-GO" },
+    { key: "STU", name: "SD - Time Utilization " },
+    { key: "SIP", name: "SD Internal Project" },
+    { key: "SEK", name: "Sekisuiheim" },
+    { key: "TG", name: "TOHO GAS" },
+    { key: "TOUC", name: "TOUCH" },
+    { key: "TIT", name: "Titans" },
+    { key: "TS", name: "Tokyu-Stay" },
+    { key: "WON", name: "WonderTable" },
+    { key: "YUB", name: "Yubisui" },
+    { key: "YUIM", name: "Yuime" },
+    { key: "ECHO", name: "echo" }
   ],
   issueTypes: [
     "Bug",
@@ -597,6 +562,11 @@ export const memberConfiguration = {
         { from: ["Waiting for QA", "Ready for QA"], to: ["In Progress", "Back from QA"] }
       ]
     },
+    
+    // Project-specific configurations (override default)
+    projects: {
+      // Example: "YUIM": { ... custom config ... }
+    }
   },
 
   // Configuration for severity/priority field mapping
@@ -627,7 +597,23 @@ export const memberConfiguration = {
         "High": "Major",
         "Medium": "Minor",
         "Low": "Low",
-        "Lowest": "Cosmetic"
+        "Lowest": "Cosmetic",
+        
+        // Additional mappings from Project Overview (merged from BUG_SEVERITY_CONFIG)
+        "CRITICAL": "Critical",
+        "MAJOR": "Major",
+        "MEDIUM": "Minor", // Standardized to Minor like existing Medium
+        "MODERATE": "Minor",
+        "LOW": "Low",
+        "LOWEST": "Cosmetic", // Mapped to Cosmetic like existing Lowest
+        "MINOR": "Cosmetic",
+        "BLOCKER": "Critical",
+        "P1": "Critical",
+        "P2": "Major", 
+        "P3": "Minor",
+        "P4": "Low",
+        "P5": "Cosmetic",
+        "TRIVIAL": "Low"
       },
       
       // Standard severity levels used in dashboard
@@ -705,55 +691,6 @@ export const memberConfiguration = {
       "Done",
       "Closed"
     ]
-  },
-
-  // Performance targets for different project types and developer levels
-  performanceTargets: {
-    HOURS_BASE: {
-      all: {
-        totalPointWeekTarget: 35,
-        totalPointMonthTarget: 140,
-        totalPointQuarterTarget: 420
-      }
-    },
-    STORYPOINT_BASE: {
-      middle: {
-        totalPointWeekTarget: 25,
-        totalPointMonthTarget: 100,
-        totalPointQuarterTarget: 300
-      },
-      senior: {
-        totalPointWeekTarget: 30,
-        totalPointMonthTarget: 90,
-        totalPointQuarterTarget: 270
-      }
-    }
-  },
-
-  // Target line configuration for Chart.js
-  targetLineConfig: {
-    HOURS_BASE: {
-      all: {
-        color: '#ff9800',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        label: 'Target (All)'
-      }
-    },
-    STORYPOINT_BASE: {
-      middle: {
-        color: '#2196f3',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        label: 'Target (Middle)'
-      },
-      senior: {
-        color: '#4caf50',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        label: 'Target (Senior)'
-      }
-    }
   }
 }
 
@@ -763,7 +700,7 @@ export const memberConfiguration = {
  * @returns {Object} - Reopen detection configuration
  */
 export const getReopenDetectionConfig = (projectKey) => {
-  const projectConfig = memberConfiguration.reopenDetection.projects?.[projectKey]
+  const projectConfig = memberConfiguration.reopenDetection.projects[projectKey]
   return projectConfig || memberConfiguration.reopenDetection.default
 }
 

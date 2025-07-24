@@ -6,4 +6,6 @@
 
 export { developerQualityService } from './developerQualityService'
 export { filterService } from './filterService'
-export { default as CacheOptimizationService, cacheOptimizationService } from './cacheOptimizationService' 
+export { default as CacheOptimizationService, cacheOptimizationService } from './cacheOptimizationService'
+export * as performancePreprocessor from './performancePreprocessor'
+// REMOVED: targetCalculationService - deprecated in favor of preprocessed data 

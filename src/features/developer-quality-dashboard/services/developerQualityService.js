@@ -4,34 +4,14 @@
  * Following .cursorrules conventions - camelCase naming, performance optimizations
  */
 
-// Helper function to get time period key from date
-const getTimePeriodKey = (dateString, period) => {
-  const date = new Date(dateString)
-  switch (period) {
-    case 'week':
-      // ISO week calculation - same as filterService.js
-      const thursday = new Date(date.getTime())
-      thursday.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 3)
-      
-      const year = thursday.getFullYear()
-      const firstThursday = new Date(year, 0, 4)
-      firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
-      
-      const weekNum = Math.floor((thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
-      
-      return `${year}-W${weekNum.toString().padStart(2, '0')}`
-    case 'quarter':
-      const quarter = Math.ceil((date.getMonth() + 1) / 3)
-      return `${date.getFullYear()}-Q${quarter}`
-    case 'month':
-    default:
-      return dateString.substring(0, 7) // YYYY-MM
-  }
-}
+// Import unified time utilities to eliminate DRY violation
+import { getTimePeriodKey } from '../../../shared/utils/timeUtils.js'
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { shouldIncludeMember, memberConfiguration, getSeverityConfig } from '../../../constants/memberConfiguration'
 import { parseSeverity } from '../../../shared/utils/severityParser.js'
+// REMOVED: targetCalculationService import - now using preprocessed data (caching strategy fix)
+import { preprocessPerformanceData } from './performancePreprocessor.js'
 import { 
   calculateReopenMetrics, 
   calculateResolutionTimeMetrics, 
@@ -76,7 +56,14 @@ export const developerQualityService = {
       chartData: developerQualityService.initializeChartData(),
       indices: developerQualityService.initializeIndices(),
       filterOptions: developerQualityService.initializeFilterOptions(),
-      minimalIssues: []
+      minimalIssues: [],
+      performanceMetadata: {
+        // Performance metadata by project -> developer -> period -> {actualPoints, target, performance}
+        projectPerformance: new Map(), // projectKey -> Map(developerName -> Map(periodKey -> {actualPoints, target, performance}))
+        periodKeys: new Set(), // All unique period keys encountered
+        developers: new Set(), // All developers encountered
+        projects: new Set() // All projects encountered
+      }
     }
     
     // SINGLE LOOP PROCESSING - integrate with existing main loop
@@ -86,6 +73,96 @@ export const developerQualityService = {
       
       // Build indices for instant filtering
       developerQualityService.buildFilterIndices(issue, index, developerQualityData.indices)
+      
+      // PERFORMANCE METADATA COLLECTION
+      const assignee = issue.fields?.assignee?.displayName
+      const projectKey = issue.fields?.project?.key
+      const resolvedDate = issue.fields?.resolutiondate
+      const storyPoints = issue.fields?.customfield_10028 || 0
+      
+      if (assignee && projectKey && resolvedDate && storyPoints > 0) {
+        // Track metadata sets
+        developerQualityData.performanceMetadata.developers.add(assignee)
+        developerQualityData.performanceMetadata.projects.add(projectKey)
+        
+        // Calculate time period keys for resolved date
+        const periods = ['week', 'month', 'quarter']
+        periods.forEach(period => {
+          const periodKey = getTimePeriodKey(resolvedDate, period)
+          developerQualityData.performanceMetadata.periodKeys.add(periodKey)
+          
+          // Initialize project performance map if needed
+          if (!developerQualityData.performanceMetadata.projectPerformance.has(projectKey)) {
+            developerQualityData.performanceMetadata.projectPerformance.set(projectKey, new Map())
+          }
+          
+          const projectMap = developerQualityData.performanceMetadata.projectPerformance.get(projectKey)
+          
+          // Initialize developer map if needed
+          if (!projectMap.has(assignee)) {
+            projectMap.set(assignee, new Map())
+          }
+          
+          const developerMap = projectMap.get(assignee)
+          
+          // Initialize or update period data
+          if (!developerMap.has(periodKey)) {
+            // Calculate target directly from configuration (avoiding deprecated service)
+            let target = null
+            const project = memberConfiguration.projects.find(p => p.key === projectKey)
+            if (project?.pointType) {
+              const targetConfig = memberConfiguration.performanceTargets[project.pointType]
+              if (project.pointType === 'HOURS_BASE') {
+                const allTargets = targetConfig?.all
+                if (allTargets) {
+                  switch (period) {
+                    case 'week':
+                      target = allTargets.totalPointWeekTarget
+                      break
+                    case 'quarter':
+                      target = allTargets.totalPointQuarterTarget
+                      break
+                    default:
+                      target = allTargets.totalPointMonthTarget
+                      break
+                  }
+                }
+              } else if (project.pointType === 'STORYPOINT_BASE') {
+                const developer = memberConfiguration.developers.find(d => d.name === assignee)
+                const levelTargets = targetConfig?.[developer?.level]
+                if (levelTargets) {
+                  switch (period) {
+                    case 'week':
+                      target = levelTargets.totalPointWeekTarget
+                      break
+                    case 'quarter':
+                      target = levelTargets.totalPointQuarterTarget
+                      break
+                    default:
+                      target = levelTargets.totalPointMonthTarget
+                      break
+                  }
+                }
+              }
+            }
+            
+            developerMap.set(periodKey, {
+              actualPoints: 0,
+              target,
+              performance: null // Will be calculated after accumulation
+            })
+          }
+          
+          // Accumulate story points for this period
+          const periodData = developerMap.get(periodKey)
+          periodData.actualPoints += storyPoints
+          
+          // Update performance status based on accumulated points
+          if (periodData.target !== null) {
+            periodData.performance = periodData.actualPoints >= periodData.target ? 'over' : 'under'
+          }
+        })
+      }
       
       // Extract values for minimal issue data
       const status = issue.fields?.status?.name || 'Unknown'
@@ -124,12 +201,23 @@ export const developerQualityService = {
     
     const processingTime = performance.now() - startTime
     
+    // CRITICAL FIX: Preprocess performance data during initial processing (caching strategy)
+    // This eliminates on-demand calculations in chart components
+    const preprocessedPerformanceData = preprocessPerformanceData(
+      developerQualityData.performanceMetadata,
+      developerQualityData.chartData?.teamContributionChart?.data || [],
+      { timeframe: 'month' } // Default timeframe, can be overridden later
+    )
+    
     const finalData = {
       ...developerQualityData,
+      // Add preprocessed performance data to cached structure
+      preprocessedPerformance: preprocessedPerformanceData,
       metadata: {
         processingTime,
         totalIssues: issues.length,
-        cacheSize: developerQualityService.calculateCacheSize(developerQualityData)
+        cacheSize: developerQualityService.calculateCacheSize(developerQualityData),
+        performanceDataPreprocessed: true
       }
     }
     

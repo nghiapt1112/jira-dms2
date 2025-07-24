@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useEffect } from 'react'
+import React, { useMemo, useCallback, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Grid, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
 import { Refresh as RefreshIcon, CloudDownload as DownloadIcon, BugReport as LogIcon } from '@mui/icons-material'
@@ -41,6 +41,12 @@ const DeveloperQualityDashboard = React.memo(() => {
   } = useDeveloperQualityFilters()
   const { loadData } = useDeveloperQualityStore()
   
+  // Performance controls state
+  const [performanceControls, setPerformanceControls] = useState({
+    showTargetLines: false,
+    performanceFilter: 'all'
+  })
+  
   // Debug logging for filter changes
   useEffect(() => {
   }, [filters, filteredData])
@@ -76,6 +82,12 @@ const DeveloperQualityDashboard = React.memo(() => {
   const handleStatusFilterChange = useCallback((newStatusFilter) => {
     updateStatusFilter(newStatusFilter)
   }, [updateStatusFilter])
+  
+  // Performance controls callback
+  const handlePerformanceControlsChange = useCallback((newControls) => {
+    console.log('📊 DASHBOARD: Performance controls changed:', newControls)
+    setPerformanceControls(newControls)
+  }, [])
 
   const handleExportLogs = useCallback(() => {
     logger.exportLogs()
@@ -271,6 +283,7 @@ const DeveloperQualityDashboard = React.memo(() => {
           isLoading={isFiltersLoading}
           onTimePeriodChange={handleTimePeriodChange}
           onStatusFilterChange={handleStatusFilterChange}
+          onPerformanceControlsChange={handlePerformanceControlsChange}
         />
       </Paper>
       
@@ -283,6 +296,8 @@ const DeveloperQualityDashboard = React.memo(() => {
             statusFilter={filters.statusFilter}
             onStatusFilterChange={handleStatusFilterChange}
             filters={filters} // Pass complete filters object including projects
+            showTargetLines={performanceControls.showTargetLines}
+            performanceFilter={performanceControls.performanceFilter}
           />
         </Grid>
 

@@ -13,6 +13,9 @@ import {
   Legend
 } from 'chart.js'
 import { Chart } from 'react-chartjs-2'
+import { getPreprocessedFilteredData } from '../../services/performancePreprocessor.js'
+import { getWeekDateRange } from '../../../../shared/utils/timeUtils.js'
+import { memberConfiguration } from '../../../../constants/memberConfiguration.js'
 
 // Register Chart.js components
 ChartJS.register(
@@ -26,41 +29,7 @@ ChartJS.register(
   Legend
 )
 
-// Helper function to convert week string to date range
-const getWeekDateRange = (weekString) => {
-  if (!weekString || !weekString.includes('-W')) {
-    return { startDate: null, endDate: null, formatted: weekString }
-  }
-  
-  const [year, weekNum] = weekString.split('-W')
-  const yearNum = parseInt(year)
-  const week = parseInt(weekNum)
-  
-  // Calculate the date of the first day of the year
-  const firstDayOfYear = new Date(yearNum, 0, 1)
-  
-  // Calculate the start date of the week (assuming Monday as start of week)
-  const daysToAdd = (week - 1) * 7 - firstDayOfYear.getDay() + 1
-  const startDate = new Date(yearNum, 0, 1 + daysToAdd)
-  
-  // Calculate end date (Sunday)
-  const endDate = new Date(startDate)
-  endDate.setDate(startDate.getDate() + 6)
-  
-  // Format dates as DD/MM/YYYY
-  const formatDate = (date) => {
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const year = date.getFullYear()
-    return `${day}/${month}/${year}`
-  }
-  
-  return {
-    startDate,
-    endDate,
-    formatted: `${formatDate(startDate)} - ${formatDate(endDate)}`
-  }
-}
+// Removed duplicate getWeekDateRange function - now using unified time utilities
 
 /**
  * TeamOverviewChart - Dedicated component for displaying team-wide story points comparison
@@ -80,23 +49,35 @@ const TeamOverviewChart = ({
   metrics, 
   height = 400,
   chartConfig = {},
-  filters = {}
+  filters = {},
+  showTargetLines = false,
+  performanceFilter = 'all',
+  selectedProjectKey = null
 }) => {
   // Generate Chart.js data structure
   const chartData = useMemo(() => {
     console.log('📊 TEAM OVERVIEW: Processing chart data', {
       hasData: !!data,
       dataLength: data?.length || 0,
-      firstDataPoint: data?.[0]
+      firstDataPoint: data?.[0],
+      performanceFilter,
+      showTargetLines,
+      selectedProjectKey
     })
 
     if (!data || data.length === 0) {
       return null
     }
 
-    // Extract all developers from the data dynamically
+    // Use original data for now - simplified approach
+    let processedData = data
+
+    // Check if single project is selected - define early
+    const isSingleProject = filters.projects && filters.projects.length === 1
+
+    // Extract all developers from the processed data dynamically
     const developers = new Set()
-    data.forEach(item => {
+    processedData.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key !== 'timePeriod') {
           developers.add(key)
@@ -116,7 +97,7 @@ const TeamOverviewChart = ({
     // Create Chart.js datasets for each developer
     const datasets = developersArray.map((developer, index) => ({
       label: developer,
-      data: data.map(item => item[developer] || 0),
+      data: processedData.map(item => item[developer] || 0),
       backgroundColor: colors[index % colors.length],
       borderColor: colors[index % colors.length],
       borderWidth: 1,
@@ -124,9 +105,8 @@ const TeamOverviewChart = ({
     }))
 
     // Add velocity line if single project is selected
-    const isSingleProject = filters.projects && filters.projects.length === 1
     if (isSingleProject) {
-      const velocityData = data.map(item => {
+      const velocityData = processedData.map(item => {
         const totalStoryPoints = developersArray.reduce((sum, dev) => sum + (item[dev] || 0), 0)
         return totalStoryPoints
       })
@@ -149,6 +129,176 @@ const TeamOverviewChart = ({
       })
     }
 
+    // Add target lines - CHECK PROJECT TYPE FIRST!
+    console.log('🎯 TARGET LINE CHECK:', { showTargetLines, isSingleProject, selectedProjectKey })
+    
+    // DEBUG: Log all available project keys in configuration
+    console.log('🔍 DEBUG: All configured project keys:', memberConfiguration.projects.map(p => p.key))
+    console.log('🔍 DEBUG: Selected project from filter:', selectedProjectKey)
+    console.log('🔍 DEBUG: Filters object:', filters)
+    console.log('🔍 DEBUG: Available projects in filters:', filters.projects)
+    
+    if (showTargetLines && isSingleProject && selectedProjectKey) {
+      console.log('🎯 TARGET LINE: Adding target lines for project:', selectedProjectKey)
+      
+      // CRITICAL: Find the project configuration by KEY or NAME
+      let project = memberConfiguration.projects.find(p => p.key === selectedProjectKey)
+      
+      // If not found by key, try finding by name (fallback)
+      if (!project) {
+        project = memberConfiguration.projects.find(p => p.name === selectedProjectKey)
+        console.log('🔍 DEBUG: Found project by name instead of key:', project)
+      }
+      
+      console.log('🎯 TARGET LINE: Found project config:', project)
+      
+      // DEBUG: If no project found, show what we're comparing
+      if (!project) {
+        console.log('🔍 DEBUG: Project not found! Comparing:')
+        console.log('  - Looking for:', selectedProjectKey, typeof selectedProjectKey)
+        console.log('  - Available keys:', memberConfiguration.projects.map(p => ({ key: p.key, name: p.name, type: typeof p.key })))
+      }
+      
+      if (!project || !project.pointType) {
+        console.log('🎯 TARGET LINE: No project config found for', selectedProjectKey)
+        return
+      }
+      
+      const pointType = project.pointType
+      const timeframe = filters.timeframe || 'month'
+      
+      console.log('🎯 TARGET LINE: Project type is:', pointType)
+      
+      if (pointType === 'HOURS_BASE') {
+        // SINGLE line for HOURS_BASE projects
+        console.log('🎯 TARGET LINE: Processing HOURS_BASE project')
+        const config = memberConfiguration.targetLineConfig.HOURS_BASE.all
+        const targets = memberConfiguration.performanceTargets.HOURS_BASE.all
+        
+        console.log('🎯 TARGET LINE: Config and targets:', { config, targets })
+        
+        let targetValue
+        switch (timeframe) {
+          case 'week':
+            targetValue = targets.totalPointWeekTarget
+            break
+          case 'quarter':
+            targetValue = targets.totalPointQuarterTarget
+            break
+          case 'month':
+          default:
+            targetValue = targets.totalPointMonthTarget
+            break
+        }
+        
+        console.log('🎯 TARGET LINE: Calculated target value for', timeframe, ':', targetValue)
+        
+        const targetData = processedData.map(() => targetValue)
+        console.log('🎯 TARGET LINE: Target data array:', targetData)
+        
+        const targetLineDataset = {
+          label: config.label,
+          data: targetData,
+          type: 'line',
+          borderColor: config.color,
+          backgroundColor: config.color,
+          borderWidth: config.borderWidth,
+          borderDash: config.borderDash,
+          pointBackgroundColor: config.color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y1'
+        }
+        
+        console.log('🎯 TARGET LINE: Adding dataset:', targetLineDataset)
+        datasets.push(targetLineDataset)
+        
+        console.log('🎯 TARGET LINE: Added HOURS_BASE target line:', targetValue)
+        console.log('🎯 TARGET LINE: Total datasets now:', datasets.length)
+        
+      } else if (pointType === 'STORYPOINT_BASE') {
+        // TWO lines for STORYPOINT_BASE projects
+        const middleConfig = memberConfiguration.targetLineConfig.STORYPOINT_BASE.middle
+        const seniorConfig = memberConfiguration.targetLineConfig.STORYPOINT_BASE.senior
+        const middleTargets = memberConfiguration.performanceTargets.STORYPOINT_BASE.middle
+        const seniorTargets = memberConfiguration.performanceTargets.STORYPOINT_BASE.senior
+        
+        // Add middle target line
+        let middleTargetValue
+        switch (timeframe) {
+          case 'week':
+            middleTargetValue = middleTargets.totalPointWeekTarget
+            break
+          case 'quarter':
+            middleTargetValue = middleTargets.totalPointQuarterTarget
+            break
+          case 'month':
+          default:
+            middleTargetValue = middleTargets.totalPointMonthTarget
+            break
+        }
+        
+        const middleTargetData = processedData.map(() => middleTargetValue)
+        datasets.push({
+          label: middleConfig.label,
+          data: middleTargetData,
+          type: 'line',
+          borderColor: middleConfig.color,
+          backgroundColor: middleConfig.color,
+          borderWidth: middleConfig.borderWidth,
+          borderDash: middleConfig.borderDash,
+          pointBackgroundColor: middleConfig.color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y1'
+        })
+        
+        // Add senior target line
+        let seniorTargetValue
+        switch (timeframe) {
+          case 'week':
+            seniorTargetValue = seniorTargets.totalPointWeekTarget
+            break
+          case 'quarter':
+            seniorTargetValue = seniorTargets.totalPointQuarterTarget
+            break
+          case 'month':
+          default:
+            seniorTargetValue = seniorTargets.totalPointMonthTarget
+            break
+        }
+        
+        const seniorTargetData = processedData.map(() => seniorTargetValue)
+        datasets.push({
+          label: seniorConfig.label,
+          data: seniorTargetData,
+          type: 'line',
+          borderColor: seniorConfig.color,
+          backgroundColor: seniorConfig.color,
+          borderWidth: seniorConfig.borderWidth,
+          borderDash: seniorConfig.borderDash,
+          pointBackgroundColor: seniorConfig.color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y1'
+        })
+        
+        console.log('🎯 TARGET LINE: Added STORYPOINT_BASE target lines - Middle:', middleTargetValue, 'Senior:', seniorTargetValue)
+      }
+    }
+
     console.log('📊 TEAM OVERVIEW: Generated chart data', {
       developersCount: developersArray.length,
       datasetsCount: datasets.length,
@@ -158,10 +308,10 @@ const TeamOverviewChart = ({
     })
 
     return {
-      labels: data.map(item => item.timePeriod),
+      labels: processedData.map(item => item.timePeriod),
       datasets: datasets
     }
-  }, [data, filters])
+  }, [data, filters, showTargetLines, selectedProjectKey, performanceFilter])
 
   // Chart.js configuration
   const chartOptions = useMemo(() => {
@@ -214,7 +364,15 @@ const TeamOverviewChart = ({
               if (context.dataset.type === 'line') {
                 return `${context.dataset.label}: ${context.parsed.y} points (Velocity)`
               }
-              return `${context.dataset.label}: ${context.parsed.y} points`
+              
+              // Only show members with story points > 0
+              const storyPoints = context.parsed.y || 0
+              if (storyPoints > 0) {
+                return `${context.dataset.label}: ${storyPoints} points`
+              }
+              
+              // Return null to hide this item from tooltip
+              return null
             }
           }
         }
@@ -320,7 +478,10 @@ TeamOverviewChart.propTypes = {
     rootCauses: PropTypes.arrayOf(PropTypes.string),
     timeframe: PropTypes.oneOf(['week', 'month', 'quarter']),
     statusFilter: PropTypes.arrayOf(PropTypes.string)
-  })
+  }),
+  showTargetLines: PropTypes.bool,
+  performanceFilter: PropTypes.oneOf(['all', 'under', 'over']),
+  selectedProjectKey: PropTypes.string
 }
 
 export default TeamOverviewChart

@@ -6,6 +6,7 @@
 
 import { memberConfiguration } from '../../../constants/memberConfiguration'
 import { initializeSeverityBreakdown } from '../../../shared/constants/severityConstants.js'
+// REMOVED: targetCalculationService imports - now using preprocessed data (caching strategy fix)
 
 export const filterService = {
   /**
@@ -75,7 +76,9 @@ export const filterService = {
             statusFilter
           },
           // Pass through timeTrackingData from original chartData
-          timeTrackingData: cacheData.chartData?.teamContributionChart?.timeTrackingData || []
+          timeTrackingData: cacheData.chartData?.teamContributionChart?.timeTrackingData || [],
+          // CRITICAL FIX: Pass through preprocessed performance data for target lines
+          preprocessedPerformance: cacheData.preprocessedPerformance
         }
       },
       appliedFilters: filters,
@@ -865,5 +868,7 @@ export const filterService = {
     }
     
     return summary
-  }
+  },
+
+  // REMOVED: applyPerformanceFilter method - now using preprocessed data (caching strategy fix)
 } 

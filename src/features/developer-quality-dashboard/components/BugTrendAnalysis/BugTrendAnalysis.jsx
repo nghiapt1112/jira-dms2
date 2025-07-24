@@ -16,45 +16,14 @@ const BugTrendAnalysis = React.memo(({
   
   // 2. Memoized values
   const chartData = useMemo(() => {
-    console.log('🔍 BUG_TREND: Processing chart data', {
-      hasData: !!data,
-      dataLength: data?.data?.length || 0,
-      timePeriod: data?.config?.timePeriod,
-      periodKey: data?.config?.periodKey,
-      sampleData: data?.data?.[0],
-      allDataKeys: data?.data?.[0] ? Object.keys(data.data[0]) : [],
-      fullDataSample: data?.data?.slice(0, 3), // Show more sample data
-      weekFormatExists: data?.data?.[0]?._weekStartFormatted ? 'EXISTS' : 'MISSING',
-      allDataItems: data?.data?.map((item, idx) => ({
-        index: idx,
-        week: item.week,
-        month: item.month,
-        quarter: item.quarter,
-        period: item.period,
-        periodKeyValue: item[data?.config?.periodKey || 'month'],
-        _weekStartFormatted: item._weekStartFormatted,
-        allKeys: Object.keys(item)
-      })) || [],
-      timestamp: new Date().toISOString()
-    })
     
     if (!data || !data.data || data.data.length === 0) {
-      console.warn('🔍 BUG_TREND: No data available', { data })
       return null
     }
     
     // Get time period from config or default to month
     const timePeriod = data.config?.timePeriod || 'month'
     const periodKey = data.config?.periodKey || 'month'
-    
-    console.log('🔍 BUG_TREND: Time period configuration', {
-      timePeriod,
-      periodKey,
-      dataHasPeriodKey: data.data[0] && periodKey in data.data[0],
-      availableKeys: data.data[0] ? Object.keys(data.data[0]) : [],
-      periodKeyValue: data.data[0] ? data.data[0][periodKey] : 'NO_DATA',
-      samplePeriodValues: data.data.slice(0, 3).map(item => item[periodKey])
-    })
     
     const muiData = {
       dataset: data.data,
@@ -88,18 +57,6 @@ const BugTrendAnalysis = React.memo(({
       }]
     }
     
-    console.log('🔍 BUG_TREND: Chart configuration prepared', {
-      dataLength: data.data.length,
-      seriesKeys: muiData.series.map(s => s.dataKey),
-      xAxisDataKey: periodKey,
-      sampleDataPoint: data.data[0],
-      hasRequiredKeys: {
-        total: data.data[0] && 'total' in data.data[0],
-        resolved: data.data[0] && 'resolved' in data.data[0],
-        pending: data.data[0] && 'pending' in data.data[0],
-        periodKey: data.data[0] && periodKey in data.data[0]
-      }
-    })
     
     // Prepare data for Chart.js transformation - ensure it has the right structure
     const chartJSData = data.data.map(item => {
@@ -132,34 +89,6 @@ const BugTrendAnalysis = React.memo(({
       })
     }
     
-    console.log('🔍 BUG_TREND: ChartJS data transformed', {
-      periodKey,
-      originalLength: data.data.length,
-      chartJSDataSample: chartJSData?.[0],
-      transformedLabels: transformedData?.labels?.slice(0, 10),
-      allTransformedLabels: transformedData?.labels,
-      transformedDatasetsCount: transformedData?.datasets?.length,
-      firstDatasetSample: transformedData?.datasets?.[0]?.data?.slice(0, 5),
-      hasOriginalData: !!transformedData?.datasets?.[0]?._originalData,
-      originalDataSample: data.data?.[0],
-      allOriginalDataKeys: data.data?.[0] ? Object.keys(data.data[0]) : [],
-      weekDataExists: data.data?.[0]?._weekStartFormatted ? 'YES' : 'NO',
-      allDatasets: transformedData?.datasets?.map(d => ({
-        label: d.label,
-        hasOriginalData: !!d._originalData,
-        originalDataLength: d._originalData?.length
-      })),
-      chartJSDataLabels: chartJSData.map(item => ({
-        timePeriod: item.timePeriod,
-        x: item.x, 
-        label: item.label,
-        periodKeyValue: item[periodKey],
-        weekField: item.week,
-        monthField: item.month,
-        quarterField: item.quarter,
-        allItemKeys: Object.keys(item)
-      }))
-    })
     return transformedData
   }, [data])
   
@@ -305,49 +234,15 @@ const BugTrendAnalysis = React.memo(({
                 cornerRadius: 6,
                 callbacks: {
                   title: function(context) {
-                    console.log('🔍 BUG_TREND: Full tooltip context:', {
-                      context,
-                      contextLength: context?.length,
-                      firstItem: context?.[0],
-                      dataPoint: context?.[0] ? {
-                        dataIndex: context[0].dataIndex,
-                        label: context[0].label,
-                        parsed: context[0].parsed,
-                        dataset: {
-                          label: context[0].dataset?.label,
-                          hasOriginalData: !!context[0].dataset?._originalData,
-                          originalDataKeys: context[0].dataset?._originalData ? Object.keys(context[0].dataset._originalData[0] || {}) : null
-                        }
-                      } : null
-                    })
-                    
                     if (!context || !context[0]) return 'No context'
                     
                     const dataPoint = context[0]
                     const timePeriod = data.config?.timePeriod || 'month'
                     const dataIndex = dataPoint.dataIndex
                     
-                    console.log('🔍 BUG_TREND: Tooltip processing', {
-                      timePeriod,
-                      dataIndex,
-                      hasOriginalData: !!dataPoint.dataset._originalData,
-                      originalDataLength: dataPoint.dataset._originalData?.length,
-                      sampleOriginalData: dataPoint.dataset._originalData?.[dataIndex],
-                      allOriginalData: dataPoint.dataset._originalData
-                    })
-                    
                     // For weekly data, show date range format
                     if (timePeriod === 'week' && dataPoint.dataset._originalData) {
                       const originalData = dataPoint.dataset._originalData[dataIndex]
-                      
-                      console.log('🔍 BUG_TREND: Weekly tooltip data', {
-                        originalData,
-                        hasWeekStart: !!originalData?._weekStartFormatted,
-                        hasWeekEnd: !!originalData?._weekEndFormatted,
-                        weekStart: originalData?._weekStartFormatted,
-                        weekEnd: originalData?._weekEndFormatted,
-                        total: originalData?.total
-                      })
                       
                       if (originalData && originalData._weekStartFormatted && originalData._weekEndFormatted) {
                         const totalBugs = originalData.total || 0
@@ -359,13 +254,6 @@ const BugTrendAnalysis = React.memo(({
                     const label = dataPoint.label || ''
                     const originalData = dataPoint.dataset._originalData?.[dataIndex]
                     const totalBugs = originalData?.total || 0
-                    
-                    console.log('🔍 BUG_TREND: Default tooltip format', {
-                      label,
-                      totalBugs,
-                      originalData
-                    })
-                    
                     return `${label}, Total Bugs: ${totalBugs}`
                   },
                   label: function(context) {

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
 import { memberConfiguration } from '../../../../constants/memberConfiguration'
 import { 
@@ -11,9 +11,13 @@ import {
   OutlinedInput,
   Typography,
   Button,
-  Paper
+  Paper,
+  Switch,
+  FormControlLabel,
+  Autocomplete,
+  TextField
 } from '@mui/material'
-import { Clear as ClearIcon } from '@mui/icons-material'
+import { Clear as ClearIcon, ShowChart, FilterList, TrendingUp, TrendingDown } from '@mui/icons-material'
 // Direct store access
 import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 
@@ -24,9 +28,22 @@ const FilterPanel = React.memo(({
   isLoading = false,
   // Backward compatibility props
   onTimePeriodChange,
-  onStatusFilterChange
+  onStatusFilterChange,
+  // Performance controls props
+  onPerformanceControlsChange
 }) => {
-  // 1. Hooks first (none needed)
+  // 1. Performance state - following .cursorrules hooks first pattern
+  const [showTargetLines, setShowTargetLines] = useState(false)
+  const [performanceFilter, setPerformanceFilter] = useState('all')
+  
+  // Single project detection for performance controls
+  const isSingleProject = useMemo(() => {
+    return filters?.projects?.length === 1
+  }, [filters?.projects])
+  
+  const selectedProjectName = useMemo(() => {
+    return isSingleProject ? filters.projects[0] : ''
+  }, [isSingleProject, filters?.projects])
   
   // 2. Memoized values
   const hasActiveFilters = useMemo(() => {
@@ -137,6 +154,52 @@ const FilterPanel = React.memo(({
       </Box>
     )
   }, [])
+  
+  // Performance controls callbacks
+  const handleShowTargetLinesChange = useCallback((checked) => {
+    setShowTargetLines(checked)
+    if (onPerformanceControlsChange) {
+      onPerformanceControlsChange({
+        showTargetLines: checked,
+        performanceFilter: checked ? performanceFilter : 'all'
+      })
+    }
+  }, [performanceFilter, onPerformanceControlsChange])
+  
+  const handlePerformanceFilterChange = useCallback((newFilter) => {
+    setPerformanceFilter(newFilter)
+    if (onPerformanceControlsChange) {
+      onPerformanceControlsChange({
+        showTargetLines,
+        performanceFilter: newFilter
+      })
+    }
+  }, [showTargetLines, onPerformanceControlsChange])
+  
+  // Performance filter options
+  const performanceFilterOptions = useMemo(() => [
+    {
+      value: 'all',
+      label: 'All Performance',
+      description: 'Show all developers regardless of performance',
+      icon: ShowChart,
+      color: 'default'
+    },
+    {
+      value: 'under',
+      label: 'Under Performance',
+      description: 'Show only developers performing below target',
+      icon: TrendingDown,
+      color: 'error'
+    },
+    {
+      value: 'over',
+      label: 'Over Performance', 
+      description: 'Show only developers performing above target',
+      icon: TrendingUp,
+      color: 'success'
+    }
+  ], [])
   
   // 4. Early returns
   if (!filterOptions) {
@@ -535,6 +598,143 @@ const FilterPanel = React.memo(({
             )}
           </Select>
         </FormControl>
+        
+        {/* Performance Controls - Only show when one project is selected */}
+        {isSingleProject && (
+          <>
+            {/* Performance Toggle */}
+            <FormControl 
+              fullWidth
+              sx={{ minWidth: 180 }}
+            >
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                minHeight: 56 // Match other FormControl heights
+              }}>
+                <ShowChart 
+                  color={isLoading ? 'disabled' : 'primary'} 
+                  fontSize="small" 
+                />
+                
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTargetLines}
+                      onChange={(event) => handleShowTargetLinesChange(event.target.checked)}
+                      disabled={isLoading}
+                      size="small"
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography 
+                      variant="body2" 
+                      color={isLoading ? 'text.disabled' : 'text.primary'}
+                      fontWeight={500}
+                    >
+                      Show Target Lines
+                    </Typography>
+                  }
+                  sx={{
+                    margin: 0,
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                />
+                
+                {selectedProjectName && (
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary"
+                    sx={{ 
+                      fontStyle: 'italic',
+                      maxWidth: 120,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    for {selectedProjectName}
+                  </Typography>
+                )}
+              </Box>
+            </FormControl>
+            
+            {/* Performance Filter */}
+            <FormControl 
+              fullWidth
+              disabled={isLoading || !showTargetLines}
+              sx={{ minWidth: 180 }}
+            >
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                minHeight: 56
+              }}>
+                <FilterList 
+                  color={isLoading || !showTargetLines ? 'disabled' : 'primary'} 
+                  fontSize="small" 
+                />
+                
+                <Autocomplete
+                  value={performanceFilterOptions.find(option => option.value === performanceFilter) || performanceFilterOptions[0]}
+                  onChange={(event, newValue) => {
+                    if (newValue) {
+                      handlePerformanceFilterChange(newValue.value)
+                    }
+                  }}
+                  options={performanceFilterOptions}
+                  getOptionLabel={(option) => option.label}
+                  disabled={isLoading || !showTargetLines}
+                  disableClearable
+                  size="small"
+                  sx={{ 
+                    flex: 1,
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: (isLoading || !showTargetLines) ? 'action.disabledBackground' : 'background.paper'
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      placeholder="Filter by performance"
+                      sx={{
+                        '& .MuiInputLabel-root': {
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    const IconComponent = option.icon
+                    const { key, ...otherProps } = props
+                    return (
+                      <Box component="li" key={key} {...otherProps} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <IconComponent 
+                          fontSize="small" 
+                          color={option.color === 'default' ? 'action' : option.color}
+                        />
+                        <Box>
+                          <Typography variant="body2" fontWeight={500}>
+                            {option.label}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {option.description}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )
+                  }}
+                />
+              </Box>
+            </FormControl>
+          </>
+        )}
       </Box>
     </Paper>
   )
@@ -568,7 +768,9 @@ FilterPanel.propTypes = {
   isLoading: PropTypes.bool,
   // Backward compatibility props
   onTimePeriodChange: PropTypes.func,
-  onStatusFilterChange: PropTypes.func
+  onStatusFilterChange: PropTypes.func,
+  // Performance controls props
+  onPerformanceControlsChange: PropTypes.func
 }
 
 export default FilterPanel 

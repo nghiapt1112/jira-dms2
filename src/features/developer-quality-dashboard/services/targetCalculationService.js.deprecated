@@ -1,0 +1,157 @@
+/**
+ * Target Calculation Service
+ * Calculates performance targets for different project types and developer levels
+ * Following .cursorrules conventions - camelCase naming, performance optimizations
+ */
+
+import { memberConfiguration } from '../../../constants/memberConfiguration.js'
+
+/**
+ * Get developer level from configuration
+ * @param {string} developerName - Name of the developer
+ * @returns {string|null} - Developer level ('senior', 'middle') or null if not found
+ */
+export const getDeveloperLevel = (developerName) => {
+  const developer = memberConfiguration.developers.find(dev => dev.name === developerName)
+  return developer?.level || null
+}
+
+/**
+ * Get project point type from configuration
+ * @param {string} projectKey - Project key (e.g., "YUIM", "BCP")
+ * @returns {string|null} - Project point type ('HOURS_BASE', 'STORYPOINT_BASE') or null if not found
+ */
+export const getProjectPointType = (projectKey) => {
+  const project = memberConfiguration.projects.find(proj => proj.key === projectKey)
+  return project?.pointType || null
+}
+
+/**
+ * Get target value for a specific time period and developer
+ * @param {string} projectKey - Project key (e.g., "YUIM", "BCP")
+ * @param {string} developerName - Name of the developer
+ * @param {string} period - Time period ('week', 'month', 'quarter')
+ * @returns {number|null} - Target value or null if not found
+ */
+export const getTargetForPeriod = (projectKey, developerName, period) => {
+  const pointType = getProjectPointType(projectKey)
+  if (!pointType) return null
+
+  const targets = memberConfiguration.performanceTargets[pointType]
+  if (!targets) return null
+
+  if (pointType === 'HOURS_BASE') {
+    // HOURS_BASE uses single target for all developers
+    const allTargets = targets.all
+    if (!allTargets) return null
+    
+    switch (period) {
+      case 'week':
+        return allTargets.totalPointWeekTarget
+      case 'month':
+        return allTargets.totalPointMonthTarget
+      case 'quarter':
+        return allTargets.totalPointQuarterTarget
+      default:
+        return null
+    }
+  } else if (pointType === 'STORYPOINT_BASE') {
+    // STORYPOINT_BASE uses level-based targets
+    const developerLevel = getDeveloperLevel(developerName)
+    if (!developerLevel) return null
+    
+    const levelTargets = targets[developerLevel]
+    if (!levelTargets) return null
+    
+    switch (period) {
+      case 'week':
+        return levelTargets.totalPointWeekTarget
+      case 'month':
+        return levelTargets.totalPointMonthTarget
+      case 'quarter':
+        return levelTargets.totalPointQuarterTarget
+      default:
+        return null
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Get all target configurations for a project
+ * @param {string} projectKey - Project key (e.g., "YUIM", "BCP")
+ * @returns {Object|null} - Target configuration object or null if not found
+ */
+export const getProjectTargets = (projectKey) => {
+  const pointType = getProjectPointType(projectKey)
+  if (!pointType) return null
+
+  const targets = memberConfiguration.performanceTargets[pointType]
+  const lineConfig = memberConfiguration.targetLineConfig[pointType]
+  
+  if (!targets || !lineConfig) return null
+
+  return {
+    pointType,
+    targets,
+    lineConfig
+  }
+}
+
+/**
+ * Check if developer performance meets target for a specific period
+ * @param {number} actualPoints - Actual points achieved by developer
+ * @param {string} projectKey - Project key
+ * @param {string} developerName - Developer name
+ * @param {string} period - Time period
+ * @returns {Object} - { meetsTarget: boolean, target: number, performance: 'over'|'under'|'meets' }
+ */
+export const checkPerformanceAgainstTarget = (actualPoints, projectKey, developerName, period) => {
+  const target = getTargetForPeriod(projectKey, developerName, period)
+  
+  if (target === null) {
+    return {
+      meetsTarget: false,
+      target: null,
+      performance: null
+    }
+  }
+  
+  const meetsTarget = actualPoints >= target
+  const performance = actualPoints >= target ? 'over' : 'under'
+  
+  return {
+    meetsTarget,
+    target,
+    performance
+  }
+}
+
+/**
+ * Get all developers with their levels for a project (used for target line generation)
+ * @param {string} projectKey - Project key
+ * @returns {Array} - Array of { name, level, target } objects for each time period
+ */
+export const getDevelopersWithTargets = (projectKey) => {
+  const pointType = getProjectPointType(projectKey)
+  if (!pointType) return []
+  
+  if (pointType === 'HOURS_BASE') {
+    // Return single target for all developers
+    return [{
+      level: 'all',
+      targets: memberConfiguration.performanceTargets[pointType].all,
+      lineConfig: memberConfiguration.targetLineConfig[pointType].all
+    }]
+  } else if (pointType === 'STORYPOINT_BASE') {
+    // Return targets for each level
+    return Object.keys(memberConfiguration.performanceTargets[pointType]).map(level => ({
+      level,
+      targets: memberConfiguration.performanceTargets[pointType][level],
+      lineConfig: memberConfiguration.targetLineConfig[pointType][level]
+    }))
+  }
+  
+  return []
+}

@@ -12,10 +12,17 @@ const TeamContributionChart = React.memo(({
   height = 400,
   statusFilter = [],
   onStatusFilterChange,
-  filters = {}
+  filters = {},
+  // Performance controls from FilterPanel
+  showTargetLines = false,
+  performanceFilter = 'all'
 }) => {
-  // 1. Hooks first
-  // Get team size for metrics display
+  // 1. Single project detection
+  const isSingleProject = useMemo(() => {
+    return filters?.projects?.length === 1
+  }, [filters?.projects])
+  
+  // 2. Memoized values - following .cursorrules pattern
   const teamSize = useMemo(() => {
     if (!data?.data || data.data.length === 0) return 0
     
@@ -30,56 +37,6 @@ const TeamContributionChart = React.memo(({
     return developers.size
   }, [data?.data])
   
-  useEffect(() => {
-    const timer = performanceMonitor.startTimer('chartRender')
-    console.log('TeamContributionChart - Rendering with data:', 
-      { dataLength: data?.data?.length || 0, projects: filters?.projects })
-    return () => {
-      timer?.end()
-    }
-  }, [data, filters])
-  
-  // Log when data or filters change
-  useEffect(() => {
-    if (data?.data) {
-      console.log('📊 CHART: TeamContributionChart - Data updated:', {
-        dataPoints: data.data.length,
-        timePeriods: data.data.map(d => d.timePeriod),
-        developers: Object.keys(data.data[0] || {}).filter(k => k !== 'timePeriod'),
-        filterState: filters,
-        timestamp: new Date().toISOString()
-      })
-    } else {
-      console.log('📊 CHART: TeamContributionChart - No data available')
-    }
-  }, [data, filters])
-  
-  // 2. Performance monitoring
-  useEffect(() => {
-    const timer = performanceMonitor.startTimer('chartRender')
-    console.log('📊 CHART: Rendering team overview chart', {
-      dataLength: data?.data?.length || 0,
-      teamSize,
-      filterProjects: filters?.projects
-    })
-    return () => {
-      timer?.end()
-    }
-  }, [data, teamSize, filters])
-  
-  // 3. Chart configuration
-  const chartConfig = useMemo(() => ({
-    height: height,
-    margin: { 
-      top: 20, 
-      right: 20, 
-      bottom: data?.data?.length > 6 ? 80 : 60, 
-      left: 80 
-    },
-    grid: { horizontal: true }
-  }), [height, data?.data?.length])
-  
-  // 4. Memoized UI elements
   const trendIcon = useMemo(() => {
     if (!metrics?.contributionTrend) return null
     
@@ -93,9 +50,41 @@ const TeamContributionChart = React.memo(({
     }
   }, [metrics?.contributionTrend])
   
-  // 3. Callbacks (none needed)
+  const chartConfig = useMemo(() => ({
+    height: height,
+    margin: { 
+      top: 20, 
+      right: 20, 
+      bottom: data?.data?.length > 6 ? 80 : 60, 
+      left: 80 
+    },
+    grid: { horizontal: true }
+  }), [height, data?.data?.length])
   
-  // 5. Early returns
+  // 3. Effects - consolidated following .cursorrules
+  useEffect(() => {
+    const timer = performanceMonitor.startTimer('chartRender')
+    
+    // Combined logging for performance
+    if (data?.data) {
+      console.log('📊 CHART: TeamContributionChart rendering with data:', {
+        dataPoints: data.data.length,
+        timePeriods: data.data.map(d => d.timePeriod),
+        developers: Object.keys(data.data[0] || {}).filter(k => k !== 'timePeriod'),
+        teamSize,
+        filterState: filters,
+        timestamp: new Date().toISOString()
+      })
+    } else {
+      console.log('📊 CHART: TeamContributionChart - No data available')
+    }
+    
+    return () => {
+      timer?.end()
+    }
+  }, [data, filters, teamSize])
+  
+  // 4. Early returns - following .cursorrules pattern
   if (!data?.data || !metrics) {
     return (
       <Paper 
@@ -130,7 +119,7 @@ const TeamContributionChart = React.memo(({
         justifyContent: 'space-between',
         mb: { xs: 2, sm: 3 },
         flexWrap: 'wrap',
-        gap: 1
+        gap: 2
       }}>
         <Typography 
           variant="h6" 
@@ -169,6 +158,9 @@ const TeamContributionChart = React.memo(({
         height={height}
         chartConfig={chartConfig}
         filters={filters}
+        showTargetLines={isSingleProject && showTargetLines}
+        performanceFilter={isSingleProject && showTargetLines ? performanceFilter : 'all'}
+        selectedProjectKey={isSingleProject ? filters.projects[0] : null}
       />
       
       {/* Metrics Summary */}
@@ -293,7 +285,10 @@ TeamContributionChart.propTypes = {
     rootCauses: PropTypes.arrayOf(PropTypes.string),
     timeframe: PropTypes.oneOf(['week', 'month', 'quarter']),
     statusFilter: PropTypes.arrayOf(PropTypes.string)
-  })
+  }),
+  // Performance controls from FilterPanel
+  showTargetLines: PropTypes.bool,
+  performanceFilter: PropTypes.oneOf(['all', 'under', 'over'])
 }
 
 export default TeamContributionChart 
