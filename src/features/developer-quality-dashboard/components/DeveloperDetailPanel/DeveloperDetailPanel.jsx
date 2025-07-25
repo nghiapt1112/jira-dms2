@@ -24,6 +24,7 @@ import {
   TrendingFlat as TrendingFlatIcon
 } from '@mui/icons-material'
 import EffortEffectivenessChart from '../EffortEffectivenessChart'
+import DeveloperTicketTable from './DeveloperTicketTable'
 
 /**
  * DeveloperDetailPanel - Comprehensive developer metrics panel
@@ -243,6 +244,15 @@ const DeveloperDetailPanel = ({
           selectedDeveloper={developerData.developer || developerName}
           statusFilter={statusFilter}
           timeframe={timeframe}
+        />
+      </Box>
+
+      {/* Individual Tickets Table */}
+      <Box sx={{ mb: 3 }}>
+        <DeveloperTicketTable 
+          developerName={developerData.developer || developerName}
+          maxHeight={600}
+          defaultExpanded={true}
         />
       </Box>
 

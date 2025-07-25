@@ -153,11 +153,16 @@ export const useDebugStore = create(
       // CRITICAL DEBUG: Log the filters being sent to API
       console.log('🔍 API REQUEST FILTERS:', filters)
       
-      // CRITICAL FIX: Use exact parameters that work with the API
+      // CRITICAL FIX: Use current year for API request
+      const currentYear = new Date().getFullYear()
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowFormatted = `${currentYear}/${String(tomorrow.getMonth() + 1).padStart(2, '0')}/${String(tomorrow.getDate()).padStart(2, '0')}`
+      
       const broadFilters = {
         ...filters,
-        fromDate: '2023/01/01',  // Start from 2023 to get historical data
-        toDate: '2025/12/31',    // End at 2025 to ensure all data
+        fromDate: `${currentYear}/01/01`,  // Start from January 1st of current year
+        toDate: tomorrowFormatted,    // Tomorrow's date
         useSnapshots: true,      // Ensure snapshots are enabled
         includeCurrentQuarter: true,
         maxResults: 50000,       // High limit to ensure all data

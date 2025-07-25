@@ -77,6 +77,21 @@ export const developerQualityService = {
       }
     }
     
+    // SPECIAL DEBUG: Check for specific missing tickets in source data
+    const missingTickets = ['YUIM-328', 'YUIM-521', 'YUIM-689', 'YUIM-690']
+    const foundMissingInSource = issues.filter(issue => missingTickets.includes(issue.key))
+    console.log(`🔍 SOURCE DATA DEBUG: Found ${foundMissingInSource.length} out of ${missingTickets.length} missing tickets in source data:`, 
+      foundMissingInSource.map(issue => ({
+        key: issue.key,
+        assignee: issue.fields?.assignee?.displayName || 'Unassigned',
+        project: issue.fields?.project?.name || 'Unknown',
+        status: issue.fields?.status?.name || 'Unknown',
+        resolved: issue.fields?.resolutiondate,
+        updated: issue.fields?.updated,
+        created: issue.fields?.created
+      }))
+    )
+
     // SINGLE LOOP PROCESSING - integrate with existing main loop
     issues.forEach((issue, index) => {
       // Enhanced logging for comprehensive data pipeline tracking
@@ -84,6 +99,19 @@ export const developerQualityService = {
       const assigneeAccountId = issue.fields?.assignee?.accountId || null
       const projectName = issue.fields?.project?.name || 'Unknown'
       const projectKey = issue.fields?.project?.key || 'Unknown'
+      
+      // SPECIAL DEBUG: Log processing of missing tickets
+      if (missingTickets.includes(issue.key)) {
+        console.log(`🔍 PROCESSING MISSING TICKET: ${issue.key}`, {
+          assignee,
+          projectName,
+          projectKey,
+          status: issue.fields?.status?.name,
+          resolved: issue.fields?.resolutiondate,
+          updated: issue.fields?.updated,
+          memberStatus: shouldIncludeMember(assignee, assigneeAccountId)
+        })
+      }
       
       // Log member filtering decision
       const memberStatus = shouldIncludeMember(assignee, assigneeAccountId)

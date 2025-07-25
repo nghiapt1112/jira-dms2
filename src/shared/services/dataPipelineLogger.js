@@ -417,6 +417,116 @@ export class DataPipelineLogger {
     return recommendations
   }
 
+  // Developer Ticket Filtering Logging (for useDeveloperTickets hook)
+  logDeveloperFiltering(developerName, filterState) {
+    this.log('DEBUG', 'DEVELOPER_FILTERING', `Filtering tickets for developer "${developerName}"`, {
+      totalIssues: filterState.totalIssues,
+      timeframe: filterState.timeframe,
+      projectsFilter: filterState.projectsFilter,
+      hasProjectsFilter: filterState.hasProjectsFilter
+    })
+  }
+
+  logMissingTicketsDebug(missingTickets, foundTickets) {
+    this.log('DEBUG', 'MISSING_TICKETS', `Missing tickets analysis`, {
+      searchedTickets: missingTickets,
+      foundCount: foundTickets.length,
+      missingCount: missingTickets.length - foundTickets.length,
+      foundTickets: foundTickets.map(t => ({
+        key: t.key,
+        assignee: t.assignee,
+        project: t.project,
+        status: t.status,
+        resolved: t.resolved,
+        updated: t.updated
+      })),
+      missingTickets: missingTickets.filter(ticketKey => 
+        !foundTickets.some(ticket => ticket.key === ticketKey)
+      )
+    })
+  }
+
+  logYudanisVariations(yudanisTickets) {
+    this.log('DEBUG', 'YUDANIS_VARIATIONS', `Found ${yudanisTickets.length} tickets with Yudanis name variations`, {
+      count: yudanisTickets.length,
+      sampleTickets: yudanisTickets.slice(0, 5).map(t => ({ 
+        key: t.key, 
+        assignee: t.assignee, 
+        project: t.project,
+        status: t.status 
+      })),
+      allTicketKeys: yudanisTickets.map(t => t.key)
+    })
+  }
+
+  logMissingTicketsAfterFiltering(missingTicketsAfterFiltering, minimalIssues, developerName, filters) {
+    const analysisResults = []
+    
+    // Analyze each missing ticket
+    missingTicketsAfterFiltering.forEach(ticketKey => {
+      const originalTicket = minimalIssues.find(t => t.key === ticketKey)
+      if (originalTicket) {
+        const excludedStatuses = ['To Do', 'In Progress', 'Rejected', 'todo', 'inprogress', 'rejected']
+        const isExcludedByStatus = excludedStatuses.some(excludedStatus => 
+          originalTicket.status?.toLowerCase() === excludedStatus.toLowerCase()
+        )
+        const isExcludedByProject = filters.projects && filters.projects.length > 0 && 
+          !filters.projects.includes(originalTicket.project)
+        const isExcludedByDeveloper = originalTicket.assignee !== developerName
+        
+        analysisResults.push({
+          ticketKey,
+          status: originalTicket.status,
+          project: originalTicket.project,
+          assignee: originalTicket.assignee,
+          exclusionReasons: {
+            byStatus: isExcludedByStatus,
+            byProject: isExcludedByProject,
+            byDeveloper: isExcludedByDeveloper
+          }
+        })
+      } else {
+        analysisResults.push({
+          ticketKey,
+          status: 'NOT_FOUND_IN_SOURCE',
+          exclusionReasons: {
+            notInSource: true
+          }
+        })
+      }
+    })
+
+    this.log('WARN', 'MISSING_TICKETS_AFTER_FILTERING', 
+      `${missingTicketsAfterFiltering.length} tickets still missing after all filtering`, {
+      missingTickets: missingTicketsAfterFiltering,
+      analysisResults,
+      filterCriteria: {
+        developer: developerName,
+        projects: filters.projects || [],
+        excludedStatuses: ['To Do', 'In Progress', 'Rejected', 'todo', 'inprogress', 'rejected']
+      }
+    })
+  }
+
+  logDeveloperFilteringResults(developerName, developerTickets, filters) {
+    this.log('INFO', 'DEVELOPER_FILTERING_RESULTS', `Filtering completed for "${developerName}"`, {
+      filteredTickets: developerTickets.length,
+      excludedStatusesUsed: ['To Do', 'In Progress', 'Rejected', 'todo', 'inprogress', 'rejected'],
+      projectsInResults: [...new Set(developerTickets.map(t => t.project))],
+      statusesInResults: [...new Set(developerTickets.map(t => t.status))],
+      timeframeFilter: filters?.timeframe || 'month',
+      projectsFilter: filters?.projects || [],
+      sampleTickets: developerTickets.slice(0, 3).map(t => ({ 
+        key: t.key, 
+        project: t.project, 
+        status: t.status,
+        storyPoints: t.storyPoints,
+        updated: t.updated,
+        resolved: t.resolved
+      }))
+    })
+  }
+
   // Export functionality for debug store
   exportLogs() {
     return {

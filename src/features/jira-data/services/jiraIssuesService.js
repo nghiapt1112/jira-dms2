@@ -10,11 +10,11 @@ export const jiraIssuesService = {
       jql: `project IN (${JIRA_CONSTANTS.DEFAULT_PROJECTS.map(p => `"${p}"`).join(',')})`,
       selectedProjects: JIRA_CONSTANTS.DEFAULT_PROJECTS,
       selectedFields: JIRA_CONSTANTS.SELECTED_FIELDS,
-      // FIXED: Use consistent date format and broader range for historical data
-      fromDate: filters.fromDate || "2023/01/01",  // Start from 2023 to get historical data
-      toDate: filters.toDate || "2025/12/31",      // End at 2025 to ensure all data
-      startDate: filters.startDate || filters.fromDate || "2023/01/01",
-      endDate: filters.endDate || filters.toDate || "2025/12/31",
+      // FIXED: Use current year for date range
+      fromDate: filters.fromDate || `${new Date().getFullYear()}/01/01`,  // Start from January 1st of current year
+      toDate: filters.toDate || formatDate(addDays(getCurrentDate(), 1), DATE_FORMATS.YEAR_MONTH_DAY),  // Tomorrow
+      startDate: filters.startDate || filters.fromDate || `${new Date().getFullYear()}/01/01`,
+      endDate: filters.endDate || filters.toDate || formatDate(addDays(getCurrentDate(), 1), DATE_FORMATS.YEAR_MONTH_DAY),
       includeCurrentQuarter: filters.includeCurrentQuarter ?? true,
       statuses: filters.statuses || [],
       issueTypes: filters.issueTypes || [],

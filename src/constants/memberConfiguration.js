@@ -480,7 +480,7 @@ export const memberConfiguration = {
     { key: "PDS", name: "Product Design" , pointType: "HOURS_BASE" },
     { key: "RAG", name: "RAG" , pointType: "HOURS_BASE" },
     { key: "SG", name: "SCOP-GO" , pointType: "HOURS_BASE" },
-    { key: "STU", name: "SD - Time Utilization " , pointType: "HOURS_BASE" },
+    // { key: "STU", name: "SD - Time Utilization " , pointType: "HOURS_BASE" },
     { key: "SIP", name: "SD Internal Project" , pointType: "HOURS_BASE" },
     { key: "SEK", name: "Sekisuiheim" , pointType: "HOURS_BASE" },
     { key: "TG", name: "TOHO GAS" , pointType: "HOURS_BASE" },

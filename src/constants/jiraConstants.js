@@ -74,7 +74,7 @@ export const JIRA_CONSTANTS = {
   
   // Download settings
   DOWNLOAD_SETTINGS: {
-    TIMEOUT: 300000, // 5 minutes
+    TIMEOUT: 600000, // 10 minutes for API debugging
     MAX_RETRIES: 3,
     RETRY_DELAY: 2000, // 2 seconds
     CHUNK_SIZE: 1000000, // 1MB chunks
@@ -82,7 +82,7 @@ export const JIRA_CONSTANTS = {
     // Parallel download settings
     MAX_CONCURRENT_DOWNLOADS: 3, // Number of simultaneous downloads
     BANDWIDTH_LIMIT_MBPS: 10, // Total bandwidth limit in MB/s
-    PER_FILE_TIMEOUT: 300000, // 5 minutes per file
+    PER_FILE_TIMEOUT: 600000, // 10 minutes per file for API debugging
     RETRY_WITH_BACKOFF: true, // Use exponential backoff for retries
     ENABLE_PARALLEL_DOWNLOADS: true // Feature flag to enable/disable
   },

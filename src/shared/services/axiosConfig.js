@@ -2,7 +2,7 @@ import axios from 'axios'
 import { useUIStore } from '../store/uiStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
-const REQUEST_TIMEOUT = 30000
+const REQUEST_TIMEOUT = 600000 // 10 minutes for API debugging
 const JWT_TOKEN = import.meta.env.VITE_JWT_TOKEN
 
 const axiosInstance = axios.create({
