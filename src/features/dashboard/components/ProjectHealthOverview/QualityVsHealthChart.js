@@ -12,7 +12,6 @@ import {
   Title
 } from 'chart.js'
 import { Scatter } from 'react-chartjs-2'
-import logger from '../../../../utils/logger'
 
 // Register Chart.js components
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend, Title)
@@ -71,11 +70,6 @@ const QualityVsHealthChart = React.memo(({
   }, [theme])
 
   const chartDatasets = useMemo(() => {
-    logger.heatmap('QUALITY_HEALTH', 'Processing scatter chart data', {
-      hasData: !!data,
-      dataLength: data?.length,
-      chartDataLength: chartData.length
-    })
 
     const healthGroups = {
       healthy: { data: [], color: theme.palette.success.main, label: 'Healthy (≥80)' },
@@ -121,16 +115,6 @@ const QualityVsHealthChart = React.memo(({
           return Math.max(Math.sqrt((point?.storyPoints || point?.size || 10) / 10), 6) + 2
         }
       }))
-
-    logger.heatmap('QUALITY_HEALTH', 'Chart datasets prepared', {
-      datasetsCount: datasets.length,
-      totalPoints: datasets.reduce((sum, ds) => sum + ds.data.length, 0),
-      sampleDataset: datasets[0] ? {
-        label: datasets[0].label,
-        pointCount: datasets[0].data.length,
-        samplePoint: datasets[0].data[0]
-      } : null
-    })
 
     return datasets
   }, [chartData, theme, data])

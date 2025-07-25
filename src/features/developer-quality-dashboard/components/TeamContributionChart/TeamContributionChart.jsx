@@ -65,18 +65,13 @@ const TeamContributionChart = React.memo(({
   useEffect(() => {
     const timer = performanceMonitor.startTimer('chartRender')
     
-    // Combined logging for performance
-    if (data?.data) {
-      console.log('📊 CHART: TeamContributionChart rendering with data:', {
-        dataPoints: data.data.length,
-        timePeriods: data.data.map(d => d.timePeriod),
-        developers: Object.keys(data.data[0] || {}).filter(k => k !== 'timePeriod'),
-        teamSize,
-        filterState: filters,
-        timestamp: new Date().toISOString()
+    
+    if (!(data?.data && data.data.length > 0)) {
+      console.warn('⚠️ TEAM CONTRIBUTION - No data available:', {
+        dataObject: data,
+        dataType: typeof data,
+        dataKeys: data ? Object.keys(data) : null
       })
-    } else {
-      console.log('📊 CHART: TeamContributionChart - No data available')
     }
     
     return () => {

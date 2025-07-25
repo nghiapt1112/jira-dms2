@@ -724,8 +724,8 @@ export const memberConfiguration = {
       },
       senior: {
         totalPointWeekTarget: 30,
-        totalPointMonthTarget: 90,
-        totalPointQuarterTarget: 270
+        totalPointMonthTarget: 120,
+        totalPointQuarterTarget: 360
       }
     }
   },

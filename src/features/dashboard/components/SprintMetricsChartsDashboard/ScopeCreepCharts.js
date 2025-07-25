@@ -18,7 +18,6 @@ import {
 } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
 import { Visibility as ViewIcon } from '@mui/icons-material'
-import logger from '../../../../utils/logger'
 
 // Register Chart.js components
 ChartJS.register(
@@ -51,12 +50,6 @@ const ScopeCreepCharts = React.memo(({
   const chartDatasets = useMemo(() => {
     if (!scopeCreepData) return { labels: [], datasets: [] }
 
-    logger.heatmap('SCOPE_CREEP', 'Processing bar chart data', {
-      hasData: !!scopeCreepData,
-      dataLength: scopeCreepData.chartData?.length,
-      sprintsCount: scopeCreepData.summary?.totalSprints
-    })
-
     const datasets = [
       {
         label: 'Planned',
@@ -77,16 +70,6 @@ const ScopeCreepCharts = React.memo(({
     ]
 
     const labels = scopeCreepData.xAxisData
-
-    logger.heatmap('SCOPE_CREEP', 'Chart datasets prepared', {
-      datasetsCount: datasets.length,
-      labelsCount: labels.length,
-      sampleData: {
-        planned: datasets[0].data.slice(0, 3),
-        added: datasets[1].data.slice(0, 3),
-        labels: labels.slice(0, 3)
-      }
-    })
 
     return { labels, datasets }
   }, [scopeCreepData, theme])

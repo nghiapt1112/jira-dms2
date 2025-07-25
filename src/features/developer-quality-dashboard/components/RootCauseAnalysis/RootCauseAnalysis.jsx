@@ -12,7 +12,6 @@ import {
 } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
 import { Psychology, TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material'
-import logger from '../../../../utils/logger'
 
 // Register Chart.js components
 ChartJS.register(
@@ -34,13 +33,6 @@ const RootCauseAnalysis = React.memo(({
   
   // 2. Memoized values
   const chartData = useMemo(() => {
-    logger.heatmap('ROOT_CAUSE', 'Processing chart data', {
-      hasData: !!data,
-      dataKeys: data ? Object.keys(data) : null,
-      hasDataArray: !!data?.data,
-      dataLength: data?.data?.length,
-      sampleData: data?.data?.[0]
-    })
 
     if (!data || !data.data || data.data.length === 0) return null
     
@@ -92,14 +84,6 @@ const RootCauseAnalysis = React.memo(({
     const labels = sortedData.map(item => item.name)
     const values = sortedData.map(item => totalIssues > 0 ? (item.value / totalIssues * 100) : 0)
     const backgroundColors = sortedData.map(item => getColorForCategory(item.name, item.value, maxValue))
-
-    logger.heatmap('ROOT_CAUSE', 'Bar chart data prepared', {
-      dataCount: sortedData.length,
-      maxValue,
-      sampleData: sortedData[0],
-      totalValue: values.reduce((sum, val) => sum + val, 0),
-      labels: labels.slice(0, 5) // First 5 labels for debugging
-    })
 
     return {
       labels: labels,
@@ -208,17 +192,6 @@ const RootCauseAnalysis = React.memo(({
     }
   }), [])
   
-  const categoryTrends = useMemo(() => {
-    if (!metrics?.trends) return []
-    
-    return Object.entries(metrics.trends).map(([category, trend]) => ({
-      category,
-      trend,
-      icon: getTrendIcon(trend),
-      color: getTrendColor(trend)
-    }))
-  }, [metrics?.trends])
-  
   const getTrendIcon = (trend) => {
     switch (trend?.toLowerCase()) {
       case 'increasing':
@@ -240,6 +213,17 @@ const RootCauseAnalysis = React.memo(({
         return 'warning.main'
     }
   }
+  
+  const categoryTrends = useMemo(() => {
+    if (!metrics?.trends) return []
+    
+    return Object.entries(metrics.trends).map(([category, trend]) => ({
+      category,
+      trend,
+      icon: getTrendIcon(trend),
+      color: getTrendColor(trend)
+    }))
+  }, [metrics?.trends])
   
   const topCategories = useMemo(() => {
     if (!metrics?.categories) return []

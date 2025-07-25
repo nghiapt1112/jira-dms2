@@ -12,7 +12,6 @@ import {
   Title
 } from 'chart.js'
 import { Scatter } from 'react-chartjs-2'
-import logger from '../../../../utils/logger'
 
 // Register Chart.js components
 ChartJS.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend, Title)
@@ -70,11 +69,6 @@ const QualityVsDeliveryChart = React.memo(({
   }, [theme])
 
   const chartDatasets = useMemo(() => {
-    logger.heatmap('QUALITY_DELIVERY', 'Processing scatter chart data', {
-      hasData: !!data,
-      dataLength: data?.length,
-      chartDataLength: chartData.length
-    })
 
     const deliveryGroups = {
       excellent: { data: [], color: theme.palette.success.main, label: 'Excellent Delivery (≥80)' },
@@ -120,16 +114,6 @@ const QualityVsDeliveryChart = React.memo(({
           return Math.max(Math.sqrt((point?.storyPoints || point?.size || 10) / 10), 6) + 2
         }
       }))
-
-    logger.heatmap('QUALITY_DELIVERY', 'Chart datasets prepared', {
-      datasetsCount: datasets.length,
-      totalPoints: datasets.reduce((sum, ds) => sum + ds.data.length, 0),
-      sampleDataset: datasets[0] ? {
-        label: datasets[0].label,
-        pointCount: datasets[0].data.length,
-        samplePoint: datasets[0].data[0]
-      } : null
-    })
 
     return datasets
   }, [chartData, theme, data])

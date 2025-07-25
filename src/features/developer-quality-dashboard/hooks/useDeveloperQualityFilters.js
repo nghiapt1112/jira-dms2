@@ -15,26 +15,10 @@ export const useDeveloperQualityFilters = () => {
     data
   } = useDeveloperQualityStore()
   
-  // Debug logging for store state
-  useEffect(() => {
-    console.log('🔍 FILTER HOOK: Store state changed:', {
-      hasData: !!data,
-      dataKeys: data ? Object.keys(data) : [],
-      filters,
-      timestamp: new Date().toISOString()
-    })
-  }, [data, filters])
 
   // Memoized filter options - include data as dependency since getFilterOptions accesses data.filterOptions
   const filterOptions = useMemo(() => {
-    console.log('🔧 HOOK: Recalculating filterOptions due to data change')
     const options = getFilterOptions()
-    console.log('🔧 HOOK: New filterOptions:', {
-      developers: options.developers?.length || 0,
-      projects: options.projects?.length || 0,
-      issueTypes: options.issueTypes?.length || 0,
-      statuses: options.statuses?.length || 0
-    })
     return options
   }, [getFilterOptions, data])
 
@@ -45,24 +29,21 @@ export const useDeveloperQualityFilters = () => {
       const result = getFilteredData()
       timer?.end()
       performanceMonitor.recordMetric('cacheHit', 1)
+      
       return result
     } catch (error) {
       timer?.end()
       performanceMonitor.recordMetric('cacheMiss', 1)
-      console.error('Filter operation failed:', error)
       return null
     }
   }, [getFilteredData, filters, data])
 
   // Update individual filter with special handling for projects
   const updateFilter = useCallback((filterType, value) => {
-    console.log(`useDeveloperQualityFilters: Updating ${filterType} filter:`, value)
-    
     // Direct manipulation for projects to ensure changes are detected
     if (filterType === 'projects') {
       // Create a completely new copy to ensure reference changes
       const projectsValue = Array.isArray(value) ? [...value] : value
-      console.log('Setting projects filter with forced reference change:', projectsValue)
       
       // Force direct state update without using previous state
       // This bypasses potential reference comparison issues
@@ -70,9 +51,6 @@ export const useDeveloperQualityFilters = () => {
         ...filters,
         projects: projectsValue
       }
-      
-      // Debug before setting
-      console.log('Before setFilters:', { oldFilters: filters, newFilters })
       
       // Force cache invalidation regardless of comparison
       setFilters(newFilters)

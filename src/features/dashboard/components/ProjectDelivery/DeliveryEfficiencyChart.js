@@ -11,7 +11,6 @@ import {
   Legend,
 } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
-import logger from '../../../../utils/logger'
 
 // Register Chart.js components
 ChartJS.register(
@@ -63,12 +62,6 @@ const DeliveryEfficiencyChart = React.memo(({
   const chartDatasets = useMemo(() => {
     if (!chartData || chartData.length === 0) return { labels: [], datasets: [] }
 
-    logger.heatmap('DELIVERY_EFFICIENCY', 'Processing bar chart data', {
-      hasData: !!chartData,
-      dataLength: chartData.length,
-      maxProjects
-    })
-
     const datasets = [{
       label: 'Delivery Efficiency (%)',
       data: chartData.map(project => project.efficiency),
@@ -78,16 +71,6 @@ const DeliveryEfficiencyChart = React.memo(({
     }]
 
     const labels = chartData.map(project => project.projectName)
-
-    logger.heatmap('DELIVERY_EFFICIENCY', 'Chart datasets prepared', {
-      datasetsCount: datasets.length,
-      labelsCount: labels.length,
-      sampleData: {
-        efficiency: datasets[0].data.slice(0, 3),
-        labels: labels.slice(0, 3),
-        colors: chartData.slice(0, 3).map(p => p.color)
-      }
-    })
 
     return { labels, datasets }
   }, [chartData, maxProjects])

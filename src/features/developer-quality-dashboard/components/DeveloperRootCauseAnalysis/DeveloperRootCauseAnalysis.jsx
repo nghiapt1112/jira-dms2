@@ -11,7 +11,6 @@ import {
 } from 'chart.js'
 import { Chart } from 'react-chartjs-2'
 import { AccountBox as DeveloperIcon, TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material'
-import logger from '../../../../utils/logger'
 
 // Chart.js Matrix/Heatmap plugin
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix'
@@ -109,18 +108,8 @@ const DeveloperRootCauseAnalysis = React.memo(({
 
   // 2. Memoized values
   const chartData = useMemo(() => {
-    logger.heatmap('HEATMAP', 'Input data received', {
-      hasData: !!data,
-      dataKeys: data ? Object.keys(data) : null,
-      hasDataArray: !!data?.data,
-      dataLength: data?.data?.length,
-      dataType: Array.isArray(data?.data) ? 'array' : typeof data?.data,
-      firstItem: data?.data?.[0],
-      allData: data?.data
-    })
     
     if (!data || !data.data || data.data.length === 0) {
-      logger.heatmap('HEATMAP', 'No valid data found, should use mock data')
       return null
     }
     
@@ -152,16 +141,6 @@ const DeveloperRootCauseAnalysis = React.memo(({
       normalizedData.push(normalizedItem)
     })
     
-    logger.heatmap('HEATMAP', 'Root cause mapping', {
-      originalCount: new Set(actualData.flatMap(item => Object.keys(item).filter(k => k !== 'developer'))).size,
-      normalizedCount: rootCauseMapping.size,
-      mappingPreview: Array.from(rootCauseMapping.entries()).slice(0, 10).map(([norm, orig]) => ({
-        original: orig,
-        normalized: norm,
-        displayName: createDisplayName(norm)
-      })),
-      sampleNormalizedData: normalizedData[0]
-    })
     
     // Extract all unique normalized root cause categories
     const categories = new Set()
@@ -175,13 +154,6 @@ const DeveloperRootCauseAnalysis = React.memo(({
     
     const categoryArray = Array.from(categories).sort()
     const developers = normalizedData.map(item => item.developer)
-    
-    logger.heatmap('HEATMAP', 'Extracted data', {
-      categories: categoryArray,
-      developers: developers,
-      categoriesCount: categoryArray.length,
-      developersCount: developers.length
-    })
     
     // Create heatmap data points (X=categories, Y=developers)
     const matrixData = []

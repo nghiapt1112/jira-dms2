@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import { Box, Grid, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
 import { Refresh as RefreshIcon, CloudDownload as DownloadIcon, BugReport as LogIcon } from '@mui/icons-material'
 import { memberConfiguration } from '../../../../constants/memberConfiguration'
-import logger from '../../../../utils/logger'
 
 import { useDeveloperQualityCache } from '../../hooks/useDeveloperQualityCache'
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
@@ -99,7 +98,7 @@ const DeveloperQualityDashboard = React.memo(() => {
   }, [])
 
   const handleExportLogs = useCallback(() => {
-    logger.exportLogs()
+    // Logger functionality removed
   }, [])
 
   // Temporary function to load test data for debugging
@@ -186,6 +185,7 @@ const DeveloperQualityDashboard = React.memo(() => {
       </Box>
     )
   }
+
 
   if (needsInitialization || !filteredData) {
     return (
@@ -295,6 +295,7 @@ const DeveloperQualityDashboard = React.memo(() => {
           onPerformanceControlsChange={handlePerformanceControlsChange}
         />
       </Paper>
+      
       
       <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Team Contribution Chart */}

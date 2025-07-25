@@ -37,8 +37,8 @@ import EffortEffectivenessChart from '../EffortEffectivenessChart'
  */
 const DeveloperDetailPanel = ({ 
   developerName, 
-  metrics, 
-  filteredData,
+  metrics = null, 
+  filteredData = null,
   statusFilter = memberConfiguration.filterDefaults.statusFilter,
   timeframe = 'month'
 }) => {
@@ -283,11 +283,5 @@ DeveloperDetailPanel.propTypes = {
   timeframe: PropTypes.oneOf(['week', 'month', 'quarter'])
 }
 
-DeveloperDetailPanel.defaultProps = {
-  metrics: null,
-  filteredData: null,
-  statusFilter: memberConfiguration.filterDefaults.statusFilter,
-  timeframe: 'month'
-}
 
 export default React.memo(DeveloperDetailPanel)

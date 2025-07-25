@@ -25,7 +25,7 @@ const mockMemberConfiguration = {
   ]
 }
 
-// Mock the memberConfiguration import
+// Mock the memberConfiguration import - Fixed path from test directory (4 levels up)
 jest.mock('../../../../constants/memberConfiguration', () => ({
   memberConfiguration: mockMemberConfiguration
 }))
@@ -40,93 +40,79 @@ describe('URL Filter Utils', () => {
 
   describe('Smart Matching', () => {
     test('Developer exact name matching', () => {
-      const matcher = utils.smartMatcher
-      
-      // Exact matches
-      expect(matcher.matchDeveloper('Andra Satria')).toMatchObject({ name: 'Andra Satria' })
-      expect(matcher.matchDeveloper('andra satria')).toMatchObject({ name: 'Andra Satria' })
-      expect(matcher.matchDeveloper('ANDRA SATRIA')).toMatchObject({ name: 'Andra Satria' })
+      // Exact matches using functional approach
+      expect(utils.matchDeveloper('Andra Satria')).toMatchObject({ name: 'Andra Satria' })
+      expect(utils.matchDeveloper('andra satria')).toMatchObject({ name: 'Andra Satria' })
+      expect(utils.matchDeveloper('ANDRA SATRIA')).toMatchObject({ name: 'Andra Satria' })
     })
 
     test('Developer partial name matching', () => {
-      const matcher = utils.smartMatcher
-      
       // First name only
-      expect(matcher.matchDeveloper('andra')).toMatchObject({ name: 'Andra Satria' })
-      expect(matcher.matchDeveloper('tuan')).toMatchObject({ name: 'Tuan Hoang' })
+      expect(utils.matchDeveloper('andra')).toMatchObject({ name: 'Andra Satria' })
+      expect(utils.matchDeveloper('tuan')).toMatchObject({ name: 'Tuan Hoang' })
       
       // Last name only  
-      expect(matcher.matchDeveloper('tang')).toMatchObject({ name: 'Duy Tang' })
-      expect(matcher.matchDeveloper('hoang')).toMatchObject({ name: 'Tuan Hoang' })
+      expect(utils.matchDeveloper('tang')).toMatchObject({ name: 'Duy Tang' })
+      expect(utils.matchDeveloper('hoang')).toMatchObject({ name: 'Tuan Hoang' })
       
       // Contains matching
-      expect(matcher.matchDeveloper('nhat')).toMatchObject({ name: 'nhat nguyen' })
-      expect(matcher.matchDeveloper('edward')).toMatchObject({ name: 'Edward Viet Ha Quoc' })
+      expect(utils.matchDeveloper('nhat')).toMatchObject({ name: 'nhat nguyen' })
+      expect(utils.matchDeveloper('edward')).toMatchObject({ name: 'Edward Viet Ha Quoc' })
     })
 
     test('Developer username matching', () => {
-      const matcher = utils.smartMatcher
-      
       // Username format
-      expect(matcher.matchDeveloper('hung.pham')).toMatchObject({ name: 'hung.pham' })
+      expect(utils.matchDeveloper('hung.pham')).toMatchObject({ name: 'hung.pham' })
     })
 
     test('Developer no match returns null', () => {
-      const matcher = utils.smartMatcher
-      expect(matcher.matchDeveloper('nonexistent')).toBeNull()
-      expect(matcher.matchDeveloper('')).toBeNull()
-      expect(matcher.matchDeveloper(null)).toBeNull()
+      expect(utils.matchDeveloper('nonexistent')).toBeNull()
+      expect(utils.matchDeveloper('')).toBeNull()
+      expect(utils.matchDeveloper(null)).toBeNull()
     })
 
     test('Project exact key matching', () => {
-      const matcher = utils.smartMatcher
-      
       // Exact key matches
-      expect(matcher.matchProject('BCP')).toMatchObject({ key: 'BCP', name: 'Borderless City Project' })
-      expect(matcher.matchProject('bcp')).toMatchObject({ key: 'BCP', name: 'Borderless City Project' })
-      expect(matcher.matchProject('CF')).toMatchObject({ key: 'CF', name: 'Calbee-FfF' })
+      expect(utils.matchProject('BCP')).toMatchObject({ key: 'BCP', name: 'Borderless City Project' })
+      expect(utils.matchProject('bcp')).toMatchObject({ key: 'BCP', name: 'Borderless City Project' })
+      expect(utils.matchProject('CF')).toMatchObject({ key: 'CF', name: 'Calbee-FfF' })
     })
 
     test('Project name matching', () => {
-      const matcher = utils.smartMatcher
-      
       // Exact name matches
-      expect(matcher.matchProject('Borderless City Project')).toMatchObject({ key: 'BCP' })
-      expect(matcher.matchProject('wondertable')).toMatchObject({ key: 'WON', name: 'WonderTable' })
+      expect(utils.matchProject('Borderless City Project')).toMatchObject({ key: 'BCP' })
+      expect(utils.matchProject('wondertable')).toMatchObject({ key: 'WON', name: 'WonderTable' })
       
       // Contains matching
-      expect(matcher.matchProject('borderless')).toMatchObject({ key: 'BCP' })
-      expect(matcher.matchProject('enterprise')).toMatchObject({ key: 'ENT' })
+      expect(utils.matchProject('borderless')).toMatchObject({ key: 'BCP' })
+      expect(utils.matchProject('enterprise')).toMatchObject({ key: 'ENT' })
     })
 
     test('Project no match returns null', () => {
-      const matcher = utils.smartMatcher
-      expect(matcher.matchProject('nonexistent')).toBeNull()
-      expect(matcher.matchProject('')).toBeNull()
-      expect(matcher.matchProject(null)).toBeNull()
+      expect(utils.matchProject('nonexistent')).toBeNull()
+      expect(utils.matchProject('')).toBeNull()
+      expect(utils.matchProject(null)).toBeNull()
     })
 
     test('Timeframe matching', () => {
-      const matcher = utils.smartMatcher
-      
       // Exact matches
-      expect(matcher.matchTimeframe('month')).toBe('month')
-      expect(matcher.matchTimeframe('week')).toBe('week')
-      expect(matcher.matchTimeframe('quarter')).toBe('quarter')
+      expect(utils.matchTimeframe('month')).toBe('month')
+      expect(utils.matchTimeframe('week')).toBe('week')
+      expect(utils.matchTimeframe('quarter')).toBe('quarter')
       
       // Case insensitive
-      expect(matcher.matchTimeframe('MONTH')).toBe('month')
-      expect(matcher.matchTimeframe('Week')).toBe('week')
+      expect(utils.matchTimeframe('MONTH')).toBe('month')
+      expect(utils.matchTimeframe('Week')).toBe('week')
       
       // Partial matches
-      expect(matcher.matchTimeframe('m')).toBe('month')
-      expect(matcher.matchTimeframe('w')).toBe('week')
-      expect(matcher.matchTimeframe('q')).toBe('quarter')
+      expect(utils.matchTimeframe('m')).toBe('month')
+      expect(utils.matchTimeframe('w')).toBe('week')
+      expect(utils.matchTimeframe('q')).toBe('quarter')
       
       // Invalid defaults to month
-      expect(matcher.matchTimeframe('invalid')).toBe('month')
-      expect(matcher.matchTimeframe('')).toBe('month')
-      expect(matcher.matchTimeframe(null)).toBe('month')
+      expect(utils.matchTimeframe('invalid')).toBe('month')
+      expect(utils.matchTimeframe('')).toBe('month')
+      expect(utils.matchTimeframe(null)).toBe('month')
     })
   })
 
@@ -257,15 +243,13 @@ describe('URL Filter Utils', () => {
 
   describe('Performance Requirements', () => {
     test('Smart matching completes within performance targets', () => {
-      const matcher = utils.smartMatcher
-      
-      // Test with multiple operations
+      // Test with multiple operations using functional approach
       const startTime = performance.now()
       
       for (let i = 0; i < 100; i++) {
-        matcher.matchDeveloper('andra')
-        matcher.matchProject('bcp')
-        matcher.matchTimeframe('w')
+        utils.matchDeveloper('andra')
+        utils.matchProject('bcp')
+        utils.matchTimeframe('w')
       }
       
       const endTime = performance.now()
@@ -278,17 +262,15 @@ describe('URL Filter Utils', () => {
 
   describe('Error Handling', () => {
     test('Graceful handling of malformed input', () => {
-      const matcher = utils.smartMatcher
-      
-      // Should not throw errors with malformed input
-      expect(() => matcher.matchDeveloper(undefined)).not.toThrow()
-      expect(() => matcher.matchProject({})).not.toThrow()
-      expect(() => matcher.matchTimeframe(123)).not.toThrow()
+      // Should not throw errors with malformed input using functional approach
+      expect(() => utils.matchDeveloper(undefined)).not.toThrow()
+      expect(() => utils.matchProject({})).not.toThrow()
+      expect(() => utils.matchTimeframe(123)).not.toThrow()
       
       // Should return safe defaults
-      expect(matcher.matchDeveloper(undefined)).toBeNull()
-      expect(matcher.matchProject({})).toBeNull()
-      expect(matcher.matchTimeframe(123)).toBe('month')
+      expect(utils.matchDeveloper(undefined)).toBeNull()
+      expect(utils.matchProject({})).toBeNull()
+      expect(utils.matchTimeframe(123)).toBe('month')
     })
 
     test('URL encoding handles errors gracefully', () => {

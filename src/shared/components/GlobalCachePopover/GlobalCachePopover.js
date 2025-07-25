@@ -61,7 +61,7 @@ const GlobalCachePopover = React.memo(({
     const status = cacheStatus.status || 'unknown'
     const hitRate = performanceMetrics.hitRate || 0
     
-    return `Cache: ${entries} entries | Status: ${status} | Hit Rate: ${hitRate.toFixed(1)}%`
+    return `Global Management | Cache: ${entries} entries | Status: ${status} | Hit Rate: ${hitRate.toFixed(1)}%`
   }, [performanceMetrics, cacheStatus])
 
   return (
@@ -146,7 +146,7 @@ const GlobalCachePopover = React.memo(({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <StorageIcon />
               <Typography variant="h6">
-                Global Cache Management
+                Global Management
               </Typography>
             </Box>
             
@@ -182,7 +182,6 @@ const GlobalCachePopover = React.memo(({
             </Box>
           </Box>
 
-          <Divider />
 
           {/* Cache Manager */}
           <Box sx={{ p: 2 }}>

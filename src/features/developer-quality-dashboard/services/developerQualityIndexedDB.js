@@ -288,8 +288,8 @@ class DeveloperQualityIndexedDB {
         }
         if (criteria.dateRange) {
           results = results.filter(issue => {
-            const created = new Date(issue.created)
-            return created >= criteria.dateRange.start && created <= criteria.dateRange.end
+            const updated = new Date(issue.updated)
+            return updated >= criteria.dateRange.start && updated <= criteria.dateRange.end
           })
         }
 

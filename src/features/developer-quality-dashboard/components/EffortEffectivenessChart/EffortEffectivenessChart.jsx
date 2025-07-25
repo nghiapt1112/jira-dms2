@@ -7,12 +7,6 @@
 import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
 import { memberConfiguration, getSeverityConfig, getSeverityWeights } from '../../../../constants/memberConfiguration'
-import { 
-  calculateProjectSeverityRates,
-  calculateWeightedBugRate,
-  calculateSeverityBreakdown,
-  calculateSimpleBugRate
-} from '../../../../shared/utils/severityCalculations.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,17 +26,13 @@ import {
   CardContent, 
   Grid, 
   Chip, 
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper
 } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+// Import centralized time utilities to fix data alignment issues
+import { getTimePeriodKey } from '../../../../shared/utils/timeUtils.js'
 
 // Register Chart.js components
 ChartJS.register(
@@ -59,7 +49,7 @@ ChartJS.register(
 // Severity weights are now centralized in severityConstants.js and memberConfiguration.js
 
 const EffortEffectivenessChart = ({ 
-  developerData, 
+  developerData = null, 
   selectedDeveloper, 
   statusFilter = memberConfiguration.filterDefaults.statusFilter,
   timeframe = 'month',
@@ -89,22 +79,6 @@ const EffortEffectivenessChart = ({
   const getProjectSeverityRates = () => projectSeverityRates
   const getCurrentSeverityWeights = () => currentSeverityWeights
 
-  // Helper function to get time period key from date
-  const getTimePeriodKey = (dateString, period) => {
-    const date = new Date(dateString)
-    switch (period) {
-      case 'week':
-        const year = date.getFullYear()
-        const week = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
-        return `${year}-W${week.toString().padStart(2, '0')}`
-      case 'quarter':
-        const quarter = Math.ceil((date.getMonth() + 1) / 3)
-        return `${date.getFullYear()}-Q${quarter}`
-      case 'month':
-      default:
-        return dateString.substring(0, 7) // YYYY-MM
-    }
-  }
 
   // Calculate totals from the developer data
   const metrics = useMemo(() => {
@@ -172,24 +146,23 @@ const EffortEffectivenessChart = ({
       statusFilter.includes(issue.status) || statusFilter.length === 0
     )
 
-    // Group issues by time period
+    // Group issues by time period for the velocity trends chart
     const timeGroups = new Map()
     
     deliveredIssues.forEach(issue => {
-      if (issue.created) {
-        const periodKey = getTimePeriodKey(issue.created, timeframe)
+      if (issue.updated) {
+        // Use timeframe setting for the chart (not hardcoded to month)
+        const periodKey = getTimePeriodKey(issue.updated, timeframe)
         if (!timeGroups.has(periodKey)) {
           timeGroups.set(periodKey, {
             period: periodKey,
             storyPoints: 0,
-            timeSpent: 0,
-            issues: []
+            timeSpent: 0
           })
         }
         const group = timeGroups.get(periodKey)
         group.storyPoints += issue.storyPoints || 0
         group.timeSpent += issue.timeSpentHours || 0
-        group.issues.push(issue)
       }
     })
 
@@ -226,52 +199,10 @@ const EffortEffectivenessChart = ({
     }
 
     return { 
-      chartData, 
-      issuesData: deliveredIssues.sort((a, b) => 
-        new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime()
-      )
+      chartData
     }
   }, [developerData, statusFilter, timeframe])
 
-  // Severity Rate Data Storage - for cross-dashboard consistency
-  const severityRateData = useMemo(() => {
-    if (!projectData || !projectData.projects) {
-      // Fallback: create basic data from developer data if available
-      if (developerData && developerData.bugs) {
-        const projectKey = developerData.projectKey || null
-        const totalIssues = (developerData.totalIssues || 0)
-        const bugs = developerData.bugs || []
-        
-        return [{
-          projectId: projectKey || 'developer-project',
-          projectName: projectKey || 'Developer Analysis',
-          developer: selectedDeveloper,
-          rawBugRate: calculateSimpleBugRate(bugs, totalIssues),
-          weightedBugRate: calculateWeightedBugRate(bugs, totalIssues, projectKey),
-          severityBreakdown: calculateSeverityBreakdown(bugs, projectKey),
-          qualityEfficiency: Math.max(0, 100 - calculateWeightedBugRate(bugs, totalIssues, projectKey)),
-          totalIssues,
-          totalBugs: bugs.length
-        }]
-      }
-      return []
-    }
-    
-    return projectData.projects.map(project => ({
-      projectId: project.id || project.projectKey,
-      projectName: project.name || project.projectKey,
-      rawBugRate: calculateSimpleBugRate(project.bugs, project.totalIssues),
-      weightedBugRate: calculateWeightedBugRate(project.bugs, project.totalIssues, project.projectKey),
-      severityBreakdown: calculateSeverityBreakdown(project.bugs, project.projectKey),
-      qualityEfficiency: Math.max(0, 100 - calculateWeightedBugRate(project.bugs, project.totalIssues, project.projectKey)),
-      totalIssues: project.totalIssues || 0,
-      totalBugs: (project.bugs || []).length,
-      // Additional project metadata
-      progress: project.progress,
-      qualityScore: project.qualityScore,
-      healthScore: project.healthScore
-    }))
-  }, [projectData, developerData, selectedDeveloper])
 
   // Chart data configuration
   const chartData = useMemo(() => {
@@ -453,6 +384,7 @@ const EffortEffectivenessChart = ({
     }
   }, [selectedDeveloper, timeframe])
 
+
   // Get efficiency color
   const getEfficiencyColor = (efficiency) => {
     switch (efficiency) {
@@ -562,198 +494,7 @@ const EffortEffectivenessChart = ({
           </Box>
         </Box>
 
-        {/* Issue Details Table */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
-            Detailed Issue Breakdown
-          </Typography>
-          
-          <TableContainer 
-              component={Paper} 
-              sx={{ maxHeight: 500, border: '1px solid rgba(0, 0, 0, 0.12)' }}
-            >
-              <Table stickyHeader size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Issue Key</strong></TableCell>
-                    <TableCell align="right"><strong>Story Points</strong></TableCell>
-                    <TableCell align="right"><strong>Time Spent (h)</strong></TableCell>
-                    <TableCell align="right"><strong>Efficiency (h/SP)</strong></TableCell>
-                    <TableCell><strong>Status</strong></TableCell>
-                    <TableCell><strong>Created</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {timeBasedData.issuesData.length > 0 ? (
-                    timeBasedData.issuesData.map((issue, index) => {
-                      const efficiency = issue.storyPoints > 0 ? 
-                        (issue.timeSpentHours / issue.storyPoints).toFixed(2) : 'N/A'
-                      return (
-                        <TableRow key={`${issue.issueKey}-${index}`} hover>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                              {issue.issueKey}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Chip 
-                              label={issue.storyPoints || 0} 
-                              size="small" 
-                              color="primary" 
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2">
-                              {(issue.timeSpentHours || 0).toFixed(1)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography 
-                              variant="body2" 
-                              color={efficiency !== 'N/A' && parseFloat(efficiency) > 2 ? 'error' : 'textPrimary'}
-                            >
-                              {efficiency}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={issue.status} 
-                              size="small" 
-                              color={issue.status === 'Done' ? 'success' : 'default'}
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" color="textSecondary">
-                              {issue.created ? new Date(issue.created).toLocaleDateString() : 'N/A'}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center">
-                        <Typography color="textSecondary" sx={{ py: 2 }}>
-                          No issues found with time tracking data
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-          </TableContainer>
-        </Box>
 
-        {/* Severity Rate Analysis - New Section */}
-        {severityRateData.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
-              Quality Efficiency Analysis
-            </Typography>
-            
-            <TableContainer 
-              component={Paper} 
-              sx={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}
-            >
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Project</strong></TableCell>
-                    <TableCell align="right"><strong>Total Issues</strong></TableCell>
-                    <TableCell align="right"><strong>Total Bugs</strong></TableCell>
-                    <TableCell align="right"><strong>Simple Bug Rate (%)</strong></TableCell>
-                    <TableCell align="right"><strong>Weighted Bug Rate (%)</strong></TableCell>
-                    <TableCell align="right"><strong>Quality Efficiency (%)</strong></TableCell>
-                    <TableCell><strong>Severity Mix</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {severityRateData.map((project, index) => (
-                    <TableRow key={`${project.projectId}-${index}`} hover>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                          {project.projectName}
-                        </Typography>
-                        {project.developer && (
-                          <Typography variant="caption" color="textSecondary">
-                            Developer: {project.developer}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {project.totalIssues}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Chip 
-                          label={project.totalBugs} 
-                          size="small" 
-                          color={project.totalBugs > 0 ? 'warning' : 'default'}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {project.rawBugRate.toFixed(1)}%
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Chip 
-                          label={`${project.weightedBugRate.toFixed(1)}%`}
-                          size="small" 
-                          color={project.weightedBugRate > 15 ? 'error' : project.weightedBugRate > 10 ? 'warning' : 'success'}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Chip 
-                          label={`${project.qualityEfficiency.toFixed(1)}%`}
-                          size="small" 
-                          color={project.qualityEfficiency >= 85 ? 'success' : project.qualityEfficiency >= 70 ? 'warning' : 'error'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {Object.entries(project.severityBreakdown)
-                            .filter(([_, count]) => count > 0)
-                            .slice(0, 3)
-                            .map(([severity, count]) => {
-                              const getSeverityColor = (sev) => {
-                                switch (sev) {
-                                  case 'Critical': return 'error'
-                                  case 'Major': return 'warning' 
-                                  case 'Minor': return 'info'
-                                  case 'Low': return 'success'
-                                  default: return 'default'
-                                }
-                              }
-                              return (
-                                <Chip
-                                  key={severity}
-                                  label={`${severity}: ${count}`}
-                                  size="small"
-                                  color={getSeverityColor(severity)}
-                                  variant="outlined"
-                                  sx={{ fontSize: '0.6rem' }}
-                                />
-                              )
-                            })}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            
-            <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-              Quality Efficiency = 100 - Weighted Bug Rate. Weighted calculation uses severity-based weights: Critical(1.0), Major(0.7), Minor(0.5), Low(0.3), Cosmetic(0.1).
-            </Typography>
-          </Box>
-        )}
 
         {/* Combined Insights */}
         <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(0, 0, 0, 0.02)', borderRadius: 1 }}>
@@ -775,19 +516,7 @@ const EffortEffectivenessChart = ({
             </Typography>
           )}
           
-          {timeBasedData.issuesData.length > 0 && (
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              <strong>Issues Summary:</strong> Showing {timeBasedData.issuesData.length} issues with time tracking data. 
-              Red efficiency values (&gt;2h/SP) may indicate complex work or estimation issues.
-            </Typography>
-          )}
           
-          {severityRateData.length > 0 && (
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              <strong>Quality Analysis:</strong> Severity-weighted bug rates provide more accurate quality metrics than simple percentages. 
-              Quality Efficiency above 85% indicates excellent development practices.
-            </Typography>
-          )}
         </Box>
       </CardContent>
     </Card>
@@ -813,11 +542,5 @@ EffortEffectivenessChart.propTypes = {
   })
 }
 
-EffortEffectivenessChart.defaultProps = {
-  developerData: null,
-  statusFilter: memberConfiguration.filterDefaults.statusFilter,
-  timeframe: 'month',
-  projectData: null
-}
 
 export default EffortEffectivenessChart

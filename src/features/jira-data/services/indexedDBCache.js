@@ -95,10 +95,7 @@ class IndexedDBCache {
   }
 
   async getCachedData(key, maxAgeHours = 24) {
-    console.log(`🔍 indexedDBCache.getCachedData: key=${key}, maxAge=${maxAgeHours}h`)
-    
     if (!this.db) {
-      console.log('🔍 IndexedDB not initialized, initializing...')
       await this.init()
     }
 
@@ -106,7 +103,6 @@ class IndexedDBCache {
     
     try {
       // Get the data
-      console.log('🔍 Getting data from IndexedDB store...')
       const issuesStore = transaction.objectStore(STORE_NAME)
       const dataEntry = await new Promise((resolve, reject) => {
         const request = issuesStore.get(key)
@@ -115,31 +111,23 @@ class IndexedDBCache {
       })
       
       if (!dataEntry) {
-        console.log('❌ No data entry found in IndexedDB')
         return null
       }
       
-      console.log(`✅ Found data entry in IndexedDB: ${dataEntry.data.length} issues`)
-      
       // Check if data is still fresh
       const ageHours = (Date.now() - dataEntry.timestamp) / (1000 * 60 * 60)
-      console.log(`🔍 IndexedDB data age: ${ageHours.toFixed(1)}h (limit: ${maxAgeHours}h)`)
       
       if (ageHours > maxAgeHours) {
-        console.log(`⏰ IndexedDB cached data is ${ageHours.toFixed(1)}h old, treating as stale`)
         return null
       }
       
       // Get metadata
-      console.log('🔍 Getting metadata from IndexedDB...')
       const metadataStore = transaction.objectStore(METADATA_STORE)
       const metadata = await new Promise((resolve, reject) => {
         const request = metadataStore.get(key)
         request.onsuccess = () => resolve(request.result)
         request.onerror = () => reject(request.error)
       })
-      
-      console.log(`✅ Retrieved ${dataEntry.data.length} issues from IndexedDB cache`)
       
       return {
         data: dataEntry.data,
@@ -149,8 +137,7 @@ class IndexedDBCache {
       }
       
     } catch (error) {
-      console.error('❌ Failed to retrieve from IndexedDB:', error)
-      console.error('Error details:', error.stack)
+      console.error('Failed to retrieve from IndexedDB:', error)
       return null
     }
   }
@@ -258,100 +245,29 @@ class IndexedDBCache {
 // Create singleton instance
 export const indexedDBCache = new IndexedDBCache()
 
-// Fallback to localStorage with compression for smaller data
+// Cache service that always uses IndexedDB for JIRA data (localStorage only for simple strings like JWT)
 export const hybridCacheService = {
   async cacheData(key, data, metadata = {}) {
-    const dataSize = JSON.stringify(data).length
-    const dataSizeMB = dataSize / (1024 * 1024)
-    
-    // Use IndexedDB for large data (>10MB) or localStorage for smaller data
-    if (dataSizeMB > 10) {
-      console.log(`📦 Using IndexedDB for large dataset (${dataSizeMB.toFixed(2)} MB)`)
-      return await indexedDBCache.cacheData(key, data, metadata)
-    } else {
-      // Use localStorage for smaller data
-      try {
-        const cacheEntry = {
-          data,
-          metadata,
-          timestamp: Date.now()
-        }
-        localStorage.setItem(key, JSON.stringify(cacheEntry))
-        console.log(`📦 Using localStorage for small dataset (${dataSizeMB.toFixed(2)} MB)`)
-        return true
-      } catch (error) {
-        console.warn(`⚠️ localStorage failed, falling back to IndexedDB:`, error)
-        return await indexedDBCache.cacheData(key, data, metadata)
-      }
-    }
+    // Always use IndexedDB for JIRA data - no localStorage fallback
+    return await indexedDBCache.cacheData(key, data, metadata)
   },
 
   async getCachedData(key, maxAgeHours = 24) {
-    console.log(`🔍 hybridCacheService.getCachedData: key=${key}, maxAge=${maxAgeHours}h`)
-    
-    // Try localStorage first (faster)
-    try {
-      console.log('🔍 Checking localStorage...')
-      const cached = localStorage.getItem(key)
-      if (cached) {
-        console.log('✅ Found data in localStorage, parsing...')
-        const parsed = JSON.parse(cached)
-        const ageHours = (Date.now() - parsed.timestamp) / (1000 * 60 * 60)
-        
-        console.log(`🔍 localStorage data age: ${ageHours.toFixed(1)}h (limit: ${maxAgeHours}h)`)
-        
-        if (ageHours <= maxAgeHours) {
-          // Check if localStorage data is empty - if so, try IndexedDB first
-          if (parsed.data && parsed.data.length === 0) {
-            console.log(`⚠️ localStorage has empty data (0 issues), checking IndexedDB first...`)
-            const indexedDBResult = await indexedDBCache.getCachedData(key, maxAgeHours)
-            if (indexedDBResult && indexedDBResult.data.length > 0) {
-              console.log(`✅ Using IndexedDB data instead: ${indexedDBResult.data.length} issues`)
-              return indexedDBResult
-            } else {
-              console.log(`❌ IndexedDB also empty, using localStorage empty data`)
-            }
-          }
-          
-          console.log(`✅ Retrieved from localStorage cache (${ageHours.toFixed(1)}h old)`)
-          return {
-            data: parsed.data,
-            metadata: parsed.metadata || {},
-            timestamp: parsed.timestamp,
-            age: ageHours
-          }
-        } else {
-          console.log(`❌ localStorage data too old: ${ageHours.toFixed(1)}h > ${maxAgeHours}h`)
-        }
-      } else {
-        console.log('❌ No data found in localStorage')
-      }
-    } catch (error) {
-      console.warn('⚠️ localStorage read failed:', error)
-    }
-    
-    // Fall back to IndexedDB
-    console.log('🔍 Falling back to IndexedDB...')
-    const result = await indexedDBCache.getCachedData(key, maxAgeHours)
-    if (result) {
-      console.log(`🔍 IndexedDB result: ${result.data.length} issues`)
-      if (result.data.length > 0) {
-        console.log('🎉 Found data in IndexedDB! This should be used instead of empty localStorage')
-      }
-    } else {
-      console.log('🔍 IndexedDB result: null')
-    }
-    return result
+    // Always use IndexedDB for JIRA data - skip localStorage entirely
+    return await indexedDBCache.getCachedData(key, maxAgeHours)
   },
 
   async clearCache(olderThanHours = null) {
-    // Clear localStorage
+    // Clear any legacy JIRA data from localStorage (cleanup)
     const keys = Object.keys(localStorage).filter(key => 
       key.includes('jira_data') || key.includes('main_dashboard')
     )
-    keys.forEach(key => localStorage.removeItem(key))
+    if (keys.length > 0) {
+      console.log(`🧹 Cleaning up ${keys.length} legacy JIRA entries from localStorage`)
+      keys.forEach(key => localStorage.removeItem(key))
+    }
     
-    // Clear IndexedDB
+    // Clear IndexedDB (primary storage)
     return await indexedDBCache.clearCache(olderThanHours)
   }
 }

@@ -1,23 +1,29 @@
 import axiosInstance from '../../../shared/services/axiosConfig'
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
+import { getCurrentDate, formatDate, DATE_FORMATS, addDays } from '../../../shared/utils/dateUtils'
 
 export const jiraIssuesService = {
-  // Get snapshot URLs (based on your curl)
+  // Get snapshot URLs (based on working curl command)
   getSnapshotUrls: async (filters = {}) => {
+    // CRITICAL FIX: Match exact working curl payload structure
     const defaultPayload = {
       jql: `project IN (${JIRA_CONSTANTS.DEFAULT_PROJECTS.map(p => `"${p}"`).join(',')})`,
       selectedProjects: JIRA_CONSTANTS.DEFAULT_PROJECTS,
       selectedFields: JIRA_CONSTANTS.SELECTED_FIELDS,
-      fromDate: filters.fromDate || '2025/01/01',
-      toDate: filters.toDate || '2025/07/11',
-      startDate: filters.startDate || filters.fromDate || '2025/01/01',
-      endDate: filters.endDate || filters.toDate || '2025/07/11',
+      // FIXED: Use consistent date format and broader range for historical data
+      fromDate: filters.fromDate || "2023/01/01",  // Start from 2023 to get historical data
+      toDate: filters.toDate || "2025/12/31",      // End at 2025 to ensure all data
+      startDate: filters.startDate || filters.fromDate || "2023/01/01",
+      endDate: filters.endDate || filters.toDate || "2025/12/31",
       includeCurrentQuarter: filters.includeCurrentQuarter ?? true,
       statuses: filters.statuses || [],
       issueTypes: filters.issueTypes || [],
       bugTypes: filters.bugTypes || [],
       rootCauses: filters.rootCauses || [],
-      useSnapshots: filters.useSnapshots ?? true
+      useSnapshots: filters.useSnapshots ?? true,
+      // CRITICAL: Ensure these params match working curl
+      maxResults: 50000,  // High limit to ensure all data
+      expand: "changelog"  // Include changelog for comprehensive data
     }
     
     // Override with specific selected projects if provided
@@ -27,12 +33,21 @@ export const jiraIssuesService = {
     }
     
     try {
+      const requestPayload = {
+        ...defaultPayload,
+        ...filters
+      }
+      
+      // CRITICAL DEBUG: Log the exact request being sent
+      console.log('🔍 JIRA API REQUEST:', {
+        url: JIRA_CONSTANTS.API_ENDPOINTS.JIRA_ISSUES_V3,
+        payload: requestPayload,
+        payloadSize: JSON.stringify(requestPayload).length
+      })
+      
       const response = await axiosInstance.post(
         JIRA_CONSTANTS.API_ENDPOINTS.JIRA_ISSUES_V3,
-        {
-          ...defaultPayload,
-          ...filters
-        },
+        requestPayload,
         {
           headers: {
             'Accept': 'application/json, text/plain, */*',
@@ -40,6 +55,42 @@ export const jiraIssuesService = {
           }
         }
       )
+      
+      // CRITICAL DEBUG: Log the raw API response with detailed analysis
+      console.log('🔍 JIRA API RAW RESPONSE:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseKeys: Object.keys(response.data || {}),
+        responseData: response.data,
+        hasSnapshots: !!response.data?.snapshots,
+        snapshotsCount: response.data?.snapshots?.length || 0,
+        // Additional debugging for snapshots issue
+        snapshotsProperty: response.data?.snapshots,
+        snapshotsType: typeof response.data?.snapshots,
+        isSnapshotsArray: Array.isArray(response.data?.snapshots),
+        totalRecords: response.data?.totalRecords,
+        // Check for alternative property names
+        hasQuarters: !!response.data?.quarters,
+        hasPreviousQuarters: !!response.data?.previousQuarters,
+        hasCurrentQuarter: !!response.data?.currentQuarter,
+        hasData: !!response.data?.data,
+        allProperties: Object.keys(response.data || {}).map(key => ({
+          key,
+          type: typeof response.data[key],
+          isArray: Array.isArray(response.data[key]),
+          length: Array.isArray(response.data[key]) ? response.data[key].length : 'N/A'
+        }))
+      })
+      
+      // EMERGENCY DEBUG: Store response in window for inspection
+      if (typeof window !== 'undefined') {
+        window.lastAPIResponse = {
+          fullResponse: response,
+          data: response.data,
+          timestamp: new Date().toISOString()
+        }
+        console.log('🔍 RESPONSE STORED IN window.lastAPIResponse for inspection')
+      }
       
       return response.data
     } catch (error) {

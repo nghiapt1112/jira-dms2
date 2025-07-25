@@ -2,17 +2,10 @@
  * URL Filter Synchronization Hook
  * 
  * Provides safe bidirectional synchronization between URL parameters and filter state
- * with comprehensive error handling and circular update prevention.
- * 
- * SAFETY REQUIREMENTS:
- * - Prevent infinite loops between URL ↔ filter updates
- * - Use ONLY existing setFilters method (no bypassing)
- * - Respect special project filter handling
- * - Zero impact on existing performance monitoring
- * - Graceful fallbacks for browser compatibility
+ * following project conventions: proper React patterns, performance optimization, DRY principles
  */
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { 
   encodeFiltersToUrlParams, 
@@ -23,72 +16,71 @@ import {
 
 /**
  * Safe URL Filter Synchronization Hook
+ * Follows React conventions: useMemo for values, useCallback for functions
  * 
  * @param {Object} filters - Current filter state from store
- * @param {Function} setFilters - Filter setter function from store (must use existing method)
+ * @param {Function} setFilters - Filter setter function from store
  * @param {Object} options - Configuration options
- * @returns {Object} - URL sync utilities and state
+ * @returns {Object} - Memoized URL sync utilities and state
  */
 export const useUrlFilterSync = (filters, setFilters, options = {}) => {
-  // Configuration with safe defaults
-  const config = {
+  // Memoized configuration (performance optimization)
+  const config = useMemo(() => ({
     enableUrlSync: true,
     debounceMs: 16, // requestAnimationFrame timing
     logOperations: true,
     ...options
-  }
+  }), [options])
 
-  // Refs for preventing circular updates
-  const isUrlUpdateRef = useRef(false)
-  const isFilterUpdateRef = useRef(false)
-  const lastUrlStateRef = useRef('')
-  const debounceTimeoutRef = useRef(null)
-  const mountedRef = useRef(false)
-  const initializedRef = useRef(false)
+  // Refs for preventing circular updates and state management
+  const refsCache = useMemo(() => ({
+    isUrlUpdate: { current: false },
+    isFilterUpdate: { current: false },
+    lastUrlState: { current: '' },
+    debounceTimeout: { current: null },
+    mounted: { current: false },
+    initialized: { current: false }
+  }), [])
 
   // React Router hooks with feature detection
-  let searchParams, setSearchParams
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    [searchParams, setSearchParams] = useSearchParams()
-  } catch (error) {
-    console.warn('🚨 useSearchParams not available, URL sync disabled:', error)
-    searchParams = new URLSearchParams()
-    setSearchParams = () => {}
-  }
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Feature detection
-  const urlFeatures = detectUrlFeatures()
-  const isUrlSyncAvailable = urlFeatures.URLSearchParams && urlFeatures.pushState && config.enableUrlSync
+  // Memoized feature detection (performance optimization)
+  const urlFeatures = useMemo(() => detectUrlFeatures(), [])
+  const isUrlSyncAvailable = useMemo(() => 
+    urlFeatures.URLSearchParams && urlFeatures.pushState && config.enableUrlSync,
+    [urlFeatures, config.enableUrlSync]
+  )
 
   /**
    * Safe URL parameter update with technical debounce
    * Uses requestAnimationFrame for optimal performance timing
+   * Memoized callback for performance
    */
   const updateUrlFromFilters = useCallback((filtersToSync) => {
-    if (!isUrlSyncAvailable || isUrlUpdateRef.current || !mountedRef.current) return
+    if (!isUrlSyncAvailable || refsCache.isUrlUpdate.current || !refsCache.mounted.current) return
 
     try {
       // Clear any existing debounce
-      if (debounceTimeoutRef.current) {
-        cancelAnimationFrame(debounceTimeoutRef.current)
+      if (refsCache.debounceTimeout.current) {
+        cancelAnimationFrame(refsCache.debounceTimeout.current)
       }
 
-      // Use requestAnimationFrame for optimal timing (16ms debounce)
-      debounceTimeoutRef.current = requestAnimationFrame(() => {
+      // Use requestAnimationFrame for optimal timing (follows performance conventions)
+      refsCache.debounceTimeout.current = requestAnimationFrame(() => {
         try {
           const startTime = performance.now()
           
           // Prevent circular updates
-          isFilterUpdateRef.current = true
+          refsCache.isFilterUpdate.current = true
           
           // Encode filters to URL params
           const newParams = encodeFiltersToUrlParams(filtersToSync)
           const newUrlState = newParams.toString()
           
-          // Only update if URL actually changed
-          if (newUrlState !== lastUrlStateRef.current) {
-            lastUrlStateRef.current = newUrlState
+          // Only update if URL actually changed (performance optimization)
+          if (newUrlState !== refsCache.lastUrlState.current) {
+            refsCache.lastUrlState.current = newUrlState
             
             // Update URL without triggering navigation
             setSearchParams(newParams, { replace: true })
@@ -104,7 +96,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
         } finally {
           // Reset flag after a brief delay to prevent rapid cycling
           setTimeout(() => {
-            isFilterUpdateRef.current = false
+            refsCache.isFilterUpdate.current = false
           }, 50)
         }
       })
@@ -112,22 +104,23 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
     } catch (error) {
       console.warn('🚨 URL update scheduling failed:', error)
     }
-  }, [isUrlSyncAvailable, setSearchParams, config.logOperations])
+  }, [isUrlSyncAvailable, setSearchParams, config, refsCache])
 
   /**
    * Safe filter update from URL parameters
    * Uses existing setFilters method with validation
+   * Memoized callback for performance
    */
   const updateFiltersFromUrl = useCallback((urlParams) => {
-    if (!isUrlSyncAvailable || isFilterUpdateRef.current || !mountedRef.current) return
+    if (!isUrlSyncAvailable || refsCache.isFilterUpdate.current || !refsCache.mounted.current) return
 
     try {
       const startTime = performance.now()
       
       // Prevent circular updates
-      isUrlUpdateRef.current = true
+      refsCache.isUrlUpdate.current = true
       
-      // Validate URL parameters first
+      // Validate URL parameters first (security)
       const validation = validateUrlParams(urlParams)
       if (!validation.isValid) {
         console.warn('🚨 Invalid URL parameters detected:', validation.errors)
@@ -165,20 +158,20 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
     } finally {
       // Reset flag after a brief delay to prevent rapid cycling
       setTimeout(() => {
-        isUrlUpdateRef.current = false
+        refsCache.isUrlUpdate.current = false
       }, 50)
     }
-  }, [isUrlSyncAvailable, setFilters, config.logOperations])
+  }, [isUrlSyncAvailable, setFilters, config, refsCache])
 
   /**
    * Initialize URL sync on component mount
-   * Reads URL parameters and applies them to filters with precedence over persisted state
+   * Reads URL parameters and applies them to filters
    */
   useEffect(() => {
     if (!isUrlSyncAvailable) return
 
     try {
-      mountedRef.current = true
+      refsCache.mounted.current = true
       
       // Check if URL has any filter parameters
       const urlState = searchParams.toString()
@@ -186,18 +179,18 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
                           searchParams.has('developers') || 
                           searchParams.has('projects')
       
-      if (hasUrlParams && !initializedRef.current) {
+      if (hasUrlParams && !refsCache.initialized.current) {
         console.log('🚀 Initializing filters from URL parameters:', urlState)
-        initializedRef.current = true
-        lastUrlStateRef.current = urlState
+        refsCache.initialized.current = true
+        refsCache.lastUrlState.current = urlState
         updateFiltersFromUrl(searchParams)
-      } else if (!hasUrlParams && !initializedRef.current) {
+      } else if (!hasUrlParams && !refsCache.initialized.current) {
         console.log('🚀 No URL parameters found, using current filter state')
-        initializedRef.current = true
+        refsCache.initialized.current = true
         // Initialize URL from current filters if no URL params exist
         const currentUrlState = encodeFiltersToUrlParams(filters).toString()
         if (currentUrlState) {
-          lastUrlStateRef.current = currentUrlState
+          refsCache.lastUrlState.current = currentUrlState
           setSearchParams(encodeFiltersToUrlParams(filters), { replace: true })
         }
       }
@@ -205,75 +198,69 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
     } catch (error) {
       console.warn('🚨 URL sync initialization failed:', error)
     }
-  }, [isUrlSyncAvailable, searchParams, filters, updateFiltersFromUrl, setSearchParams])
+  }, [isUrlSyncAvailable, searchParams, filters, updateFiltersFromUrl, setSearchParams, refsCache])
 
   /**
    * Listen for filter changes and update URL
-   * Uses deep comparison to prevent unnecessary updates
+   * Memoized filter values for performance (follows conventions)
    */
-  useEffect(() => {
-    if (!isUrlSyncAvailable || !mountedRef.current || isUrlUpdateRef.current) return
+  const filtersToSync = useMemo(() => ({
+    timeframe: filters?.timeframe,
+    developers: filters?.developers,
+    projects: filters?.projects
+  }), [filters?.timeframe, filters?.developers, filters?.projects])
 
-    // Only sync the 3 main filters as specified
-    const filtersToSync = {
-      timeframe: filters.timeframe,
-      developers: filters.developers,
-      projects: filters.projects
-    }
+  useEffect(() => {
+    if (!isUrlSyncAvailable || !refsCache.mounted.current || refsCache.isUrlUpdate.current) return
 
     updateUrlFromFilters(filtersToSync)
-  }, [filters.timeframe, filters.developers, filters.projects, updateUrlFromFilters])
+  }, [filtersToSync, updateUrlFromFilters, isUrlSyncAvailable, refsCache])
 
   /**
    * Listen for URL changes (browser back/forward, direct URL changes)
    */
   useEffect(() => {
-    if (!isUrlSyncAvailable || !mountedRef.current || isFilterUpdateRef.current) return
+    if (!isUrlSyncAvailable || !refsCache.mounted.current || refsCache.isFilterUpdate.current) return
 
     const currentUrlState = searchParams.toString()
     
     // Only update if URL actually changed
-    if (currentUrlState !== lastUrlStateRef.current) {
+    if (currentUrlState !== refsCache.lastUrlState.current) {
       console.log('🔄 URL changed externally, updating filters:', currentUrlState)
-      lastUrlStateRef.current = currentUrlState
+      refsCache.lastUrlState.current = currentUrlState
       updateFiltersFromUrl(searchParams)
     }
-  }, [searchParams, updateFiltersFromUrl])
+  }, [searchParams, updateFiltersFromUrl, isUrlSyncAvailable, refsCache])
 
   /**
-   * Cleanup on unmount
+   * Cleanup on unmount (memory leak prevention)
    */
   useEffect(() => {
     return () => {
-      mountedRef.current = false
-      if (debounceTimeoutRef.current) {
-        cancelAnimationFrame(debounceTimeoutRef.current)
+      refsCache.mounted.current = false
+      if (refsCache.debounceTimeout.current) {
+        cancelAnimationFrame(refsCache.debounceTimeout.current)
       }
     }
-  }, [])
+  }, [refsCache])
 
   /**
-   * Manual URL sync trigger (for edge cases)
+   * Manual URL sync trigger (memoized callback)
    */
   const syncUrlFromFilters = useCallback(() => {
     if (!isUrlSyncAvailable) return false
 
     try {
-      const filtersToSync = {
-        timeframe: filters.timeframe,
-        developers: filters.developers,
-        projects: filters.projects
-      }
       updateUrlFromFilters(filtersToSync)
       return true
     } catch (error) {
       console.warn('🚨 Manual URL sync failed:', error)
       return false
     }
-  }, [filters, updateUrlFromFilters, isUrlSyncAvailable])
+  }, [filtersToSync, updateUrlFromFilters, isUrlSyncAvailable])
 
   /**
-   * Manual filter sync trigger (for edge cases)
+   * Manual filter sync trigger (memoized callback)
    */
   const syncFiltersFromUrl = useCallback(() => {
     if (!isUrlSyncAvailable) return false
@@ -288,15 +275,10 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
   }, [searchParams, updateFiltersFromUrl, isUrlSyncAvailable])
 
   /**
-   * Get current shareable URL
+   * Get current shareable URL (memoized callback)
    */
   const getShareableUrl = useCallback(() => {
     try {
-      const filtersToSync = {
-        timeframe: filters.timeframe,
-        developers: filters.developers,
-        projects: filters.projects
-      }
       const params = encodeFiltersToUrlParams(filtersToSync)
       const baseUrl = `${window.location.origin}${window.location.pathname}`
       return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
@@ -304,36 +286,45 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
       console.warn('🚨 Shareable URL creation failed:', error)
       return window.location.href
     }
-  }, [filters])
+  }, [filtersToSync])
 
   /**
-   * Check if URL sync is working
+   * Get URL sync status (memoized value)
    */
-  const getUrlSyncStatus = useCallback(() => {
-    return {
-      available: isUrlSyncAvailable,
-      initialized: initializedRef.current,
-      features: urlFeatures,
-      currentUrl: searchParams.toString()
-    }
-  }, [isUrlSyncAvailable, urlFeatures, searchParams])
+  const urlSyncStatus = useMemo(() => ({
+    available: isUrlSyncAvailable,
+    initialized: refsCache.initialized.current,
+    features: urlFeatures,
+    currentUrl: searchParams.toString()
+  }), [isUrlSyncAvailable, urlFeatures, searchParams, refsCache])
 
-  // Return hook interface
-  return {
+  // Return memoized hook interface (performance optimization)
+  return useMemo(() => ({
     // Status
     isUrlSyncAvailable,
-    isInitialized: initializedRef.current,
+    isInitialized: refsCache.initialized.current,
     
-    // Manual controls
+    // Manual controls (memoized callbacks)
     syncUrlFromFilters,
     syncFiltersFromUrl,
     getShareableUrl,
-    getUrlSyncStatus,
+    
+    // Status getter
+    getUrlSyncStatus: () => urlSyncStatus,
     
     // Utilities (for debugging)
     currentUrlParams: searchParams.toString(),
     urlFeatures
-  }
+  }), [
+    isUrlSyncAvailable,
+    refsCache,
+    syncUrlFromFilters,
+    syncFiltersFromUrl,
+    getShareableUrl,
+    urlSyncStatus,
+    searchParams,
+    urlFeatures
+  ])
 }
 
 export default useUrlFilterSync

@@ -9,6 +9,7 @@ import {
 } from '@mui/material'
 import Sidebar from '../../navigation/Sidebar'
 import GlobalCachePopover from '../../../shared/components/GlobalCachePopover'
+import { DebugPanel, DebugFab } from '../../../shared/components/DebugPanel'
 import { useNavigationStore } from '../../../shared/store/navigationStore'
 
 const Layout = React.memo(({ children }) => {
@@ -56,6 +57,10 @@ const Layout = React.memo(({ children }) => {
 
       {/* Global Cache Management Popover */}
       <GlobalCachePopover selectedProjects={[]} />
+      
+      {/* Debug Panel - Global debugging functionality */}
+      <DebugPanel />
+      <DebugFab />
     </Box>
   )
 })

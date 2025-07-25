@@ -5,52 +5,55 @@ export const dataProcessingService = {
   // Process raw JIRA issues from S3 files
   processJiraIssues: (rawData) => {
     try {
-      console.log('Processing JIRA issues...')
+      
       const startTime = Date.now()
       
       // Check if rawData is already a flat array of issues
-      if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].key) {
-        // Data is already flattened
-        console.log(`Processing ${rawData.length} pre-flattened issues`)
+      if (Array.isArray(rawData) && rawData.length > 0 && rawData[0]?.key) {
+        
         const uniqueIssues = dataProcessingService.removeDuplicateIssues(rawData)
         const validIssues = dataProcessingService.validateIssueData(uniqueIssues)
         const enrichedIssues = dataProcessingService.enrichIssueData(validIssues)
         
         const processingTime = Date.now() - startTime
-        console.log(`Processing completed in ${processingTime}ms`)
-        
-        const stats = dataProcessingService.getProcessingStats(rawData.length, enrichedIssues.length)
-        console.log('Processing statistics:', stats)
         
         return enrichedIssues
       }
       
       // Otherwise, flatten all issues from multiple snapshots
+      
       const allIssues = []
       let totalRawCount = 0
       
-      for (const dataChunk of rawData) {
+      for (let i = 0; i < rawData.length; i++) {
+        const dataChunk = rawData[i]
+        
+        let addedCount = 0
         if (Array.isArray(dataChunk)) {
+          addedCount = dataChunk.length
           totalRawCount += dataChunk.length
           allIssues.push(...dataChunk)
         } else if (dataChunk && Array.isArray(dataChunk.issues)) {
+          addedCount = dataChunk.issues.length
           totalRawCount += dataChunk.issues.length
           allIssues.push(...dataChunk.issues)
         } else if (dataChunk && dataChunk.data && Array.isArray(dataChunk.data)) {
+          addedCount = dataChunk.data.length
           totalRawCount += dataChunk.data.length
           allIssues.push(...dataChunk.data)
+        } else {
+        }
+        
+        if (addedCount > 0) {
         }
       }
       
-      console.log(`Total raw issues collected: ${totalRawCount}`)
       
       // Remove duplicates based on issue key
       const uniqueIssues = dataProcessingService.removeDuplicateIssues(allIssues)
-      console.log(`Unique issues after deduplication: ${uniqueIssues.length}`)
       
       // Validate and clean data
       const cleanedIssues = dataProcessingService.validateIssueData(uniqueIssues)
-      console.log(`Valid issues after cleaning: ${cleanedIssues.length}`)
       
       // Enrich issues with calculated fields
       const enrichedIssues = dataProcessingService.enrichIssueData(cleanedIssues)
@@ -61,11 +64,7 @@ export const dataProcessingService = {
       )
       
       const processingTime = Date.now() - startTime
-      console.log(`Processing completed in ${processingTime}ms`)
       
-      // Log processing statistics
-      const stats = dataProcessingService.getProcessingStats(totalRawCount, enrichedIssues.length)
-      console.log('Processing statistics:', stats)
       
       return enrichedIssues
       
@@ -79,22 +78,37 @@ export const dataProcessingService = {
   removeDuplicateIssues: (issues) => {
     const seen = new Map()
     const duplicates = []
+    const sampleDuplicates = []
     
-    const uniqueIssues = issues.filter(issue => {
-      if (!issue.key) return false
-      
-      if (seen.has(issue.key)) {
-        duplicates.push(issue.key)
+    const uniqueIssues = issues.filter((issue, index) => {
+      if (!issue.key) {
         return false
       }
       
-      seen.set(issue.key, true)
+      if (seen.has(issue.key)) {
+        duplicates.push(issue.key)
+        // Keep sample of first 5 duplicates for debugging
+        if (sampleDuplicates.length < 5) {
+          sampleDuplicates.push({
+            key: issue.key,
+            created: issue.fields?.created,
+            updated: issue.fields?.updated,
+            project: issue.fields?.project?.key
+          })
+        }
+        return false
+      }
+      
+      seen.set(issue.key, {
+        created: issue.fields?.created,
+        updated: issue.fields?.updated,
+        project: issue.fields?.project?.key
+      })
       return true
     })
     
-    if (duplicates.length > 0) {
-      console.log(`Removed ${duplicates.length} duplicate issues`)
-    }
+    const retentionRate = ((uniqueIssues.length / issues.length) * 100).toFixed(2)
+    
     
     return uniqueIssues
   },

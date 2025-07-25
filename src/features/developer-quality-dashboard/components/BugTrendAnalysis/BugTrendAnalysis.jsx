@@ -18,6 +18,11 @@ const BugTrendAnalysis = React.memo(({
   const chartData = useMemo(() => {
     
     if (!data || !data.data || data.data.length === 0) {
+      console.warn('⚠️ BUG TREND - No data available:', {
+        dataObject: data,
+        dataType: typeof data,
+        dataKeys: data ? Object.keys(data) : null
+      })
       return null
     }
     
@@ -80,6 +85,7 @@ const BugTrendAnalysis = React.memo(({
     
     // Transform data for Chart.js
     const transformedData = transformSeriesData(chartJSData, muiData.series)
+    
     
     // Add original data reference for tooltips - attach to ALL datasets
     if (transformedData.datasets && transformedData.datasets.length > 0) {

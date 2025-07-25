@@ -5,7 +5,18 @@
  */
 
 // Import unified time utilities to eliminate DRY violation
-import { getTimePeriodKey } from '../../../shared/utils/timeUtils.js'
+import { 
+  getTimePeriodKey,
+  getWeekFromDate,
+  getQuarterFromDate,
+  getWeekDateRange,
+  formatDateDDMMYYYY,
+  generateQuarterDataFromMonths,
+  getMonthsInQuarter,
+  getQuarterFromMonth
+} from '../../../shared/utils/timeUtils.js'
+
+import { dataPipelineLogger } from '../../../shared/services/dataPipelineLogger'
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { shouldIncludeMember, memberConfiguration, getSeverityConfig } from '../../../constants/memberConfiguration'
@@ -68,6 +79,26 @@ export const developerQualityService = {
     
     // SINGLE LOOP PROCESSING - integrate with existing main loop
     issues.forEach((issue, index) => {
+      // Enhanced logging for comprehensive data pipeline tracking
+      const assignee = issue.fields?.assignee?.displayName || 'Unassigned'
+      const assigneeAccountId = issue.fields?.assignee?.accountId || null
+      const projectName = issue.fields?.project?.name || 'Unknown'
+      const projectKey = issue.fields?.project?.key || 'Unknown'
+      
+      // Log member filtering decision
+      const memberStatus = shouldIncludeMember(assignee, assigneeAccountId)
+      dataPipelineLogger.logMemberFiltering(issue, memberStatus)
+      
+      // Log project filtering decision
+      const CONFIGURED_PROJECT_NAMES = new Set(memberConfiguration.projects?.map(p => p.name) || [])
+      const isProjectIncluded = CONFIGURED_PROJECT_NAMES.has(projectName)
+      dataPipelineLogger.logProjectFiltering(issue, isProjectIncluded)
+      
+      // Log issue type and status breakdown
+      dataPipelineLogger.logIssueTypeBreakdown(issue)
+      dataPipelineLogger.logStatusBreakdown(issue)
+      dataPipelineLogger.logTimeRangeAnalysis(issue)
+      
       // Process developer quality metrics
       developerQualityService.processDeveloperQualityMetrics(issue, index, developerQualityData)
       
@@ -75,8 +106,7 @@ export const developerQualityService = {
       developerQualityService.buildFilterIndices(issue, index, developerQualityData.indices)
       
       // PERFORMANCE METADATA COLLECTION
-      const assignee = issue.fields?.assignee?.displayName
-      const projectKey = issue.fields?.project?.key
+      // Note: assignee and projectKey already defined above
       const resolvedDate = issue.fields?.resolutiondate
       const storyPoints = issue.fields?.customfield_10028 || 0
       
@@ -180,11 +210,14 @@ export const developerQualityService = {
         severity: parseSeverity(issue, issue.fields?.project?.key).severity,
         project: issue.fields?.project?.name || issue.fields?.project?.key || 'Unknown',
         rootCause: rootCause,
-        created: issue.fields?.created || null,
+        updated: issue.fields?.updated || null,
         resolved: issue.fields?.resolutiondate || null,
         storyPoints: issue.fields?.customfield_10028 || 0
       })
     })
+    
+    // Log processing completion
+    dataPipelineLogger.logProcessingComplete(developerQualityData)
     
     // Post-process calculations
     developerQualityService.finalizeMetrics(developerQualityData.metrics)
@@ -221,11 +254,17 @@ export const developerQualityService = {
       }
     }
     
-    // Cache the processed data for future use
+    // Cache the processed data for future use with comprehensive logging
     try {
-      await developerQualityService.cacheProcessedData(finalData)
+      const cacheStartTime = Date.now()
+      dataPipelineLogger.logStorageStart()
+      
+      const cacheSuccess = await developerQualityService.cacheProcessedData(finalData)
+      dataPipelineLogger.logStorageComplete(cacheSuccess, finalData)
+      dataPipelineLogger.logPerformance('storageTime', Date.now() - cacheStartTime)
     } catch (error) {
       console.error('Failed to cache processed developer quality data:', error)
+      dataPipelineLogger.logStorageComplete(false, finalData)
       // Don't fail the entire operation if caching fails
     }
     
@@ -411,8 +450,9 @@ export const developerQualityService = {
     const severity = severityResult.severity
     
     const rootCause = developerQualityService.extractRootCause(issue)
-    const created = issue.fields?.created
+    const updated = issue.fields?.updated
     const resolved = issue.fields?.resolutiondate
+    const created = issue.fields?.created
     
     // Extract story points from customfield_10028
     const storyPoints = issue.fields?.customfield_10028 || 0
@@ -487,11 +527,11 @@ export const developerQualityService = {
         (data.metrics.bugAnalysis.severityDistribution[severity] || 0) + 1
       
       // Bug trends by time period
-      if (created) {
+      if (issue.fields?.created) {
         const periods = {
-          month: getTimePeriodKey(created, 'month'),
-          week: getTimePeriodKey(created, 'week'),
-          quarter: getTimePeriodKey(created, 'quarter')
+          month: getTimePeriodKey(issue.fields.updated, 'month'),
+          week: getTimePeriodKey(issue.fields.updated, 'week'),
+          quarter: getTimePeriodKey(issue.fields.updated, 'quarter')
         }
         
         // Track bugs by all time periods
@@ -503,7 +543,7 @@ export const developerQualityService = {
           const periodData = trendMap.get(periodKey)
           periodData.total += 1
           
-          if (resolved) {
+          if (issue.fields?.resolutiondate) {
             periodData.resolved += 1
           } else {
             periodData.pending += 1
@@ -523,7 +563,7 @@ export const developerQualityService = {
       }
       
       // NEW: Process resolution time
-      if (resolved && created) {
+      if (issue.fields?.resolutiondate && issue.fields?.created) {
         const resolutionMetrics = calculateResolutionTimeMetrics(issue, project)
         if (resolutionMetrics.resolutionTimeHours !== null) {
           devStats.resolutionTimes.push(resolutionMetrics)  // NEW FIELD
@@ -555,7 +595,7 @@ export const developerQualityService = {
       
       // NEW: Track recent bugs for trends
       devStats.recentBugs.push({  // NEW FIELD
-        created, resolved, severity,
+        updated, resolved, severity,
         rootCause: rootCauseAnalysis.rootCause,
         issueType, reopenCount: reopenMetrics.reopenCount
       })
@@ -580,8 +620,27 @@ export const developerQualityService = {
         }
       }
       
-      // Debug log for time tracking data
+      // Store ALL issues in timeTrackingIssues for debug/analysis purposes
+      // This ensures the debug panel shows all statuses, not just those with logged time
+      // Note: JIRA's 'updated' field might be in displayFields for enriched data
+      const updatedDate = issue.fields?.updated || 
+                         issue.displayFields?.updated || 
+                         issue.fields?.resolutiondate || 
+                         issue.fields?.updated || 
+                         null
+      
+      devStats.timeTrackingData.timeTrackingIssues.push({
+        issueKey: issue.key,
+        timeSpentHours: timeMetrics.timeSpentHours, // Will be 0 if no time logged
+        storyPoints,
+        estimationAccuracy: timeMetrics.estimationAccuracy,
+        updated: updatedDate,
+        resolved: issue.fields?.resolutiondate || null,
+        status, // Add status for filtering delivered work
+        hasTimeLogged: timeMetrics.hasTimeLogged // Flag to indicate if time was actually logged
+      })
 
+      // Only update aggregated time tracking statistics if time is actually logged
       if (timeMetrics.hasTimeLogged) {
         // Update developer time tracking data
         devStats.timeTrackingData.totalTimeSpentHours += timeMetrics.timeSpentHours
@@ -600,26 +659,16 @@ export const developerQualityService = {
         }
         
         // Weekly time tracking
-        if (created) {
-          const week = developerQualityService.getWeekFromDate(created)
+        if (issue.fields?.created) {
+          const week = getWeekFromDate(issue.fields.created)
           const weeklyTime = devStats.timeTrackingData.weeklyTimeTracking.get(week) || 0
           devStats.timeTrackingData.weeklyTimeTracking.set(week, weeklyTime + timeMetrics.timeSpentHours)
           
           // Monthly time tracking
-          const month = created.substring(0, 7)
+          const month = issue.fields.created.substring(0, 7)
           const monthlyTime = devStats.timeTrackingData.monthlyTimeTracking.get(month) || 0
           devStats.timeTrackingData.monthlyTimeTracking.set(month, monthlyTime + timeMetrics.timeSpentHours)
         }
-        
-        // Store time tracking issue data
-        devStats.timeTrackingData.timeTrackingIssues.push({
-          issueKey: issue.key,
-          timeSpentHours: timeMetrics.timeSpentHours,
-          storyPoints,
-          estimationAccuracy: timeMetrics.estimationAccuracy,
-          created,
-          status // Add status for filtering delivered work
-        })
       }
     }
 
@@ -668,10 +717,10 @@ export const developerQualityService = {
     // data.filterOptions.severities.add(severity) // Now using static configuration from memberConfiguration
     // data.filterOptions.rootCauses.add(rootCause)
     
-    if (created) {
-      const month = created.substring(0, 7)
-      const week = developerQualityService.getWeekFromDate(created)
-      const quarter = developerQualityService.getQuarterFromDate(created)
+    if (issue.fields?.created) {
+      const month = issue.fields.created.substring(0, 7)
+      const week = getWeekFromDate(issue.fields.created)
+      const quarter = getQuarterFromDate(issue.fields.created)
       
       data.filterOptions.dateRanges.months.add(month)
       data.filterOptions.dateRanges.weeks.add(week)
@@ -713,6 +762,7 @@ export const developerQualityService = {
     
     const rootCause = developerQualityService.extractRootCause(issue)
     const created = issue.fields?.created
+    const updated = issue.fields?.updated
     
     // Check if member should be included based on configuration
     const memberStatus = shouldIncludeMember(developer, developerAccountId)
@@ -728,10 +778,10 @@ export const developerQualityService = {
     developerQualityService.addToIndex(indices.bySeverity, severity, index)
     developerQualityService.addToIndex(indices.byRootCause, rootCause, index)
     
-    if (created) {
-      const month = created.substring(0, 7)
-      const week = developerQualityService.getWeekFromDate(created)
-      const quarter = developerQualityService.getQuarterFromDate(created)
+    if (issue.fields?.created) {
+      const month = issue.fields.created.substring(0, 7)
+      const week = getWeekFromDate(issue.fields.created)
+      const quarter = getQuarterFromDate(issue.fields.created)
       
       // Time-based indices
       developerQualityService.addToIndex(indices.byMonth, month, index)
@@ -782,75 +832,9 @@ export const developerQualityService = {
     return 'Unknown'
   },
 
-  /**
-   * Get week from date string using ISO week calculation
-   */
-  getWeekFromDate: (dateString) => {
-    const date = new Date(dateString)
-    
-    // ISO week calculation - same as filterService.js
-    const thursday = new Date(date.getTime())
-    thursday.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 3)
-    
-    const year = thursday.getFullYear()
-    const firstThursday = new Date(year, 0, 4)
-    firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
-    
-    const weekNum = Math.floor((thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
-    
-    return `${year}-W${weekNum.toString().padStart(2, '0')}`
-  },
 
-  /**
-   * Get quarter from date string
-   */
-  getQuarterFromDate: (dateString) => {
-    const date = new Date(dateString)
-    const year = date.getFullYear()
-    const quarter = Math.ceil((date.getMonth() + 1) / 3)
-    return `${year}-Q${quarter}`
-  },
 
-  /**
-   * Get week date range from week identifier
-   * @param {string} weekId - Week identifier (e.g., '2025-W01')
-   * @returns {Object} Object with startDate and endDate
-   */
-  getWeekDateRange: (weekId) => {
-    const [yearStr, weekStr] = weekId.split('-W')
-    const year = parseInt(yearStr)
-    const week = parseInt(weekStr)
-    
-    // Find first Thursday of the year
-    const firstThursday = new Date(year, 0, 4)
-    firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
-    
-    // Calculate the Thursday of the target week
-    const targetThursday = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000)
-    
-    // Calculate Monday (start of week)
-    const startDate = new Date(targetThursday.getTime())
-    startDate.setDate(targetThursday.getDate() - 3)
-    
-    // Calculate Sunday (end of week)
-    const endDate = new Date(targetThursday.getTime())
-    endDate.setDate(targetThursday.getDate() + 3)
-    
-    return { startDate, endDate }
-  },
 
-  /**
-   * Format date to DD/MM/YYYY
-   * @param {Date} date - Date object
-   * @returns {string} Formatted date string
-   */
-  formatDateDDMMYYYY: (date) => {
-    if (!date || !(date instanceof Date)) return 'Invalid Date'
-    const day = date.getDate().toString().padStart(2, '0')
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const year = date.getFullYear()
-    return `${day}/${month}/${year}`
-  },
 
   /**
    * Get cached processed developer quality data from granular IndexedDB structure
@@ -1014,6 +998,7 @@ export const developerQualityService = {
    * @returns {Array} Chart data for stacked bar chart
    */
   generateTimeBasedChartData: (metrics, timePeriodType = 'month', statusFilter = []) => {
+    
     // Special handling for quarters - calculate on-demand from monthly data
     if (timePeriodType === 'quarter') {
       const monthlyData = metrics.teamContribution.timeBasedStoryPoints.byMonth
@@ -1026,14 +1011,14 @@ export const developerQualityService = {
       
       // Identify all quarters from monthly data
       monthlyData.forEach((_, month) => {
-        const quarter = developerQualityService.getQuarterFromMonth(month)
+        const quarter = getQuarterFromMonth(month)
         quarters.add(quarter)
       })
       
       // Generate data for each quarter
       const quarterData = []
       quarters.forEach(quarter => {
-        const quarterChartData = developerQualityService.generateQuarterDataFromMonths(monthlyData, quarter)
+        const quarterChartData = generateQuarterDataFromMonths(monthlyData, quarter)
         quarterData.push(...quarterChartData)
       })
       
@@ -1063,7 +1048,7 @@ export const developerQualityService = {
     // Apply status filtering - need to recalculate from raw data
     // This would require access to the minimalIssues array for filtering
     // For now, return the basic time-based data
-    return Array.from(timeBasedData.entries())
+    const finalResult = Array.from(timeBasedData.entries())
       .map(([timePeriod, developersMap]) => {
         const result = { timePeriod }
         developersMap.forEach((storyPoints, developer) => {
@@ -1072,6 +1057,9 @@ export const developerQualityService = {
         return result
       })
       .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
+    
+    
+    return finalResult
   },
 
   /**
@@ -1142,56 +1130,8 @@ export const developerQualityService = {
       .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
   },
 
-  /**
-   * Generate quarter data in real-time from monthly data
-   * @param {Map} monthlyData - Monthly story points data
-   * @param {string} targetQuarter - Target quarter (e.g., '2024-Q1')
-   * @returns {Array} Quarter chart data
-   */
-  generateQuarterDataFromMonths: (monthlyData, targetQuarter) => {
-    const quarterMonths = developerQualityService.getMonthsInQuarter(targetQuarter)
-    const quarterData = new Map()
-    
-    quarterMonths.forEach(month => {
-      const monthData = monthlyData.get(month) || new Map()
-      monthData.forEach((storyPoints, developer) => {
-        quarterData.set(developer, (quarterData.get(developer) || 0) + storyPoints)
-      })
-    })
-    
-    return [{
-      timePeriod: targetQuarter,
-      ...Object.fromEntries(quarterData)
-    }]
-  },
 
-  /**
-   * Get months for a quarter
-   * @param {string} quarter - Quarter string (e.g., '2024-Q1')
-   * @returns {Array} Array of month strings
-   */
-  getMonthsInQuarter: (quarter) => {
-    const [year, q] = quarter.split('-Q')
-    const quarterNum = parseInt(q)
-    const startMonth = (quarterNum - 1) * 3 + 1
-    
-    return [
-      `${year}-${String(startMonth).padStart(2, '0')}`,
-      `${year}-${String(startMonth + 1).padStart(2, '0')}`, 
-      `${year}-${String(startMonth + 2).padStart(2, '0')}`
-    ]
-  },
 
-  /**
-   * Convert month to quarter
-   * @param {string} month - Month string (e.g., '2024-01')
-   * @returns {string} Quarter string (e.g., '2024-Q1')
-   */
-  getQuarterFromMonth: (month) => {
-    const [year, monthNum] = month.split('-')
-    const quarter = Math.ceil(parseInt(monthNum) / 3)
-    return `${year}-Q${quarter}`
-  },
 
   /**
    * Generate effort effectiveness chart data (hours per story point by time period)
@@ -1222,11 +1162,11 @@ export const developerQualityService = {
       // Calculate quarters from monthly data
       const quarters = new Set()
       monthlyStoryData.forEach((_, month) => {
-        quarters.add(developerQualityService.getQuarterFromMonth(month))
+        quarters.add(getQuarterFromMonth(month))
       })
       
       quarters.forEach(quarter => {
-        const quarterMonths = developerQualityService.getMonthsInQuarter(quarter)
+        const quarterMonths = getMonthsInQuarter(quarter)
         const quarterEfforts = new Map()
         
         quarterMonths.forEach(month => {
@@ -1323,13 +1263,6 @@ export const developerQualityService = {
     )
     
     // NEW: Add time tracking data for team contribution chart
-    console.log('📊 CALLING generateTimeBasedTimeTrackingChartData with:', {
-      timePeriodType,
-      statusFilter,
-      hasMetrics: !!metrics,
-      hasTeamContribution: !!metrics?.teamContribution,
-      developerStatsCount: metrics?.teamContribution?.developerStats?.size || 0
-    })
     
     const timeTrackingData = developerQualityService.generateTimeBasedTimeTrackingChartData(
       metrics, 
@@ -1369,7 +1302,6 @@ export const developerQualityService = {
         }
       ]
       chartData.teamContributionChart.timeTrackingData = mockTimeTrackingData
-      console.log('📊 MOCK TIME TRACKING DATA ADDED:', mockTimeTrackingData)
     }
     
     // NEW: Add effort effectiveness data for team contribution chart
@@ -1393,6 +1325,7 @@ export const developerQualityService = {
       const bugTrendKey = `${timePeriod}lyBugTrend`
       const bugTrendData = metrics.bugAnalysis[bugTrendKey] || metrics.bugAnalysis.monthlyBugTrend
       
+      
       chartData.bugTrendChart.data = Array.isArray(bugTrendData) 
         ? bugTrendData 
         : Array.from(bugTrendData.entries())
@@ -1412,11 +1345,11 @@ export const developerQualityService = {
                     result._weekStartFormatted = `Week ${period}`
                     result._weekEndFormatted = `Week ${period}`
                   } else {
-                    const weekRange = developerQualityService.getWeekDateRange(period)
+                    const weekRange = getWeekDateRange(period)
                     result._weekStart = weekRange.startDate
                     result._weekEnd = weekRange.endDate
-                    result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
-                    result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+                    result._weekStartFormatted = formatDateDDMMYYYY(weekRange.startDate)
+                    result._weekEndFormatted = formatDateDDMMYYYY(weekRange.endDate)
                   }
                 } catch (error) {
                   console.warn('Failed to get week range for period:', period, error)
@@ -1428,6 +1361,7 @@ export const developerQualityService = {
               return result
             })
             .sort((a, b) => a.period.localeCompare(b.period))
+      
       
       // Store time period info for chart component  
       // Use same field naming logic as filterService
@@ -1458,11 +1392,11 @@ export const developerQualityService = {
                 result._weekStartFormatted = `Week ${period}`
                 result._weekEndFormatted = `Week ${period}`
               } else {
-                const weekRange = developerQualityService.getWeekDateRange(period)
+                const weekRange = getWeekDateRange(period)
                 result._weekStart = weekRange.startDate
                 result._weekEnd = weekRange.endDate
-                result._weekStartFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.startDate)
-                result._weekEndFormatted = developerQualityService.formatDateDDMMYYYY(weekRange.endDate)
+                result._weekStartFormatted = formatDateDDMMYYYY(weekRange.startDate)
+                result._weekEndFormatted = formatDateDDMMYYYY(weekRange.endDate)
               }
             } catch (error) {
               console.warn('Fallback: Failed to get week range for period:', period, error)

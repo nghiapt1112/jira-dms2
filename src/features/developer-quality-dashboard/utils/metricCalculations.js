@@ -8,6 +8,8 @@ import { getReopenDetectionConfig, getSeverityConfig } from '../../../constants/
 import { calculateSeverityBreakdown } from '../../../shared/utils/severityCalculations.js'
 import { parseSeverity } from '../../../shared/utils/severityParser.js'
 import { SEVERITY_LEVELS } from '../../../shared/constants/severityConstants.js'
+// Import centralized time utilities to fix data alignment issues
+import { getTimePeriodKey } from '../../../shared/utils/timeUtils.js'
 
 /**
  * Calculate reopen rate based on issue changelog
@@ -207,9 +209,9 @@ export const calculateQualityTrend = (recentIssues, timeWindowDays = 30) => {
   const weeklyData = new Map()
   
   recentIssues.forEach(issue => {
-    const createdDate = new Date(issue.created)
-    if (createdDate >= cutoffDate) {
-      const weekKey = getWeekKey(createdDate)
+    const updatedDate = new Date(issue.updated)
+    if (updatedDate >= cutoffDate) {
+      const weekKey = getTimePeriodKey(updatedDate.toISOString(), 'week')
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, { total: 0, bugs: 0 })
       }
@@ -278,16 +280,6 @@ export const calculateTimeEfficiency = (resolutionTimes) => {
   return Math.round(averageEfficiency)
 }
 
-/**
- * Helper function to get week key from date
- * @param {Date} date - Date object
- * @returns {string} Week key in format YYYY-WNN
- */
-const getWeekKey = (date) => {
-  const year = date.getFullYear()
-  const week = Math.ceil((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
-  return `${year}-W${week.toString().padStart(2, '0')}`
-}
 
 /**
  * Calculate linear trend using simple linear regression
@@ -376,12 +368,10 @@ export const aggregateTimeTrackingByPeriod = (issues, timePeriod = 'week') => {
   const aggregated = new Map()
   
   issues.forEach(issue => {
-    const created = issue.fields?.created
-    if (!created) return
+    const updated = issue.fields?.updated
+    if (!updated) return
     
-    const timeKey = timePeriod === 'week' 
-      ? getWeekKey(new Date(created))
-      : created.substring(0, 7) // YYYY-MM format
+    const timeKey = getTimePeriodKey(updated, timePeriod)
     
     if (!aggregated.has(timeKey)) {
       aggregated.set(timeKey, {

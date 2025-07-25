@@ -1,6 +1,7 @@
 import axios from 'axios'
 import axiosInstance from './axiosConfig'
 import { JIRA_CONSTANTS } from '../../constants/jiraConstants.js'
+import { getCurrentDate, formatDate, DATE_FORMATS, addDays } from '../utils/dateUtils'
 
 const _CHUNK_SIZE = 1024 * 1024
 
@@ -13,19 +14,22 @@ class JiraDataService {
   async fetchJiraSnapshots(options = {}) {
     const {
       projects = ["WON","YUIM","STU","DAAI","DAICO","TOUC","TG","NKR2","SG","BCP","SIP","IP","HG","CF","TIT","OOPS","JSR","RAG","ECHO","SEK","PMAX","MIT","IS","KB","PDS","TS","YUB"],
-      fromDate = "2025/01/01",
-      toDate = "2025/07/11",
+      // Date parameters used by backend to filter issues by updated date
+      fromDate = `${new Date().getFullYear()}/01/01`,
+      toDate = formatDate(addDays(getCurrentDate(), 1), DATE_FORMATS.YEAR_MONTH_DAY),
       selectedFields = `project,resolutiondate,status,assignee,issuetype,timespent,timeoriginalestimate,timetracking,created,priority,${JIRA_CONSTANTS.CUSTOM_FIELDS.STORY_POINTS},${JIRA_CONSTANTS.CUSTOM_FIELDS.SPRINT},${JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE},${JIRA_CONSTANTS.CUSTOM_FIELDS.ROOT_CAUSE},${JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_SEVERITY},${JIRA_CONSTANTS.CUSTOM_FIELDS.START_DATE},${JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_CAUSED_BY},reporter`,
       includeCurrentQuarter = true,
       useSnapshots = true
     } = options
     
-    const jql = `project IN (${projects.map(p => `"${p}"`).join(',')}) AND "updated" >= "${fromDate}" AND "updated" <= "${toDate}"`
+    // JQL is simplified since backend handles the date filtering for updated issues in current year
+    const jql = `project IN (${projects.map(p => `"${p}"`).join(',')})`
     
     const payload = {
       jql,
       selectedProjects: projects,
       selectedFields,
+      // Date parameters used by backend to filter issues by updated date
       fromDate,
       toDate,
       startDate: fromDate,

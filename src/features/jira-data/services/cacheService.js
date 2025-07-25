@@ -4,7 +4,7 @@ import { getCurrentDate, isCacheExpired as isExpired } from '../../../shared/uti
 import { parseSeverity } from '../../../shared/utils/severityParser.js'
 
 export const cacheService = {
-  // Cache JIRA data using hybrid storage (IndexedDB for large data, localStorage for small)
+  // Cache JIRA data using IndexedDB only (localStorage reserved for simple strings like JWT)
   cacheJiraData: async (data, metadata) => {
     try {
       const cacheKey = JIRA_CONSTANTS.CACHE_SETTINGS.STORAGE_KEY
@@ -23,14 +23,14 @@ export const cacheService = {
       
       console.log(`Caching ${data.length} issues (${dataSizeMB.toFixed(2)} MB)...`)
       
-      // Use hybrid cache service (automatically chooses IndexedDB vs localStorage)
+      // Use IndexedDB for all JIRA data storage
       const success = await hybridCacheService.cacheData(cacheKey, data, cacheMetadata)
       
       if (success) {
-        console.log('✅ Data cached successfully using hybrid storage')
+        console.log('✅ Data cached successfully to IndexedDB')
         return true
       } else {
-        console.error('❌ Failed to cache data with hybrid storage')
+        console.error('❌ Failed to cache data to IndexedDB')
         return false
       }
       
@@ -118,9 +118,9 @@ export const cacheService = {
   // Clear cache
   clearCache: async () => {
     try {
-      // Use hybrid cache service to clear all data
+      // Clear IndexedDB data and any legacy localStorage entries
       await hybridCacheService.clearCache()
-      console.log('✅ Cache cleared')
+      console.log('✅ Cache cleared from IndexedDB')
       return true
     } catch (error) {
       console.error('❌ Failed to clear cache:', error)
@@ -131,9 +131,9 @@ export const cacheService = {
   // Clear old cache entries (older than specified hours)
   clearOldCache: async (olderThanHours = 48) => {
     try {
-      // Use hybrid cache service to clear old entries
+      // Clear old IndexedDB entries and any legacy localStorage entries
       await hybridCacheService.clearCache(olderThanHours)
-      console.log(`✅ Cleared cache entries older than ${olderThanHours} hours`)
+      console.log(`✅ Cleared IndexedDB cache entries older than ${olderThanHours} hours`)
       return true
       
     } catch (error) {

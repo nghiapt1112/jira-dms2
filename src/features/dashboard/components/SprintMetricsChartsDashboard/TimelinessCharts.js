@@ -19,7 +19,6 @@ import {
 } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
 import { Visibility as ViewIcon } from '@mui/icons-material'
-import logger from '../../../../utils/logger'
 
 // Register Chart.js components
 ChartJS.register(
@@ -52,12 +51,6 @@ const TimelinessCharts = React.memo(({
   const chartDatasets = useMemo(() => {
     if (!timelinessData) return { labels: [], datasets: [] }
 
-    logger.heatmap('TIMELINESS', 'Processing bar chart data', {
-      hasData: !!timelinessData,
-      dataLength: timelinessData.chartData?.length,
-      sprintsCount: timelinessData.summary?.totalSprints
-    })
-
     const datasets = [
       {
         label: 'On Time',
@@ -78,16 +71,6 @@ const TimelinessCharts = React.memo(({
     ]
 
     const labels = timelinessData.xAxisData
-
-    logger.heatmap('TIMELINESS', 'Chart datasets prepared', {
-      datasetsCount: datasets.length,
-      labelsCount: labels.length,
-      sampleData: {
-        onTime: datasets[0].data.slice(0, 3),
-        late: datasets[1].data.slice(0, 3),
-        labels: labels.slice(0, 3)
-      }
-    })
 
     return { labels, datasets }
   }, [timelinessData, theme])

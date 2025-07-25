@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getCurrentDate, formatDate, DATE_FORMATS, addDays } from '../../../shared/utils/dateUtils'
 
 export const useJiraDataStore = create(
   persist(
@@ -44,8 +45,9 @@ export const useJiraDataStore = create(
       
       // Filter state
       filters: {
-        fromDate: '2025/01/01',
-        toDate: '2025/07/11',
+        // Backend uses these dates to filter issues by updated date
+        fromDate: `${new Date().getFullYear()}/01/01`, // January 1st of current year
+        toDate: formatDate(addDays(getCurrentDate(), 1), DATE_FORMATS.YEAR_MONTH_DAY), // Tomorrow's date
         selectedProjects: [],
         statuses: [],
         issueTypes: [],
@@ -188,8 +190,9 @@ export const useJiraDataStore = create(
       
       resetFilters: () => set(state => ({
         filters: {
-          fromDate: '2025/01/01',
-          toDate: '2025/07/11',
+          // Backend uses these dates to filter issues by updated date
+          fromDate: `${new Date().getFullYear()}/01/01`, // January 1st of current year
+          toDate: formatDate(addDays(getCurrentDate(), 1), DATE_FORMATS.YEAR_MONTH_DAY), // Tomorrow's date
           selectedProjects: [],
           statuses: [],
           issueTypes: [],
@@ -399,9 +402,10 @@ export const useJiraDataStore = create(
                 if (result.status === 'success') {
                   successCount++
                   if (result.data && Array.isArray(result.data)) {
+                    const beforeLength = allSnapshotData.length
                     allSnapshotData.push(...result.data)
+                    const afterLength = allSnapshotData.length
                   }
-                  // Update progress to completed
                   store.updateDownloadProgress(result.url, { 
                     status: 'completed',
                     percent: 100
@@ -409,7 +413,6 @@ export const useJiraDataStore = create(
                   store.incrementCompletedSnapshots()
                 } else {
                   failedCount++
-                  console.error(`Failed to download Q${result.quarter} ${result.year}:`, result.error)
                   store.updateDownloadProgress(result.url, { 
                     status: 'failed', 
                     error: result.error 
@@ -417,8 +420,6 @@ export const useJiraDataStore = create(
                   store.addFailedDownload(result.url, result.error)
                 }
               }
-              
-              console.log(`Parallel download completed: ${successCount} successful, ${failedCount} failed`)
               
               if (failedCount > 0) {
                 toast.loading(`⚠️ Downloaded ${successCount}/${downloadResults.length} files (${failedCount} failed)`, {
@@ -471,7 +472,7 @@ export const useJiraDataStore = create(
             icon: '⚙️'
           })
           
-          console.log(`Processing ${allSnapshotData.length} issues...`)
+          
           const processedData = dataProcessingService.processJiraIssues(allSnapshotData)
           
           store.setAllIssues(processedData)
@@ -483,10 +484,8 @@ export const useJiraDataStore = create(
           
           // Cache the data
           try {
-            await cacheService.cacheJiraData(processedData, metadata)
-            console.log('Data cached successfully')
+            const cacheResult = await cacheService.cacheJiraData(processedData, metadata)
           } catch (cacheError) {
-            console.error('Failed to cache data:', cacheError)
             // Continue without caching
           }
           

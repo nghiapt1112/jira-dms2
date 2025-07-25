@@ -227,7 +227,6 @@ export const useDeveloperQualityStore = create(
           
           setData(processedData)
         } catch (error) {
-          console.error('🔍 STORE: Failed to load developer quality data:', error)
           setError(error)
         } finally {
           setLoading(false)
@@ -255,11 +254,11 @@ export const useDeveloperQualityStore = create(
           // Pass all filter parameters in one call
           const filtered = filterService.applyFilters(filters, data)
           
+          
           // Don't call setFilteredData during render - this causes React warnings
           // The filtered data will be stored when needed by other functions
           return filtered
         } catch (error) {
-          console.error('Failed to apply filters:', error)
           get().setError(error)
           return null
         }
