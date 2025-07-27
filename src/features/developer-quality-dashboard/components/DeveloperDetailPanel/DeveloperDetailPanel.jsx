@@ -220,6 +220,7 @@ const DeveloperDetailPanel = ({
           selectedDeveloper={developerData.developer || developerName}
           statusFilter={statusFilter}
           timeframe={timeframe}
+          filteredData={filteredData}  // CRITICAL: Pass filteredData to respect filter state
         />
       </Box>
 

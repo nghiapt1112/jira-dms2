@@ -55,7 +55,8 @@ const EffortEffectivenessChart = ({
   developerData = null, 
   selectedDeveloper, 
   timeframe = 'month',
-  projectData = null  // New prop for project-level severity calculations
+  projectData = null,  // New prop for project-level severity calculations
+  filteredData = null  // CRITICAL: Add filteredData prop to respect filter state
 }) => {
 
   // Using centralized severity utilities from shared/utils/severityCalculations.js
@@ -84,7 +85,29 @@ const EffortEffectivenessChart = ({
 
   // Calculate totals from the developer data
   const metrics = useMemo(() => {
-    if (!developerData || !developerData.timeTrackingIssues) {
+    // CRITICAL FIX: Use filteredData to respect current filter state
+    // If filteredData is available, use it; otherwise fall back to store data
+    let issuesToProcess = []
+    
+    if (filteredData && filteredData.filteredIssues) {
+      // Use filtered data that respects all current filter options
+      issuesToProcess = filteredData.filteredIssues.filter(issue => issue.assignee === selectedDeveloper)
+    } else if (developerData && developerData.timeTrackingIssues) {
+      // Fallback to developer data if no filtered data available
+      issuesToProcess = developerData.timeTrackingIssues.filter(issue => issue.assignee === selectedDeveloper)
+    } else {
+      // Final fallback to store data
+      const { data } = useDeveloperQualityStore()
+      const storeIssues = data?.minimalIssues || []
+      issuesToProcess = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
+    }
+    
+    // CRITICAL: Ensure issuesToProcess is always defined
+    if (!issuesToProcess) {
+      issuesToProcess = []
+    }
+    
+    if (!issuesToProcess || issuesToProcess.length === 0) {
       return {
         totalStoryPoints: 0,
         totalTimeSpent: 0,
@@ -96,22 +119,15 @@ const EffortEffectivenessChart = ({
       }
     }
 
-    // CRITICAL FIX: Use the same data source as DeveloperTicketTable for consistency
-    // Instead of using developerData.timeTrackingIssues, use the store's minimalIssues
-    // This ensures both components use identical data filtering logic
-    const { data } = useDeveloperQualityStore()
-    const storeIssues = data?.minimalIssues || []
-    
-    // Filter by developer first, then apply delivered filter (same as DeveloperTicketTable)
-    const developerIssues = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
-    const deliveredIssues = IssueUtils.filterDeliveredIssues(developerIssues)
+    // Apply delivered filter to get final issues for calculation
+    const deliveredIssues = IssueUtils.filterDeliveredIssues(issuesToProcess)
 
     // Debug logging using IssueUtils
     if (process.env.NODE_ENV === 'development') {
       IssueUtils.debugCalculation(
-        developerIssues,
+        issuesToProcess,
         deliveredIssues,
-        'Velocity Trends (Fixed)'
+        'Velocity Trends (Fixed) - Updated'
       )
     }
 
@@ -123,8 +139,8 @@ const EffortEffectivenessChart = ({
     const totalIssues = deliveredIssues.length
 
     // Calculate all metrics (unfiltered) for comparison
-    const allStoryPoints = IssueUtils.calculateTotalStoryPoints(developerIssues)
-    const allTimeSpent = developerIssues.reduce(
+    const allStoryPoints = IssueUtils.calculateTotalStoryPoints(issuesToProcess)
+    const allTimeSpent = issuesToProcess.reduce(
       (sum, issue) => sum + (issue.timeSpentHours || 0), 0
     )
 
@@ -147,21 +163,32 @@ const EffortEffectivenessChart = ({
       allStoryPoints,
       allTimeSpent: Math.round(allTimeSpent * 100) / 100
     }
-  }, [developerData, selectedDeveloper, timeframe])
+  }, [developerData, selectedDeveloper, timeframe, filteredData])
 
   // Calculate time-based metrics for trends
   const timeBasedData = useMemo(() => {
-    if (!developerData || !developerData.timeTrackingIssues) {
+    // CRITICAL FIX: Use filteredData to respect current filter state for time-based calculations
+    let issuesToProcess = []
+    
+    if (filteredData && filteredData.filteredIssues) {
+      // Use filtered data that respects all current filter options
+      issuesToProcess = filteredData.filteredIssues.filter(issue => issue.assignee === selectedDeveloper)
+    } else if (developerData && developerData.timeTrackingIssues) {
+      // Fallback to developer data if no filtered data available
+      issuesToProcess = developerData.timeTrackingIssues.filter(issue => issue.assignee === selectedDeveloper)
+    } else {
+      // Final fallback to store data
+      const { data } = useDeveloperQualityStore()
+      const storeIssues = data?.minimalIssues || []
+      issuesToProcess = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
+    }
+    
+    if (!issuesToProcess || issuesToProcess.length === 0) {
       return { chartData: null, issuesData: [] }
     }
 
-    // CRITICAL FIX: Use the same data source as DeveloperTicketTable for consistency
-    const { data } = useDeveloperQualityStore()
-    const storeIssues = data?.minimalIssues || []
-    
-    // Filter by developer first, then apply delivered filter (same as DeveloperTicketTable)
-    const developerIssues = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
-    const deliveredIssues = IssueUtils.filterDeliveredIssues(developerIssues)
+    // Apply delivered filter to get final issues for time-based calculations
+    const deliveredIssues = IssueUtils.filterDeliveredIssues(issuesToProcess)
 
     // Group issues by time period for the velocity trends chart
     const timeGroups = new Map()
@@ -220,7 +247,7 @@ const EffortEffectivenessChart = ({
     return { 
       chartData
     }
-  }, [developerData, selectedDeveloper, timeframe])
+  }, [developerData, selectedDeveloper, timeframe, filteredData])
 
 
   // Chart data configuration
@@ -558,7 +585,8 @@ EffortEffectivenessChart.propTypes = {
       qualityScore: PropTypes.number,
       healthScore: PropTypes.number
     }))
-  })
+  }),
+  filteredData: PropTypes.object  // CRITICAL: Add filteredData prop to respect filter state
 }
 
 
