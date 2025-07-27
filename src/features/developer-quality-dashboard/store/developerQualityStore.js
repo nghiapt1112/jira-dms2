@@ -8,6 +8,7 @@ import { memberConfiguration } from '../../../constants/memberConfiguration'
 const areFiltersChanged = (oldFilters, newFilters) => {
   // Compare primitive filters
   if (oldFilters.timeframe !== newFilters.timeframe) return true
+  if (oldFilters.showTargetLines !== newFilters.showTargetLines) return true
   
   // Compare array filters
   const arrayFilters = ['developers', 'projects', 'issueTypes', 'statuses', 'severities', 'rootCauses', 'statusFilter']
@@ -63,7 +64,9 @@ export const useDeveloperQualityStore = create(
         },
         // Moved from component state to store
         timeframe: 'month', // Previously timePeriodType
-        statusFilter: memberConfiguration.filterDefaults.statusFilter
+        statusFilter: memberConfiguration.filterDefaults.statusFilter,
+        // Target lines visibility control for single project charts
+        showTargetLines: true
       },
       
       // Filtered data cache
@@ -173,7 +176,8 @@ export const useDeveloperQualityStore = create(
             endDate: null
           },
           timeframe: 'month',
-          statusFilter: memberConfiguration.filterDefaults.statusFilter
+          statusFilter: memberConfiguration.filterDefaults.statusFilter,
+          showTargetLines: true
         },
         filteredData: null,
         filterAppliedAt: null
@@ -198,7 +202,8 @@ export const useDeveloperQualityStore = create(
             endDate: null
           },
           timeframe: 'month',
-          statusFilter: memberConfiguration.filterDefaults.statusFilter
+          statusFilter: memberConfiguration.filterDefaults.statusFilter,
+          showTargetLines: true
         },
         filteredData: null,
         filterAppliedAt: null

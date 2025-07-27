@@ -7,6 +7,7 @@
 import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
 import { memberConfiguration, getSeverityConfig, getSeverityWeights } from '../../../../constants/memberConfiguration'
+import { IssueUtils } from '../../../../shared/utils/IssueUtils'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -51,7 +52,6 @@ ChartJS.register(
 const EffortEffectivenessChart = ({ 
   developerData = null, 
   selectedDeveloper, 
-  statusFilter = memberConfiguration.filterDefaults.statusFilter,
   timeframe = 'month',
   projectData = null  // New prop for project-level severity calculations
 }) => {
@@ -94,24 +94,30 @@ const EffortEffectivenessChart = ({
       }
     }
 
-    // Filter issues by status for "delivered" metrics
-    const deliveredIssues = developerData.timeTrackingIssues.filter(issue => 
-      statusFilter.includes(issue.status) || statusFilter.length === 0
+    // Use IssueUtils for consistent delivered issue filtering (DRY & SOLID compliant)
+    const deliveredIssues = IssueUtils.filterDeliveredIssues(
+      developerData.timeTrackingIssues
+      // No additional filters needed - delivered statuses are mandatory
     )
 
-    // Calculate delivered metrics (status-filtered)
-    const totalStoryPoints = deliveredIssues.reduce(
-      (sum, issue) => sum + (issue.storyPoints || 0), 0
-    )
+    // Debug logging using IssueUtils
+    if (process.env.NODE_ENV === 'development') {
+      IssueUtils.debugCalculation(
+        developerData.timeTrackingIssues,
+        deliveredIssues,
+        'Velocity Trends'
+      )
+    }
+
+    // Calculate delivered metrics using IssueUtils
+    const totalStoryPoints = IssueUtils.calculateTotalStoryPoints(deliveredIssues)
     const totalTimeSpent = deliveredIssues.reduce(
       (sum, issue) => sum + (issue.timeSpentHours || 0), 0
     )
     const totalIssues = deliveredIssues.length
 
     // Calculate all metrics (unfiltered) for comparison
-    const allStoryPoints = developerData.timeTrackingIssues.reduce(
-      (sum, issue) => sum + (issue.storyPoints || 0), 0
-    )
+    const allStoryPoints = IssueUtils.calculateTotalStoryPoints(developerData.timeTrackingIssues)
     const allTimeSpent = developerData.totalTimeSpentHours || 0
 
     // Calculate efficiency based on delivered work only
@@ -133,7 +139,7 @@ const EffortEffectivenessChart = ({
       allStoryPoints,
       allTimeSpent: Math.round(allTimeSpent * 100) / 100
     }
-  }, [developerData, statusFilter])
+  }, [developerData, timeframe])
 
   // Calculate time-based metrics for trends
   const timeBasedData = useMemo(() => {
@@ -141,18 +147,21 @@ const EffortEffectivenessChart = ({
       return { chartData: null, issuesData: [] }
     }
 
-    // Filter issues by status
-    const deliveredIssues = developerData.timeTrackingIssues.filter(issue => 
-      statusFilter.includes(issue.status) || statusFilter.length === 0
+    // Use IssueUtils for consistent delivered issue filtering
+    const deliveredIssues = IssueUtils.filterDeliveredIssues(
+      developerData.timeTrackingIssues
+      // Delivered statuses are mandatory - no additional filtering needed
     )
 
     // Group issues by time period for the velocity trends chart
     const timeGroups = new Map()
     
     deliveredIssues.forEach(issue => {
-      if (issue.updated) {
+      // Use IssueUtils.getDeliveredDate for consistent date logic
+      const deliveredDate = IssueUtils.getDeliveredDate(issue)
+      if (deliveredDate) {
         // Use timeframe setting for the chart (not hardcoded to month)
-        const periodKey = getTimePeriodKey(issue.updated, timeframe)
+        const periodKey = getTimePeriodKey(deliveredDate, timeframe)
         if (!timeGroups.has(periodKey)) {
           timeGroups.set(periodKey, {
             period: periodKey,
@@ -201,7 +210,7 @@ const EffortEffectivenessChart = ({
     return { 
       chartData
     }
-  }, [developerData, statusFilter, timeframe])
+  }, [developerData, timeframe])
 
 
   // Chart data configuration

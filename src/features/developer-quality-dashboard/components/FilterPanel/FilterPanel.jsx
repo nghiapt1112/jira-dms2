@@ -38,8 +38,9 @@ const FilterPanel = React.memo(({
   }, [filters?.projects])
   
   // 1. Performance state - following .cursorrules hooks first pattern
-  // Initialize showTargetLines to true if single project is already selected
-  const [showTargetLines, setShowTargetLines] = useState(() => isSingleProject)
+  // Use Zustand store for showTargetLines instead of local state
+  const { setFilters } = useDeveloperQualityStore()
+  const showTargetLines = filters?.showTargetLines ?? true
   const [performanceFilter, setPerformanceFilter] = useState('all')
   
   const selectedProjectName = useMemo(() => {
@@ -49,7 +50,7 @@ const FilterPanel = React.memo(({
   // Auto-enable target lines when single project is selected
   useEffect(() => {
     if (isSingleProject && !showTargetLines) {
-      setShowTargetLines(true)
+      setFilters(prev => ({ ...prev, showTargetLines: true }))
       if (onPerformanceControlsChange) {
         onPerformanceControlsChange({
           showTargetLines: true,
@@ -57,7 +58,7 @@ const FilterPanel = React.memo(({
         })
       }
     }
-  }, [isSingleProject, selectedProjectName, showTargetLines, performanceFilter, onPerformanceControlsChange])
+  }, [isSingleProject, selectedProjectName, showTargetLines, performanceFilter, onPerformanceControlsChange, setFilters])
   
   // Notify parent of initial performance controls state
   useEffect(() => {
@@ -184,14 +185,14 @@ const FilterPanel = React.memo(({
   
   // Performance controls callbacks
   const handleShowTargetLinesChange = useCallback((checked) => {
-    setShowTargetLines(checked)
+    setFilters(prev => ({ ...prev, showTargetLines: checked }))
     if (onPerformanceControlsChange) {
       onPerformanceControlsChange({
         showTargetLines: checked,
         performanceFilter: checked ? performanceFilter : 'all'
       })
     }
-  }, [performanceFilter, onPerformanceControlsChange])
+  }, [performanceFilter, onPerformanceControlsChange, setFilters])
   
   const handlePerformanceFilterChange = useCallback((newFilter) => {
     setPerformanceFilter(newFilter)

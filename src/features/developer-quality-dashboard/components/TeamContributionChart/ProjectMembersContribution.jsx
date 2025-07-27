@@ -1,22 +1,28 @@
 import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Paper, Typography, Chip } from '@mui/material'
-import { Bar } from 'react-chartjs-2'
+import { Chart } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
 } from 'chart.js'
+import { memberConfiguration } from '../../../../constants/memberConfiguration'
+import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
@@ -46,6 +52,10 @@ const ProjectMembersContribution = React.memo(({
   showTargetLines = false,
   performanceFilter = 'all'
 }) => {
+  // Get showTargetLines from Zustand store instead of props
+  const { filters: storeFilters } = useDeveloperQualityStore()
+  const showTargetLinesFromStore = storeFilters?.showTargetLines ?? true
+  
   // Single project detection (inherited logic)
   const isSingleProject = useMemo(() => {
     return filters?.projects?.length === 1
@@ -54,6 +64,101 @@ const ProjectMembersContribution = React.memo(({
   const selectedProjectKey = useMemo(() => {
     return isSingleProject ? filters.projects[0] : null
   }, [isSingleProject, filters?.projects])
+  
+  // Project configuration for target lines
+  const projectConfig = useMemo(() => {
+    if (!selectedProjectKey) return null
+    
+    // Find project by key first, then by name as fallback
+    let project = memberConfiguration.projects.find(p => p.key === selectedProjectKey)
+    if (!project) {
+      project = memberConfiguration.projects.find(p => p.name === selectedProjectKey)
+    }
+    
+    return project
+  }, [selectedProjectKey])
+  
+  const timeframe = useMemo(() => {
+    return filters?.timeframe || 'month'
+  }, [filters?.timeframe])
+  
+  // Target values calculation (similar to ProjectTeamPerformance)
+  const targetValues = useMemo(() => {
+    if (!projectConfig || !showTargetLinesFromStore || !data?.data) return null
+    
+    const pointType = projectConfig.pointType
+    const targets = memberConfiguration.performanceTargets[pointType]
+    
+    // Calculate number of time periods to multiply target by
+    const numberOfPeriods = data.data.length
+    
+    if (pointType === 'HOURS_BASE') {
+      const config = targets.all
+      let perPeriodTarget
+      switch (timeframe) {
+        case 'week':
+          perPeriodTarget = config.totalPointWeekTarget
+          break
+        case 'quarter':
+          perPeriodTarget = config.totalPointQuarterTarget
+          break
+        case 'month':
+        default:
+          perPeriodTarget = config.totalPointMonthTarget
+          break
+      }
+      
+      // Multiply per-period target by number of periods for total target
+      const totalTarget = perPeriodTarget * numberOfPeriods
+      
+      return [{ 
+        value: totalTarget, 
+        label: `Target (All) - ${numberOfPeriods} ${timeframe}s`, 
+        config: memberConfiguration.targetLineConfig.HOURS_BASE.all 
+      }]
+    } else if (pointType === 'STORYPOINT_BASE') {
+      const middleTargets = targets.middle
+      const seniorTargets = targets.senior
+      const middleConfig = memberConfiguration.targetLineConfig.STORYPOINT_BASE.middle
+      const seniorConfig = memberConfiguration.targetLineConfig.STORYPOINT_BASE.senior
+      
+      let middlePerPeriod, seniorPerPeriod
+      switch (timeframe) {
+        case 'week':
+          middlePerPeriod = middleTargets.totalPointWeekTarget
+          seniorPerPeriod = seniorTargets.totalPointWeekTarget
+          break
+        case 'quarter':
+          middlePerPeriod = middleTargets.totalPointQuarterTarget
+          seniorPerPeriod = seniorTargets.totalPointQuarterTarget
+          break
+        case 'month':
+        default:
+          middlePerPeriod = middleTargets.totalPointMonthTarget
+          seniorPerPeriod = seniorTargets.totalPointMonthTarget
+          break
+      }
+      
+      // Multiply per-period targets by number of periods for total targets
+      const middleTotalTarget = middlePerPeriod * numberOfPeriods
+      const seniorTotalTarget = seniorPerPeriod * numberOfPeriods
+      
+      return [
+        { 
+          value: middleTotalTarget, 
+          label: `${middleConfig.label} - ${numberOfPeriods} ${timeframe}s`, 
+          config: middleConfig 
+        },
+        { 
+          value: seniorTotalTarget, 
+          label: `${seniorConfig.label} - ${numberOfPeriods} ${timeframe}s`, 
+          config: seniorConfig 
+        }
+      ]
+    }
+    
+    return null
+  }, [projectConfig, showTargetLinesFromStore, timeframe, data?.data])
 
   // Process inherited data to aggregate developer contributions across all time periods
   const aggregatedData = useMemo(() => {
@@ -100,21 +205,47 @@ const ProjectMembersContribution = React.memo(({
     const labels = aggregatedData.map(item => item.developer)
     const dataValues = aggregatedData.map(item => item.storyPoints)
 
+    const datasets = [
+      {
+        label: 'Total Story Points',
+        data: dataValues,
+        backgroundColor: labels.map((_, index) => colors[index % colors.length]),
+        borderColor: labels.map((_, index) => colors[index % colors.length]),
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+        type: 'bar'
+      }
+    ]
+    
+    // Add target lines if enabled
+    if (showTargetLinesFromStore && targetValues) {
+      targetValues.forEach(target => {
+        const targetData = aggregatedData.map(() => target.value)
+        datasets.push({
+          label: target.label,
+          data: targetData,
+          type: 'line',
+          borderColor: target.config.color,
+          backgroundColor: target.config.color,
+          borderWidth: target.config.borderWidth,
+          borderDash: target.config.borderDash,
+          pointBackgroundColor: target.config.color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: false,
+          tension: 0.1
+        })
+      })
+    }
+
     return {
       labels: labels,
-      datasets: [
-        {
-          label: 'Total Story Points',
-          data: dataValues,
-          backgroundColor: labels.map((_, index) => colors[index % colors.length]),
-          borderColor: labels.map((_, index) => colors[index % colors.length]),
-          borderWidth: 1,
-          borderRadius: 4,
-          borderSkipped: false,
-        }
-      ]
+      datasets
     }
-  }, [aggregatedData])
+  }, [aggregatedData, showTargetLinesFromStore, targetValues])
 
   // Chart options
   const chartOptions = useMemo(() => {
@@ -123,7 +254,15 @@ const ProjectMembersContribution = React.memo(({
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false
+          display: showTargetLinesFromStore && targetValues && targetValues.length > 0,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            filter: function(legendItem) {
+              // Only show target lines in legend, not the main bars
+              return legendItem.text.includes('Target')
+            }
+          }
         },
         tooltip: {
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -138,6 +277,9 @@ const ProjectMembersContribution = React.memo(({
               return `${tooltipItems[0].label}`
             },
             label: function(context) {
+              if (context.dataset.type === 'line') {
+                return `${context.dataset.label}: ${context.parsed.y} SP`
+              }
               const storyPoints = context.parsed.y || 0
               const timeframe = filters.timeframe || 'month'
               const periods = data?.data?.length || 1
@@ -191,9 +333,13 @@ const ProjectMembersContribution = React.memo(({
             }
           }
         }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
       }
     }
-  }, [aggregatedData, filters, data?.data])
+  }, [aggregatedData, filters, data?.data, showTargetLinesFromStore, targetValues])
 
   // Early returns (same logic as existing components)
   if (!isSingleProject) {
@@ -290,7 +436,7 @@ const ProjectMembersContribution = React.memo(({
       {/* Chart */}
       <Box sx={{ height, width: '100%' }}>
         {chartData ? (
-          <Bar data={chartData} options={chartOptions} />
+          <Chart type="bar" data={chartData} options={chartOptions} />
         ) : (
           <Box sx={{ 
             display: 'flex', 

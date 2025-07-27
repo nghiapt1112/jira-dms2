@@ -392,8 +392,9 @@ describe('IssueUtils', () => {
       })
       
       expect(validation.isConsistent).toBe(false)
-      expect(validation.inconsistencies).toHaveLength(1)
+      expect(validation.inconsistencies).toHaveLength(2) // Should detect 2 inconsistencies
       expect(validation.inconsistencies[0]).toContain('Team vs Individual: 10 !== 5')
+      expect(validation.inconsistencies[1]).toContain('Team vs Velocity: 10 !== 0')
     })
   })
 })

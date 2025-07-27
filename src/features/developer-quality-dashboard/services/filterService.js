@@ -13,6 +13,8 @@ import {
   getWeekDateRange,
   formatDateDDMMYYYY
 } from '../../../shared/utils/timeUtils.js'
+// Import IssueUtils for centralized story point calculations
+import { IssueUtils } from '../../../shared/utils/IssueUtils.js'
 // REMOVED: targetCalculationService imports - now using preprocessed data (caching strategy fix)
 
 export const filterService = {
@@ -170,87 +172,32 @@ export const filterService = {
   },
 
   /**
-   * Generate time-based chart data from filtered issues
+   * Generate time-based chart data from filtered issues using IssueUtils
    * @param {Array} filteredIssues - Array of filtered issues
-   * @param {string} timePeriodType - 'week', 'month', or 'quarter'
-   * @param {Array} statusFilter - Array of statuses to include
+   * @param {string} timePeriodType - 'week', 'month', or 'quarter' (REQUIRED from Zustand filters.timeframe)
+   * @param {Array} statusFilter - Array of statuses to include (DEPRECATED - delivered statuses are mandatory)
+   * @param {Object} filters - Filter object containing project/developer filters
    * @returns {Array} Chart data for stacked bar chart
    */
-  generateTimeBasedChartData: (filteredIssues, timePeriodType = 'month', statusFilter = [], filters = null) => {
-    
-    const timeBasedData = new Map()
-    
-    // Apply project filter if specified
-    let issuesToProcess = filteredIssues
-    if (filters && filters.projects && filters.projects.length > 0) {
-      const projectSet = new Set(filters.projects)
-      issuesToProcess = filteredIssues.filter(issue => projectSet.has(issue.project))
-      
+  generateTimeBasedChartData: (filteredIssues, timePeriodType, statusFilter = [], filters = null) => {
+    // Validate required timeframe parameter
+    if (!timePeriodType) {
+      console.error('filterService.generateTimeBasedChartData: timePeriodType is required from Zustand filters.timeframe')
+      return []
     }
     
-    let skippedCount = { unassigned: 0, noStoryPoints: 0, statusFilter: 0, processed: 0 }
-    
-    issuesToProcess.forEach(issue => {
-      const assignee = issue.assignee || 'Unassigned'
-      const storyPoints = issue.storyPoints || 0
-      // API doesn't provide 'updated' field, use 'created' as primary date field
-      const updated = issue.created || issue.resolved
-      const status = issue.status
-      
-      // Skip if no assignee or story points
-      if (assignee === 'Unassigned') {
-        skippedCount.unassigned++;
-        return;
+    // Use IssueUtils for consistent story point calculation
+    // Note: statusFilter is ignored - delivered statuses are mandatory
+    const chartData = IssueUtils.calculateStoryPointsByTimePeriod(
+      filteredIssues, 
+      timePeriodType, // Dynamic from Zustand filters.timeframe
+      {
+        projectFilter: filters?.projects || null,
+        developerFilter: filters?.developers || null
       }
-      if (storyPoints === 0) {
-        skippedCount.noStoryPoints++;
-        return;
-      }
-      
-      // Apply status filter if provided
-      if (statusFilter && statusFilter.length > 0 && !statusFilter.includes(status)) {
-        skippedCount.statusFilter++;
-        return;
-      }
-      
-      skippedCount.processed++;
-      
-      if (updated) {
-        let timePeriod
-        
-        switch (timePeriodType) {
-          case 'week':
-            timePeriod = getWeekFromDate(updated)
-            break
-          case 'quarter':
-            timePeriod = getQuarterFromDate(updated)
-            break
-          default: // month
-            timePeriod = updated.substring(0, 7) // '2024-01'
-        }
-        
-        if (!timeBasedData.has(timePeriod)) {
-          timeBasedData.set(timePeriod, new Map())
-        }
-        
-        const periodData = timeBasedData.get(timePeriod)
-        periodData.set(assignee, (periodData.get(assignee) || 0) + storyPoints)
-      }
-    })
+    )
     
-    // Convert to chart data format
-    const finalResult = Array.from(timeBasedData.entries())
-      .map(([timePeriod, developersMap]) => {
-        const result = { timePeriod }
-        developersMap.forEach((storyPoints, developer) => {
-          result[developer] = storyPoints
-        })
-        return result
-      })
-      .sort((a, b) => a.timePeriod.localeCompare(b.timePeriod))
-    
-    
-    return finalResult
+    return chartData
   },
 
 
