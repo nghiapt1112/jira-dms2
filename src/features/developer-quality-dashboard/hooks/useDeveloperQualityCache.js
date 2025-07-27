@@ -46,7 +46,7 @@ export const useDeveloperQualityCache = () => {
     status: cacheStatus
   }), [lastUpdated, cacheSize, processingTime, jiraData, data, cacheStatus])
 
-  // Simplified data loading logic - just process JIRA data when available
+  // Proactive data loading logic - similar to MainDashboard approach
   useEffect(() => {
     // Skip if already loading, data exists, or there's an error
     if (isLoading || data || error) return
@@ -74,9 +74,9 @@ export const useDeveloperQualityCache = () => {
       return
     }
     
-    // If no JIRA data in memory but it should exist, load it
-    if (!jiraData && hasData) {
-      console.log('🔍 CACHE HOOK: No JIRA data in memory, loading from cache...')
+    // Proactively try to load cached data (like MainDashboard does)
+    if (!jiraData) {
+      console.log('🔍 CACHE HOOK: No JIRA data in memory, proactively loading from cache...')
       try {
         loadCachedData()
       } catch (cacheError) {
@@ -84,12 +84,16 @@ export const useDeveloperQualityCache = () => {
       }
       return
     }
-    
-    // If truly no data exists anywhere
-    if (!jiraData && !hasData) {
-      console.log('🔍 CACHE HOOK: No data available, user needs to load from S3')
+  }, [data, isLoading, jiraData, jiraLoading, error])
+
+  // Additional mount effect to be more proactive (like MainDashboard)
+  useEffect(() => {
+    if (!data && !isLoading && !error && !jiraLoading) {
+      console.log('🔍 CACHE HOOK: Mount effect - trying to load cached data')
+      loadCachedData()
     }
-  }, [data, isLoading, jiraData, jiraLoading, hasData, error])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Auto-refresh when JIRA data updates - disable for now to prevent loops
   // useEffect(() => {

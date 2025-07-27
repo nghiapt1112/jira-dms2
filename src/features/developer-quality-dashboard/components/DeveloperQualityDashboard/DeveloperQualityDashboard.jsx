@@ -15,6 +15,7 @@ import BugTrendAnalysis from '../BugTrendAnalysis'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import DeveloperRootCauseAnalysis from '../DeveloperRootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
+import ProjectTeamPerformance from '../ProjectTeamPerformance'
 import useUrlFilterSync from '../../hooks/useUrlFilterSync'
 
 const DeveloperQualityDashboard = React.memo(() => {
@@ -68,6 +69,12 @@ const DeveloperQualityDashboard = React.memo(() => {
     const developers = filters?.developers || []
     return developers.length === 1 ? developers[0] : null
   }, [filters?.developers])
+
+  // Check if single project is selected for team performance chart
+  const selectedSingleProject = useMemo(() => {
+    const projects = filters?.projects || []
+    return projects.length === 1
+  }, [filters?.projects])
   
   // 2. Memoized values
   const handleFiltersChange = useCallback((newFilters) => {
@@ -145,8 +152,11 @@ const DeveloperQualityDashboard = React.memo(() => {
     }
   }, [loadData])
   
-  // 4. Early returns
-  if (isLoading) {
+  // 4. Early returns - Consolidated loading logic to prevent flashing
+  // Show loading if any data loading is happening OR if we need initialization but might have cache
+  const isAnyLoading = isLoading || isFiltersLoading || (needsInitialization && !error)
+  
+  if (isAnyLoading) {
     return (
       <Box sx={{ 
         display: 'flex', 
@@ -159,6 +169,9 @@ const DeveloperQualityDashboard = React.memo(() => {
         <CircularProgress size={48} />
         <Typography variant="h6" sx={{ mt: 2 }}>
           Loading developer quality data...
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {isLoading ? 'Processing data...' : 'Checking cache...'}
         </Typography>
       </Box>
     )
@@ -186,8 +199,8 @@ const DeveloperQualityDashboard = React.memo(() => {
     )
   }
 
-
-  if (needsInitialization || !filteredData) {
+  // Only show "no data" if we truly have no data and no loading is happening
+  if (!filteredData && !isAnyLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert 
@@ -299,7 +312,7 @@ const DeveloperQualityDashboard = React.memo(() => {
       
       <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Team Contribution Chart */}
-        <Grid item xs={12}>
+        <Grid item xs={6}>
           <TeamContributionChart
             data={filteredData.filteredChartData.teamContributionChart}
             metrics={filteredData.filteredMetrics.teamContribution}
@@ -313,7 +326,7 @@ const DeveloperQualityDashboard = React.memo(() => {
 
         {/* Developer Detail Panel - Shows when single developer is selected */}
         {selectedDeveloper && (
-          <Grid item xs={12}>
+          <Grid item xs={6}>
             <DeveloperDetailPanel
               developerName={selectedDeveloper}
               metrics={filteredData.filteredMetrics}
@@ -323,9 +336,21 @@ const DeveloperQualityDashboard = React.memo(() => {
             />
           </Grid>
         )}
+
+        {/* Project Team Performance - Shows when single project is selected */}
+        {selectedSingleProject && (
+          <Grid item xs={12} md={6}>
+            <ProjectTeamPerformance
+              data={filteredData.filteredChartData.teamContributionChart}
+              filters={filters}
+              showTargetLines={performanceControls.showTargetLines}
+              performanceFilter={performanceControls.performanceFilter}
+            />
+          </Grid>
+        )}
         
         {/* Bug Trend Analysis */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={3} md={3}>
           <BugTrendAnalysis
             data={{
               ...filteredData.filteredChartData.bugTrendChart,
@@ -339,7 +364,7 @@ const DeveloperQualityDashboard = React.memo(() => {
         </Grid>
         
         {/* Root Cause Analysis */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={3} md={3}>
           <RootCauseAnalysis
             data={filteredData.filteredChartData.rootCauseChart}
             metrics={filteredData.filteredMetrics.rootCauseAnalysis}
@@ -347,12 +372,12 @@ const DeveloperQualityDashboard = React.memo(() => {
         </Grid>
         
         {/* Developer Root Cause Analysis */}
-        <Grid item xs={12} md={6}>
+        {/* <Grid item xs={6} md={6}>
           <DeveloperRootCauseAnalysis
             data={filteredData.filteredChartData.developerRootCauseChart}
             metrics={filteredData.filteredMetrics.developerRootCause}
           />
-        </Grid>
+        </Grid> */}
         
         {/* Bug Rate Analysis Table */}
         <Grid item xs={12}>

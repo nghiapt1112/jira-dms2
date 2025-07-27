@@ -23,9 +23,6 @@ const DebugFab = React.memo(() => {
     error
   } = useDebugStore()
 
-  // Don't show on mobile to avoid UI clutter
-  if (isMobile) return null
-
   // Memoized FAB state and color (performance optimization)
   const statusColor = useMemo(() => {
     if (error) return 'error'
@@ -90,6 +87,9 @@ const DebugFab = React.memo(() => {
       },
     }
   }), [isRefreshing, isExporting])
+
+  // Don't show on mobile to avoid UI clutter - moved after all hooks
+  if (isMobile) return null
 
   return (
     <Tooltip title={tooltipText} placement="left">

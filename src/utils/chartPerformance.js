@@ -1,3 +1,4 @@
+import React from 'react';
 import { FEATURE_FLAGS } from '../config/features';
 
 /**
