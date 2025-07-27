@@ -21,9 +21,11 @@ import {
  * @param {Object} filters - Current filter state from store
  * @param {Function} setFilters - Filter setter function from store
  * @param {Object} options - Configuration options
+ * @param {number} activeTab - Current active tab (optional)
+ * @param {Function} setActiveTab - Tab setter function (optional)
  * @returns {Object} - Memoized URL sync utilities and state
  */
-export const useUrlFilterSync = (filters, setFilters, options = {}) => {
+export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = null, setActiveTab = null) => {
   // Memoized configuration (performance optimization)
   const config = useMemo(() => ({
     enableUrlSync: true,
@@ -57,7 +59,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
    * Uses requestAnimationFrame for optimal performance timing
    * Memoized callback for performance
    */
-  const updateUrlFromFilters = useCallback((filtersToSync) => {
+  const updateUrlFromFilters = useCallback((filtersToSync, tabToSync = null) => {
     if (!isUrlSyncAvailable || refsCache.isUrlUpdate.current || !refsCache.mounted.current) return
 
     try {
@@ -74,8 +76,8 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
           // Prevent circular updates
           refsCache.isFilterUpdate.current = true
           
-          // Encode filters to URL params
-          const newParams = encodeFiltersToUrlParams(filtersToSync)
+          // Encode filters and tab to URL params
+          const newParams = encodeFiltersToUrlParams(filtersToSync, tabToSync)
           const newUrlState = newParams.toString()
           
           // Only update if URL actually changed (performance optimization)
@@ -87,7 +89,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
             
             if (config.logOperations) {
               const duration = performance.now() - startTime
-              console.log(`🔄 URL updated from filters in ${duration.toFixed(2)}ms:`, newUrlState)
+              console.log(`🔄 URL updated from filters/tab in ${duration.toFixed(2)}ms:`, newUrlState)
             }
           }
           
@@ -132,10 +134,11 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
       }
       
       // Decode URL parameters with smart matching
-      const urlFilters = decodeUrlParamsToFilters(urlParams)
+      const decodedData = decodeUrlParamsToFilters(urlParams)
+      const { filters: urlFilters, activeTab: urlActiveTab } = decodedData
       
-      // Only update if we got valid filters
-      if (Object.keys(urlFilters).length > 0) {
+      // Update filters if we got valid ones
+      if (urlFilters && Object.keys(urlFilters).length > 0) {
         // Use existing setFilters method to maintain system integrity
         // This preserves special project handling and performance monitoring
         setFilters(currentFilters => {
@@ -151,6 +154,15 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
           
           return newFilters
         })
+      }
+      
+      // Update tab if we have a tab setter and valid tab from URL
+      if (setActiveTab && urlActiveTab !== undefined && urlActiveTab !== activeTab) {
+        setActiveTab(urlActiveTab)
+        
+        if (config.logOperations) {
+          console.log(`🔄 Tab updated from URL: ${urlActiveTab}`)
+        }
       }
       
     } catch (error) {
@@ -173,32 +185,33 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
     try {
       refsCache.mounted.current = true
       
-      // Check if URL has any filter parameters
+      // Check if URL has any filter or tab parameters
       const urlState = searchParams.toString()
       const hasUrlParams = searchParams.has('timeframe') || 
                           searchParams.has('developers') || 
-                          searchParams.has('projects')
+                          searchParams.has('projects') ||
+                          searchParams.has('tab')
       
       if (hasUrlParams && !refsCache.initialized.current) {
-        console.log('🚀 Initializing filters from URL parameters:', urlState)
+        console.log('🚀 Initializing filters/tab from URL parameters:', urlState)
         refsCache.initialized.current = true
         refsCache.lastUrlState.current = urlState
         updateFiltersFromUrl(searchParams)
       } else if (!hasUrlParams && !refsCache.initialized.current) {
-        console.log('🚀 No URL parameters found, using current filter state')
+        console.log('🚀 No URL parameters found, using current filter/tab state')
         refsCache.initialized.current = true
-        // Initialize URL from current filters if no URL params exist
-        const currentUrlState = encodeFiltersToUrlParams(filters).toString()
+        // Initialize URL from current filters and tab if no URL params exist
+        const currentUrlState = encodeFiltersToUrlParams(filters, activeTab).toString()
         if (currentUrlState) {
           refsCache.lastUrlState.current = currentUrlState
-          setSearchParams(encodeFiltersToUrlParams(filters), { replace: true })
+          setSearchParams(encodeFiltersToUrlParams(filters, activeTab), { replace: true })
         }
       }
       
     } catch (error) {
       console.warn('🚨 URL sync initialization failed:', error)
     }
-  }, [isUrlSyncAvailable, searchParams, filters, updateFiltersFromUrl, setSearchParams, refsCache])
+  }, [isUrlSyncAvailable, searchParams, filters, activeTab, updateFiltersFromUrl, setSearchParams, refsCache])
 
   /**
    * Listen for filter changes and update URL
@@ -213,8 +226,8 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
   useEffect(() => {
     if (!isUrlSyncAvailable || !refsCache.mounted.current || refsCache.isUrlUpdate.current) return
 
-    updateUrlFromFilters(filtersToSync)
-  }, [filtersToSync, updateUrlFromFilters, isUrlSyncAvailable, refsCache])
+    updateUrlFromFilters(filtersToSync, activeTab)
+  }, [filtersToSync, activeTab, updateUrlFromFilters, isUrlSyncAvailable, refsCache])
 
   /**
    * Listen for URL changes (browser back/forward, direct URL changes)
@@ -251,13 +264,13 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
     if (!isUrlSyncAvailable) return false
 
     try {
-      updateUrlFromFilters(filtersToSync)
+      updateUrlFromFilters(filtersToSync, activeTab)
       return true
     } catch (error) {
       console.warn('🚨 Manual URL sync failed:', error)
       return false
     }
-  }, [filtersToSync, updateUrlFromFilters, isUrlSyncAvailable])
+  }, [filtersToSync, activeTab, updateUrlFromFilters, isUrlSyncAvailable])
 
   /**
    * Manual filter sync trigger (memoized callback)
@@ -279,14 +292,14 @@ export const useUrlFilterSync = (filters, setFilters, options = {}) => {
    */
   const getShareableUrl = useCallback(() => {
     try {
-      const params = encodeFiltersToUrlParams(filtersToSync)
+      const params = encodeFiltersToUrlParams(filtersToSync, activeTab)
       const baseUrl = `${window.location.origin}${window.location.pathname}`
       return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
     } catch (error) {
       console.warn('🚨 Shareable URL creation failed:', error)
       return window.location.href
     }
-  }, [filtersToSync])
+  }, [filtersToSync, activeTab])
 
   /**
    * Get URL sync status (memoized value)

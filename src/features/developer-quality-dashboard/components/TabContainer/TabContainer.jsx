@@ -54,16 +54,59 @@ const TabContainer = React.memo(({
   dashboardActions,
   dashboardState
 }) => {
-  // 1. Memoized values
+  // 1. Memoized values - Enhanced tab styling
   const tabProps = useMemo(() => ({
     sx: {
-      borderBottom: 1,
+      backgroundColor: 'background.paper',
+      borderRadius: '12px 12px 0 0',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid',
       borderColor: 'divider',
+      borderBottom: 'none',
+      overflow: 'hidden',
+      '& .MuiTabs-indicator': {
+        display: 'none' // Hide default indicator, we'll use background instead
+      },
       '& .MuiTab-root': {
         fontSize: { xs: '0.875rem', sm: '1rem' },
-        minHeight: { xs: 48, sm: 56 },
+        minHeight: { xs: 52, sm: 60 },
         textTransform: 'none',
-        fontWeight: 600
+        fontWeight: 600,
+        transition: 'all 0.3s ease',
+        borderRadius: '8px',
+        margin: '6px',
+        position: 'relative',
+        color: 'text.secondary',
+        backgroundColor: 'transparent',
+        '&:hover': {
+          backgroundColor: 'primary.light',
+          color: 'primary.contrastText',
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          '& .MuiSvgIcon-root': {
+            transform: 'scale(1.1)'
+          }
+        },
+        '&.Mui-selected': {
+          backgroundColor: 'primary.main',
+          color: 'primary.contrastText',
+          fontWeight: 700,
+          boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+          '&:hover': {
+            backgroundColor: 'primary.dark',
+            transform: 'translateY(-1px)'
+          }
+        },
+        '&.Mui-focusVisible': {
+          backgroundColor: 'action.focus',
+          outline: '2px solid',
+          outlineColor: 'primary.main',
+          outlineOffset: '2px'
+        },
+        '& .MuiSvgIcon-root': {
+          transition: 'transform 0.2s ease',
+          fontSize: { xs: '1.2rem', sm: '1.4rem' }
+        }
       }
     }
   }), [])
@@ -105,7 +148,7 @@ const TabContainer = React.memo(({
   return (
     <Box sx={{ width: '100%' }}>
       {/* Tab Navigation */}
-      <Paper elevation={0} sx={{ backgroundColor: 'transparent' }}>
+      <Paper elevation={0} sx={{ backgroundColor: 'transparent', mb: 2 }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -116,14 +159,20 @@ const TabContainer = React.memo(({
             label="Team"
             icon={<GroupIcon />}
             iconPosition="start"
-            sx={{ gap: 1 }}
+            sx={{ 
+              gap: { xs: 0.5, sm: 1 },
+              px: { xs: 2, sm: 3 }
+            }}
             {...getTabProps(0)}
           />
           <Tab
             label="Developer"
             icon={<PersonIcon />}
             iconPosition="start"
-            sx={{ gap: 1 }}
+            sx={{ 
+              gap: { xs: 0.5, sm: 1 },
+              px: { xs: 2, sm: 3 }
+            }}
             {...getTabProps(1)}
           />
         </Tabs>

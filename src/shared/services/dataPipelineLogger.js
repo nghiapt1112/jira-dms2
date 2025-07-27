@@ -179,15 +179,6 @@ export class DataPipelineLogger {
     }
     
     // Log first 10 excluded developers for debugging
-    if (!memberStatus.isIncluded && this.metrics.processing.memberFiltered.excludedBreakdown.unknownDevelopers.size <= 10) {
-      this.log('DEBUG', 'PROCESSING', `Issue excluded - member not configured`, {
-        issueKey: issue.key,
-        assignee,
-        assigneeAccountId,
-        project: issue.fields?.project?.key,
-        memberStatus
-      })
-    }
   }
 
   logProjectFiltering(issue, isIncluded) {

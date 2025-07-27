@@ -36,20 +36,20 @@ const DeveloperQualityDashboard = React.memo(() => {
   } = useDeveloperQualityFilters()
   const { loadData, setFilters } = useDeveloperQualityStore()
   
-  // URL Filter Synchronization - Safe integration with existing filter system
+  // Tab state management - Must be declared before URL sync hook
+  const [activeTab, setActiveTab] = useState(0) // 0: Team, 1: Developer
+  
+  // URL Filter Synchronization - Safe integration with existing filter system and tab sync
   const urlSyncStatus = useUrlFilterSync(filters, setFilters, {
     enableUrlSync: true,
     logOperations: true
-  })
+  }, activeTab, setActiveTab)
   
   // Performance controls state
   const [performanceControls, setPerformanceControls] = useState({
     showTargetLines: false,
     performanceFilter: 'all'
   })
-  
-  // Tab state management
-  const [activeTab, setActiveTab] = useState(0) // 0: Team, 1: Developer
   
   
   // Debug logging for cache state

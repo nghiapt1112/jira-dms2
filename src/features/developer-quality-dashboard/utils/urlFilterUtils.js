@@ -270,10 +270,46 @@ const matchTimeframe = (input) => {
 }
 
 /**
+ * Smart tab matching
+ * Single responsibility: normalize tab input
+ */
+const matchTab = (input) => {
+  if (!input || typeof input !== 'string') return 'team'
+  
+  const startTime = performance.now()
+  const normalizedInput = input.toLowerCase().trim()
+  const validTabs = ['team', 'developer']
+  
+  try {
+    // Exact match
+    if (validTabs.includes(normalizedInput)) {
+      performanceMonitor.log('Tab exact match', startTime)
+      return normalizedInput
+    }
+    
+    // Partial match
+    for (const tab of validTabs) {
+      if (tab.startsWith(normalizedInput)) {
+        performanceMonitor.log('Tab partial match', startTime)
+        return tab
+      }
+    }
+    
+    // Default fallback
+    performanceMonitor.log('Tab default fallback', startTime)
+    return 'team'
+    
+  } catch (error) {
+    console.warn('🚨 Tab matching failed:', error)
+    return 'team'
+  }
+}
+
+/**
  * Encode filter object to URL search parameters
  * Single responsibility: filter object → URL params
  */
-export const encodeFiltersToUrlParams = (filters) => {
+export const encodeFiltersToUrlParams = (filters, activeTab = null) => {
   try {
     const startTime = performance.now()
     const params = new URLSearchParams()
@@ -289,6 +325,12 @@ export const encodeFiltersToUrlParams = (filters) => {
     
     if (filters?.projects?.length > 0) {
       params.set('projects', filters.projects.join(','))
+    }
+    
+    // Add tab parameter if not default (team = 0)
+    if (activeTab !== null && activeTab !== 0) {
+      const tabName = activeTab === 1 ? 'developer' : 'team'
+      params.set('tab', tabName)
     }
     
     performanceMonitor.log('URL encoding', startTime)
@@ -308,6 +350,7 @@ export const decodeUrlParamsToFilters = (searchParams) => {
   try {
     const startTime = performance.now()
     const filters = {}
+    let activeTab = 0 // Default to Team tab
     
     // Timeframe parsing
     const timeframeParam = searchParams.get('timeframe')
@@ -355,8 +398,15 @@ export const decodeUrlParamsToFilters = (searchParams) => {
       }
     }
     
+    // Tab parsing
+    const tabParam = searchParams.get('tab')
+    if (tabParam) {
+      const matchedTab = matchTab(tabParam)
+      activeTab = matchedTab === 'developer' ? 1 : 0
+    }
+    
     performanceMonitor.log('URL decoding', startTime)
-    return filters
+    return { filters, activeTab }
     
   } catch (error) {
     console.warn('🚨 URL decoding failed:', error)

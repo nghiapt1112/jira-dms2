@@ -137,18 +137,34 @@ describe('URL Filter Utils', () => {
       params.set('developers', 'andra,tuan,nonexistent')
       params.set('projects', 'bcp,cf,invalid')
       
-      const filters = utils.decodeUrlParamsToFilters(params)
+      const decodedData = utils.decodeUrlParamsToFilters(params)
+      const { filters } = decodedData
       
       expect(filters.timeframe).toBe('week')
       expect(filters.developers).toEqual(['Andra Satria', 'Tuan Hoang'])
       expect(filters.projects).toEqual(['Borderless City Project', 'Calbee-FfF'])
     })
 
+    test('URL to filter decoding with tab support', () => {
+      const params = new URLSearchParams()
+      params.set('timeframe', 'week')
+      params.set('developers', 'andra')
+      params.set('tab', 'developer')
+      
+      const decodedData = utils.decodeUrlParamsToFilters(params)
+      const { filters, activeTab } = decodedData
+      
+      expect(filters.timeframe).toBe('week')
+      expect(filters.developers).toEqual(['Andra Satria'])
+      expect(activeTab).toBe(1) // Developer tab
+    })
+
     test('Empty parameters handling', () => {
       const emptyParams = new URLSearchParams()
-      const filters = utils.decodeUrlParamsToFilters(emptyParams)
+      const decodedData = utils.decodeUrlParamsToFilters(emptyParams)
+      const { filters } = decodedData
       
-      expect(Object.keys(filters)).toHaveLength(0)
+      expect(Object.keys(filters || {})).toHaveLength(0)
     })
 
     test('Default timeframe handling', () => {
@@ -317,7 +333,8 @@ describe('Real-world URL Scenarios', () => {
     
     // Decode back from URL
     const decodedParams = new URLSearchParams(urlString)
-    const decodedFilters = utils.decodeUrlParamsToFilters(decodedParams)
+    const decodedData = utils.decodeUrlParamsToFilters(decodedParams)
+    const { filters: decodedFilters } = decodedData
     
     // Should maintain data integrity
     expect(decodedFilters.timeframe).toBe(originalFilters.timeframe)
@@ -332,7 +349,8 @@ describe('Real-world URL Scenarios', () => {
     params.set('developers', 'andra,edward')
     params.set('projects', 'bcp,wonder')
     
-    const filters = utils.decodeUrlParamsToFilters(params)
+    const decodedData = utils.decodeUrlParamsToFilters(params)
+    const { filters } = decodedData
     
     expect(filters.timeframe).toBe('month')
     expect(filters.developers).toContain('Andra Satria')
@@ -347,7 +365,8 @@ describe('Real-world URL Scenarios', () => {
     params.set('developers', 'andra,invaliddev,tuan')
     params.set('projects', 'bcp,invalidproj,cf')
     
-    const filters = utils.decodeUrlParamsToFilters(params)
+    const decodedData = utils.decodeUrlParamsToFilters(params)
+    const { filters } = decodedData
     
     // Invalid timeframe defaults to month
     expect(filters.timeframe).toBe('month')
