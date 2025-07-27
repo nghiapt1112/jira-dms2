@@ -49,7 +49,6 @@ const FilterPanel = React.memo(({
   // Auto-enable target lines when single project is selected
   useEffect(() => {
     if (isSingleProject && !showTargetLines) {
-      console.log('🎯 FilterPanel: Auto-enabling target lines for single project:', selectedProjectName)
       setShowTargetLines(true)
       if (onPerformanceControlsChange) {
         onPerformanceControlsChange({
@@ -63,7 +62,6 @@ const FilterPanel = React.memo(({
   // Notify parent of initial performance controls state
   useEffect(() => {
     if (onPerformanceControlsChange && isSingleProject) {
-      console.log('🎯 FilterPanel: Notifying parent of initial performance controls:', { showTargetLines, performanceFilter })
       onPerformanceControlsChange({
         showTargetLines,
         performanceFilter

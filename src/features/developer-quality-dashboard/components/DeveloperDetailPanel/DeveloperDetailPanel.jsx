@@ -49,21 +49,7 @@ const DeveloperDetailPanel = ({
       return null
     }
 
-    console.log('🔍 DEVELOPER PANEL: Available data sources:', {
-      metrics: metrics ? Object.keys(metrics) : null,
-      bugRateAnalysis: metrics?.bugRateAnalysis ? Object.keys(metrics.bugRateAnalysis) : null,
-      bugRateAnalysisDevelopers: metrics?.bugRateAnalysis?.developers?.length || 0,
-      developersType: Array.isArray(metrics?.bugRateAnalysis?.developers) ? 'Array' : 'Other',
-      developersPreview: metrics?.bugRateAnalysis?.developers?.slice(0, 2)
-    })
     
-    // COMPREHENSIVE DEBUG: Check all available developer data sources
-    console.log('🔍 DEVELOPER PANEL: Full data investigation for', developerName, ':', {
-      bugRateDevs: metrics?.bugRateAnalysis?.developers,
-      teamContribDevs: metrics?.teamContribution?.developerStats,
-      topContributors: metrics?.teamContribution?.topContributors,
-      filteredDataSources: filteredData ? Object.keys(filteredData) : null
-    })
 
     // The bug rate analysis contains the COMPLETE developer metrics including:
     // - Story points data
@@ -76,15 +62,6 @@ const DeveloperDetailPanel = ({
       )
       
       if (comprehensiveDeveloperData) {
-        console.log('🔍 DEVELOPER PANEL: Found comprehensive data for', developerName, ':', {
-          hasTimeSpentHours: 'totalTimeSpentHours' in comprehensiveDeveloperData,
-          hasTimePerStoryPoint: 'timePerStoryPoint' in comprehensiveDeveloperData,
-          hasSeverityBreakdown: 'severityBreakdown' in comprehensiveDeveloperData,
-          hasRootCauseBreakdown: 'rootCauseBreakdown' in comprehensiveDeveloperData,
-          hasWeeklyTimeData: 'weeklyTimeData' in comprehensiveDeveloperData,
-          allKeys: Object.keys(comprehensiveDeveloperData),
-          comprehensiveDeveloperData
-        })
         return comprehensiveDeveloperData
       }
     }
@@ -145,7 +122,6 @@ const DeveloperDetailPanel = ({
       result.trend = 'stable'
     }
 
-    console.log('🔍 DEVELOPER PANEL: Enhanced fallback data for', developerName, ':', result)
     return result
   }, [metrics, developerName])
 

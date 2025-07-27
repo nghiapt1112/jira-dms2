@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import { Box, Grid, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
+import { Box, Typography, Paper, Alert, Button, CircularProgress } from '@mui/material'
 import { Refresh as RefreshIcon, CloudDownload as DownloadIcon, BugReport as LogIcon } from '@mui/icons-material'
 import { memberConfiguration } from '../../../../constants/memberConfiguration'
 
@@ -9,13 +9,7 @@ import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilte
 import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 import DeveloperQualityErrorBoundary from '../ErrorBoundary'
 import FilterPanel from '../FilterPanel'
-import TeamContributionChart from '../TeamContributionChart'
-import DeveloperDetailPanel from '../DeveloperDetailPanel'
-import BugTrendAnalysis from '../BugTrendAnalysis'
-import RootCauseAnalysis from '../RootCauseAnalysis'
-import DeveloperRootCauseAnalysis from '../DeveloperRootCauseAnalysis'
-import BugRateAnalysisTable from '../BugRateAnalysisTable'
-import ProjectTeamPerformance from '../ProjectTeamPerformance'
+import TabContainer from '../TabContainer'
 import useUrlFilterSync from '../../hooks/useUrlFilterSync'
 
 const DeveloperQualityDashboard = React.memo(() => {
@@ -54,11 +48,9 @@ const DeveloperQualityDashboard = React.memo(() => {
     performanceFilter: 'all'
   })
   
-  // Debug logging for filter changes and URL sync
-  useEffect(() => {
-    console.log('🔄 DeveloperQualityDashboard: Filters changed:', filters)
-    console.log('🔄 URL Sync Status:', urlSyncStatus)
-  }, [filters, filteredData, urlSyncStatus])
+  // Tab state management
+  const [activeTab, setActiveTab] = useState(0) // 0: Team, 1: Developer
+  
   
   // Debug logging for cache state
   useEffect(() => {
@@ -100,8 +92,12 @@ const DeveloperQualityDashboard = React.memo(() => {
   
   // Performance controls callback
   const handlePerformanceControlsChange = useCallback((newControls) => {
-    console.log('📊 DASHBOARD: Performance controls changed:', newControls)
     setPerformanceControls(newControls)
+  }, [])
+  
+  // Tab change callback
+  const handleTabChange = useCallback((newTab) => {
+    setActiveTab(newTab)
   }, [])
 
   const handleExportLogs = useCallback(() => {
@@ -309,85 +305,39 @@ const DeveloperQualityDashboard = React.memo(() => {
         />
       </Paper>
       
-      
-      <Grid container spacing={{ xs: 2, sm: 3 }}>
-        {/* Team Contribution Chart */}
-        <Grid item xs={12} md={6}>
-          <TeamContributionChart
-            data={filteredData.filteredChartData.teamContributionChart}
-            metrics={filteredData.filteredMetrics.teamContribution}
-            statusFilter={filters.statusFilter}
-            onStatusFilterChange={handleStatusFilterChange}
-            filters={filters} // Pass complete filters object including projects
-            showTargetLines={performanceControls.showTargetLines}
-            performanceFilter={performanceControls.performanceFilter}
-          />
-        </Grid>
-
-        {/* Project Team Performance - Shows when single project is selected */}
-        {selectedSingleProject && (
-          <Grid item xs={12} md={6}>
-            <ProjectTeamPerformance
-              data={filteredData.filteredChartData.teamContributionChart}
-              filters={filters}
-              showTargetLines={performanceControls.showTargetLines}
-              performanceFilter={performanceControls.performanceFilter}
-            />
-          </Grid>
-        )}
+      {/* Tab Container - Phase 1: Basic infrastructure with placeholder content */}
+      {(() => {
+        // Structure props for clean architecture
+        const dashboardData = {
+          filteredData,
+          filters,
+          filterOptions
+        }
         
-        {/* Bug Trend Analysis */}
-        <Grid item xs={12} sm={6} md={6} xl={3}>
-          <BugTrendAnalysis
-            data={{
-              ...filteredData.filteredChartData.bugTrendChart,
-              config: {
-                timePeriod: filters?.timeframe || 'month',
-                periodKey: filters?.timeframe === 'week' ? 'week' : 'month'
-              }
-            }}
-            metrics={filteredData.filteredMetrics.bugAnalysis}
-          />
-        </Grid>
+        const dashboardActions = {
+          onFiltersChange: handleFiltersChange,
+          onTimePeriodChange: handleTimePeriodChange,
+          onStatusFilterChange: handleStatusFilterChange,
+          onPerformanceControlsChange: handlePerformanceControlsChange
+        }
         
-        {/* Root Cause Analysis */}
-        <Grid item xs={12} sm={6} md={6} xl={3}>
-          <RootCauseAnalysis
-            data={filteredData.filteredChartData.rootCauseChart}
-            metrics={filteredData.filteredMetrics.rootCauseAnalysis}
-          />
-        </Grid>
-        {/* Developer Detail Panel - Shows when single developer is selected */}
-        {selectedDeveloper && (
-          <Grid item xs={12} md={6}>
-            <DeveloperDetailPanel
-              developerName={selectedDeveloper}
-              metrics={filteredData.filteredMetrics}
-              filteredData={filteredData}
-              statusFilter={filters?.statusFilter || memberConfiguration.filterDefaults.statusFilter}
-              timeframe={filters?.timeframe || 'month'}
-            />
-          </Grid>
-        )}
-        {/* Developer Root Cause Analysis */}
-        {/* <Grid item xs={6} md={6}>
-          <DeveloperRootCauseAnalysis
-            data={filteredData.filteredChartData.developerRootCauseChart}
-            metrics={filteredData.filteredMetrics.developerRootCause}
-          />
-        </Grid> */}
+        const dashboardState = {
+          selectedDeveloper,
+          selectedSingleProject,
+          performanceControls,
+          isLoading: isFiltersLoading
+        }
         
-        {/* Bug Rate Analysis Table */}
-        <Grid item xs={12}>
-          <BugRateAnalysisTable
-            data={filteredData.filteredMetrics.bugRateAnalysis}
-            onRowClick={(developer) => {
-              // Show detailed issues for developer
-              console.log('Show issues for:', developer)
-            }}
+        return (
+          <TabContainer
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            dashboardData={dashboardData}
+            dashboardActions={dashboardActions}
+            dashboardState={dashboardState}
           />
-        </Grid>
-      </Grid>
+        )
+      })()}
     </Box>
     </DeveloperQualityErrorBoundary>
   )

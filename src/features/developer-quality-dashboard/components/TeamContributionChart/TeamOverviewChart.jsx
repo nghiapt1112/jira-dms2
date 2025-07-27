@@ -56,14 +56,6 @@ const TeamOverviewChart = ({
 }) => {
   // Generate Chart.js data structure
   const chartData = useMemo(() => {
-    console.log('📊 TEAM OVERVIEW: Processing chart data', {
-      hasData: !!data,
-      dataLength: data?.length || 0,
-      firstDataPoint: data?.[0],
-      performanceFilter,
-      showTargetLines,
-      selectedProjectKey
-    })
 
     if (!data || data.length === 0) {
       return null
@@ -130,16 +122,8 @@ const TeamOverviewChart = ({
     }
 
     // Add target lines - CHECK PROJECT TYPE FIRST!
-    console.log('🎯 TARGET LINE CHECK:', { showTargetLines, isSingleProject, selectedProjectKey })
-    
-    // DEBUG: Log all available project keys in configuration
-    console.log('🔍 DEBUG: All configured project keys:', memberConfiguration.projects.map(p => p.key))
-    console.log('🔍 DEBUG: Selected project from filter:', selectedProjectKey)
-    console.log('🔍 DEBUG: Filters object:', filters)
-    console.log('🔍 DEBUG: Available projects in filters:', filters.projects)
     
     if (showTargetLines && isSingleProject && selectedProjectKey) {
-      console.log('🎯 TARGET LINE: Adding target lines for project:', selectedProjectKey)
       
       // CRITICAL: Find the project configuration by KEY or NAME
       let project = memberConfiguration.projects.find(p => p.key === selectedProjectKey)
@@ -147,35 +131,23 @@ const TeamOverviewChart = ({
       // If not found by key, try finding by name (fallback)
       if (!project) {
         project = memberConfiguration.projects.find(p => p.name === selectedProjectKey)
-        console.log('🔍 DEBUG: Found project by name instead of key:', project)
       }
       
-      console.log('🎯 TARGET LINE: Found project config:', project)
       
-      // DEBUG: If no project found, show what we're comparing
-      if (!project) {
-        console.log('🔍 DEBUG: Project not found! Comparing:')
-        console.log('  - Looking for:', selectedProjectKey, typeof selectedProjectKey)
-        console.log('  - Available keys:', memberConfiguration.projects.map(p => ({ key: p.key, name: p.name, type: typeof p.key })))
-      }
       
       if (!project || !project.pointType) {
-        console.log('🎯 TARGET LINE: No project config found for', selectedProjectKey)
         return
       }
       
       const pointType = project.pointType
       const timeframe = filters.timeframe || 'month'
       
-      console.log('🎯 TARGET LINE: Project type is:', pointType)
       
       if (pointType === 'HOURS_BASE') {
         // SINGLE line for HOURS_BASE projects
-        console.log('🎯 TARGET LINE: Processing HOURS_BASE project')
         const config = memberConfiguration.targetLineConfig.HOURS_BASE.all
         const targets = memberConfiguration.performanceTargets.HOURS_BASE.all
         
-        console.log('🎯 TARGET LINE: Config and targets:', { config, targets })
         
         let targetValue
         switch (timeframe) {
@@ -191,10 +163,8 @@ const TeamOverviewChart = ({
             break
         }
         
-        console.log('🎯 TARGET LINE: Calculated target value for', timeframe, ':', targetValue)
         
         const targetData = processedData.map(() => targetValue)
-        console.log('🎯 TARGET LINE: Target data array:', targetData)
         
         const targetLineDataset = {
           label: config.label,
@@ -214,11 +184,7 @@ const TeamOverviewChart = ({
           yAxisID: 'y1'
         }
         
-        console.log('🎯 TARGET LINE: Adding dataset:', targetLineDataset)
         datasets.push(targetLineDataset)
-        
-        console.log('🎯 TARGET LINE: Added HOURS_BASE target line:', targetValue)
-        console.log('🎯 TARGET LINE: Total datasets now:', datasets.length)
         
       } else if (pointType === 'STORYPOINT_BASE') {
         // TWO lines for STORYPOINT_BASE projects
@@ -295,17 +261,9 @@ const TeamOverviewChart = ({
           yAxisID: 'y1'
         })
         
-        console.log('🎯 TARGET LINE: Added STORYPOINT_BASE target lines - Middle:', middleTargetValue, 'Senior:', seniorTargetValue)
       }
     }
 
-    console.log('📊 TEAM OVERVIEW: Generated chart data', {
-      developersCount: developersArray.length,
-      datasetsCount: datasets.length,
-      dataPointsCount: data.length,
-      isSingleProject,
-      projectName: isSingleProject ? filters.projects[0] : null
-    })
 
     return {
       labels: processedData.map(item => item.timePeriod),
