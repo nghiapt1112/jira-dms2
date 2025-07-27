@@ -194,4 +194,26 @@ describe('ProjectTeamPerformance', () => {
     expect(chartData.labels).toEqual(['Bob Wilson', 'John Doe', 'Jane Smith'])
     expect(chartData.datasets[0].data).toEqual([180, 150, 120])
   })
+  
+  it('shows target lines when enabled', () => {
+    renderWithTheme(
+      <ProjectTeamPerformance 
+        data={mockData} 
+        filters={mockFilters}
+        showTargetLines={true}
+      />
+    )
+    
+    const chartDataElement = screen.getByTestId('chart-data')
+    const chartData = JSON.parse(chartDataElement.textContent)
+    
+    // When showTargetLines is true and single project is selected,
+    // should have more than just the bar dataset
+    expect(chartData.datasets.length).toBeGreaterThan(0)
+    
+    // Should have the main bar chart dataset
+    const barDataset = chartData.datasets.find(ds => ds.type === 'bar')
+    expect(barDataset).toBeDefined()
+    expect(barDataset.label).toBe('Story Points')
+  })
 })

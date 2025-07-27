@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { memberConfiguration } from '../../../../constants/memberConfiguration'
 import { 
@@ -32,24 +32,53 @@ const FilterPanel = React.memo(({
   // Performance controls props
   onPerformanceControlsChange
 }) => {
-  // 1. Performance state - following .cursorrules hooks first pattern
-  const [showTargetLines, setShowTargetLines] = useState(false)
-  const [performanceFilter, setPerformanceFilter] = useState('all')
-  
-  // Single project detection for performance controls
+  // Single project detection for performance controls (defined early for initial state)
   const isSingleProject = useMemo(() => {
     return filters?.projects?.length === 1
   }, [filters?.projects])
+  
+  // 1. Performance state - following .cursorrules hooks first pattern
+  // Initialize showTargetLines to true if single project is already selected
+  const [showTargetLines, setShowTargetLines] = useState(() => isSingleProject)
+  const [performanceFilter, setPerformanceFilter] = useState('all')
   
   const selectedProjectName = useMemo(() => {
     return isSingleProject ? filters.projects[0] : ''
   }, [isSingleProject, filters?.projects])
   
+  // Auto-enable target lines when single project is selected
+  useEffect(() => {
+    if (isSingleProject && !showTargetLines) {
+      console.log('🎯 FilterPanel: Auto-enabling target lines for single project:', selectedProjectName)
+      setShowTargetLines(true)
+      if (onPerformanceControlsChange) {
+        onPerformanceControlsChange({
+          showTargetLines: true,
+          performanceFilter: performanceFilter
+        })
+      }
+    }
+  }, [isSingleProject, selectedProjectName, showTargetLines, performanceFilter, onPerformanceControlsChange])
+  
+  // Notify parent of initial performance controls state
+  useEffect(() => {
+    if (onPerformanceControlsChange && isSingleProject) {
+      console.log('🎯 FilterPanel: Notifying parent of initial performance controls:', { showTargetLines, performanceFilter })
+      onPerformanceControlsChange({
+        showTargetLines,
+        performanceFilter
+      })
+    }
+  }, [onPerformanceControlsChange, isSingleProject, showTargetLines, performanceFilter])
+  
   // 2. Memoized values
   const hasActiveFilters = useMemo(() => {
-    return Object.values(filters).some(filter => 
-      Array.isArray(filter) ? filter.length > 0 : Boolean(filter)
-    )
+    // Only count arrays with items and ignore default values like timeframe
+    const checkableFilters = ['developers', 'projects', 'issueTypes', 'statuses', 'severities', 'rootCauses', 'statusFilter']
+    return checkableFilters.some(key => {
+      const filter = filters[key]
+      return Array.isArray(filter) && filter.length > 0
+    })
   }, [filters])
   
   const filterSummary = useMemo(() => {
@@ -772,5 +801,7 @@ FilterPanel.propTypes = {
   // Performance controls props
   onPerformanceControlsChange: PropTypes.func
 }
+
+FilterPanel.displayName = 'FilterPanel'
 
 export default FilterPanel 

@@ -312,7 +312,7 @@ const DeveloperQualityDashboard = React.memo(() => {
       
       <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Team Contribution Chart */}
-        <Grid item xs={6}>
+        <Grid item xs={12} md={6}>
           <TeamContributionChart
             data={filteredData.filteredChartData.teamContributionChart}
             metrics={filteredData.filteredMetrics.teamContribution}
@@ -323,19 +323,6 @@ const DeveloperQualityDashboard = React.memo(() => {
             performanceFilter={performanceControls.performanceFilter}
           />
         </Grid>
-
-        {/* Developer Detail Panel - Shows when single developer is selected */}
-        {selectedDeveloper && (
-          <Grid item xs={6}>
-            <DeveloperDetailPanel
-              developerName={selectedDeveloper}
-              metrics={filteredData.filteredMetrics}
-              filteredData={filteredData}
-              statusFilter={filters?.statusFilter || memberConfiguration.filterDefaults.statusFilter}
-              timeframe={filters?.timeframe || 'month'}
-            />
-          </Grid>
-        )}
 
         {/* Project Team Performance - Shows when single project is selected */}
         {selectedSingleProject && (
@@ -350,7 +337,7 @@ const DeveloperQualityDashboard = React.memo(() => {
         )}
         
         {/* Bug Trend Analysis */}
-        <Grid item xs={3} md={3}>
+        <Grid item xs={12} sm={6} md={6} xl={3}>
           <BugTrendAnalysis
             data={{
               ...filteredData.filteredChartData.bugTrendChart,
@@ -364,13 +351,24 @@ const DeveloperQualityDashboard = React.memo(() => {
         </Grid>
         
         {/* Root Cause Analysis */}
-        <Grid item xs={3} md={3}>
+        <Grid item xs={12} sm={6} md={6} xl={3}>
           <RootCauseAnalysis
             data={filteredData.filteredChartData.rootCauseChart}
             metrics={filteredData.filteredMetrics.rootCauseAnalysis}
           />
         </Grid>
-        
+        {/* Developer Detail Panel - Shows when single developer is selected */}
+        {selectedDeveloper && (
+          <Grid item xs={12} md={6}>
+            <DeveloperDetailPanel
+              developerName={selectedDeveloper}
+              metrics={filteredData.filteredMetrics}
+              filteredData={filteredData}
+              statusFilter={filters?.statusFilter || memberConfiguration.filterDefaults.statusFilter}
+              timeframe={filters?.timeframe || 'month'}
+            />
+          </Grid>
+        )}
         {/* Developer Root Cause Analysis */}
         {/* <Grid item xs={6} md={6}>
           <DeveloperRootCauseAnalysis

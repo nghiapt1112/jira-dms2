@@ -12,7 +12,9 @@ const mockFilterOptions = {
   developers: ['john.doe', 'jane.smith', 'bob.wilson'],
   projects: ['PROJ-A', 'PROJ-B', 'PROJ-C'],
   issueTypes: ['Bug', 'Story', 'Task', 'Epic'],
-  severities: ['Critical', 'Major', 'Minor', 'Low', 'Cosmetic']
+  severities: ['Critical', 'Major', 'Minor', 'Low', 'Cosmetic'],
+  statuses: ['To Do', 'In Progress', 'Done'],
+  rootCauses: ['Code Error', 'Design Issue', 'Requirements Gap']
 }
 
 const mockFilters = {
@@ -20,7 +22,11 @@ const mockFilters = {
   projects: [],
   issueTypes: [],
   severities: [],
-  dateRange: null
+  statuses: [],
+  rootCauses: [],
+  statusFilter: [],
+  dateRange: null,
+  timeframe: 'month'
 }
 
 const mockOnFiltersChange = jest.fn()
@@ -53,8 +59,9 @@ describe('FilterPanel', () => {
       )
 
       // Check that all select elements are rendered by role
+      // Should have 7 controls: Time Period, Statuses, Developers, Projects, Issue Types, Severities, Root Causes
       const selects = screen.getAllByRole('combobox')
-      expect(selects).toHaveLength(4)
+      expect(selects).toHaveLength(7)
       
       // Check that the labels exist (they appear multiple times due to MUI structure)
       expect(screen.getAllByText('Developers')).toHaveLength(2)
@@ -430,6 +437,84 @@ describe('FilterPanel', () => {
       const selects = screen.getAllByRole('combobox')
       selects.forEach(select => {
         expect(select).toHaveAttribute('tabindex', '0')
+      })
+    })
+  })
+
+  describe('Single Project Performance Controls', () => {
+    it('shows performance controls when single project is selected', () => {
+      const singleProjectFilters = {
+        ...mockFilters,
+        projects: ['PROJ-A']
+      }
+
+      renderWithTheme(
+        <FilterPanel
+          filters={singleProjectFilters}
+          onFiltersChange={mockOnFiltersChange}
+          filterOptions={mockFilterOptions}
+          onPerformanceControlsChange={jest.fn()}
+        />
+      )
+
+      // Should show the target lines toggle
+      expect(screen.getByText('Show Target Lines')).toBeInTheDocument()
+      
+      // Should show the project name
+      expect(screen.getByText('for PROJ-A')).toBeInTheDocument()
+    })
+
+    it('does not show performance controls when multiple projects selected', () => {
+      const multipleProjectFilters = {
+        ...mockFilters,
+        projects: ['PROJ-A', 'PROJ-B']
+      }
+
+      renderWithTheme(
+        <FilterPanel
+          filters={multipleProjectFilters}
+          onFiltersChange={mockOnFiltersChange}
+          filterOptions={mockFilterOptions}
+        />
+      )
+
+      // Should not show performance controls
+      expect(screen.queryByText('Show Target Lines')).not.toBeInTheDocument()
+    })
+
+    it('does not show performance controls when no projects selected', () => {
+      renderWithTheme(
+        <FilterPanel
+          filters={mockFilters}
+          onFiltersChange={mockOnFiltersChange}
+          filterOptions={mockFilterOptions}
+        />
+      )
+
+      // Should not show performance controls
+      expect(screen.queryByText('Show Target Lines')).not.toBeInTheDocument()
+    })
+
+    it('automatically enables target lines for single project', () => {
+      const mockOnPerformanceControlsChange = jest.fn()
+      const singleProjectFilters = {
+        ...mockFilters,
+        projects: ['PROJ-A']
+      }
+
+      renderWithTheme(
+        <FilterPanel
+          filters={singleProjectFilters}
+          onFiltersChange={mockOnFiltersChange}
+          filterOptions={mockFilterOptions}
+          onPerformanceControlsChange={mockOnPerformanceControlsChange}
+        />
+      )
+
+      // Should have called with target lines enabled
+      expect(mockOnPerformanceControlsChange).toHaveBeenCalledWith({
+        showTargetLines: true,
+        performanceFilter: 'all'
       })
     })
   })

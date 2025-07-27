@@ -62,53 +62,81 @@ const ProjectTeamPerformance = React.memo(({
   }, [filters?.timeframe])
   
   const targetValues = useMemo(() => {
-    if (!projectConfig || !showTargetLines) return null
+    if (!projectConfig || !showTargetLines || !data?.data) return null
     
     const pointType = projectConfig.pointType
     const targets = memberConfiguration.performanceTargets[pointType]
     
+    // CRITICAL: Calculate number of time periods to multiply target by
+    const numberOfPeriods = data.data.length
+    
     if (pointType === 'HOURS_BASE') {
       const config = targets.all
+      let perPeriodTarget
       switch (timeframe) {
         case 'week':
-          return [{ value: config.totalPointWeekTarget, label: 'Target (All)', config: memberConfiguration.targetLineConfig.HOURS_BASE.all }]
+          perPeriodTarget = config.totalPointWeekTarget
+          break
         case 'quarter':
-          return [{ value: config.totalPointQuarterTarget, label: 'Target (All)', config: memberConfiguration.targetLineConfig.HOURS_BASE.all }]
+          perPeriodTarget = config.totalPointQuarterTarget
+          break
         case 'month':
         default:
-          return [{ value: config.totalPointMonthTarget, label: 'Target (All)', config: memberConfiguration.targetLineConfig.HOURS_BASE.all }]
+          perPeriodTarget = config.totalPointMonthTarget
+          break
       }
+      
+      // Multiply per-period target by number of periods for total target
+      const totalTarget = perPeriodTarget * numberOfPeriods
+      
+      return [{ 
+        value: totalTarget, 
+        label: `Target (All) - ${numberOfPeriods} ${timeframe}s`, 
+        config: memberConfiguration.targetLineConfig.HOURS_BASE.all 
+      }]
     } else if (pointType === 'STORYPOINT_BASE') {
       const middleTargets = targets.middle
       const seniorTargets = targets.senior
       const middleConfig = memberConfiguration.targetLineConfig.STORYPOINT_BASE.middle
       const seniorConfig = memberConfiguration.targetLineConfig.STORYPOINT_BASE.senior
       
-      let middleValue, seniorValue
+      let middlePerPeriod, seniorPerPeriod
       switch (timeframe) {
         case 'week':
-          middleValue = middleTargets.totalPointWeekTarget
-          seniorValue = seniorTargets.totalPointWeekTarget
+          middlePerPeriod = middleTargets.totalPointWeekTarget
+          seniorPerPeriod = seniorTargets.totalPointWeekTarget
           break
         case 'quarter':
-          middleValue = middleTargets.totalPointQuarterTarget
-          seniorValue = seniorTargets.totalPointQuarterTarget
+          middlePerPeriod = middleTargets.totalPointQuarterTarget
+          seniorPerPeriod = seniorTargets.totalPointQuarterTarget
           break
         case 'month':
         default:
-          middleValue = middleTargets.totalPointMonthTarget
-          seniorValue = seniorTargets.totalPointMonthTarget
+          middlePerPeriod = middleTargets.totalPointMonthTarget
+          seniorPerPeriod = seniorTargets.totalPointMonthTarget
           break
       }
       
+      // Multiply per-period targets by number of periods for total targets
+      const middleTotalTarget = middlePerPeriod * numberOfPeriods
+      const seniorTotalTarget = seniorPerPeriod * numberOfPeriods
+      
       return [
-        { value: middleValue, label: middleConfig.label, config: middleConfig },
-        { value: seniorValue, label: seniorConfig.label, config: seniorConfig }
+        { 
+          value: middleTotalTarget, 
+          label: `${middleConfig.label} - ${numberOfPeriods} ${timeframe}s`, 
+          config: middleConfig 
+        },
+        { 
+          value: seniorTotalTarget, 
+          label: `${seniorConfig.label} - ${numberOfPeriods} ${timeframe}s`, 
+          config: seniorConfig 
+        }
       ]
     }
     
     return null
-  }, [projectConfig, showTargetLines, timeframe])
+  }, [projectConfig, showTargetLines, timeframe, data?.data])
   
   // 3. Callbacks
   const getFilteredDevelopers = useCallback((developers) => {
