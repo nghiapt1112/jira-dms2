@@ -127,7 +127,7 @@ const EffortEffectivenessChart = ({
       IssueUtils.debugCalculation(
         issuesToProcess,
         deliveredIssues,
-        'Velocity Trends (Fixed) - Updated'
+        'Velocity Trends (Fixed)'
       )
     }
 

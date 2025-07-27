@@ -217,7 +217,15 @@ export class IssueUtils {
       })
     })
 
-    return groupedTickets
+    // Sort time periods in descending order (most recent period first)
+    const sortedGroupedTickets = new Map([...groupedTickets.entries()].sort((a, b) => {
+      // Compare time period keys in descending order
+      const periodA = a[0] // e.g., "2024-03" 
+      const periodB = b[0] // e.g., "2024-01"
+      return periodB.localeCompare(periodA) // Descending order (2024-03 before 2024-01)
+    }))
+
+    return sortedGroupedTickets
   }
 
   /**
