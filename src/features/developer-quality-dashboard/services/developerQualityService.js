@@ -227,7 +227,10 @@ export const developerQualityService = {
       const issueType = issue.fields?.issuetype?.name || 'Unknown'
       const rootCause = developerQualityService.extractRootCause(issue)
       
-      // Keep minimal issue data for popups
+      // Calculate time tracking metrics for this issue
+      const timeMetrics = calculateTimeTrackingMetrics(issue)
+      
+      // Keep minimal issue data for popups with time tracking data
       developerQualityData.minimalIssues.push({
         id: issue.id,
         key: issue.key,
@@ -240,7 +243,11 @@ export const developerQualityService = {
         rootCause: rootCause,
         updated: issue.fields?.updated || null,
         resolved: issue.fields?.resolutiondate || null,
-        storyPoints: issue.fields?.customfield_10028 || 0
+        storyPoints: issue.fields?.customfield_10028 || 0,
+        // CRITICAL FIX: Add time tracking data to minimalIssues for consistency
+        timeSpentHours: timeMetrics.timeSpentHours,
+        hasTimeLogged: timeMetrics.hasTimeLogged,
+        estimationAccuracy: timeMetrics.estimationAccuracy
       })
     })
     

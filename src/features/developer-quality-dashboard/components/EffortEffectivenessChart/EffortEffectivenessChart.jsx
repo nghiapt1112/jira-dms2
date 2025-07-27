@@ -8,6 +8,7 @@ import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
 import { memberConfiguration, getSeverityConfig, getSeverityWeights } from '../../../../constants/memberConfiguration'
 import { IssueUtils } from '../../../../shared/utils/IssueUtils'
+import { calculateProjectSeverityRates } from '../../../../shared/utils/severityCalculations'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -34,6 +35,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 // Import centralized time utilities to fix data alignment issues
 import { getTimePeriodKey } from '../../../../shared/utils/timeUtils.js'
+import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 
 // Register Chart.js components
 ChartJS.register(
@@ -94,18 +96,22 @@ const EffortEffectivenessChart = ({
       }
     }
 
-    // Use IssueUtils for consistent delivered issue filtering (DRY & SOLID compliant)
-    const deliveredIssues = IssueUtils.filterDeliveredIssues(
-      developerData.timeTrackingIssues
-      // No additional filters needed - delivered statuses are mandatory
-    )
+    // CRITICAL FIX: Use the same data source as DeveloperTicketTable for consistency
+    // Instead of using developerData.timeTrackingIssues, use the store's minimalIssues
+    // This ensures both components use identical data filtering logic
+    const { data } = useDeveloperQualityStore()
+    const storeIssues = data?.minimalIssues || []
+    
+    // Filter by developer first, then apply delivered filter (same as DeveloperTicketTable)
+    const developerIssues = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
+    const deliveredIssues = IssueUtils.filterDeliveredIssues(developerIssues)
 
     // Debug logging using IssueUtils
     if (process.env.NODE_ENV === 'development') {
       IssueUtils.debugCalculation(
-        developerData.timeTrackingIssues,
+        developerIssues,
         deliveredIssues,
-        'Velocity Trends'
+        'Velocity Trends (Fixed)'
       )
     }
 
@@ -117,8 +123,10 @@ const EffortEffectivenessChart = ({
     const totalIssues = deliveredIssues.length
 
     // Calculate all metrics (unfiltered) for comparison
-    const allStoryPoints = IssueUtils.calculateTotalStoryPoints(developerData.timeTrackingIssues)
-    const allTimeSpent = developerData.totalTimeSpentHours || 0
+    const allStoryPoints = IssueUtils.calculateTotalStoryPoints(developerIssues)
+    const allTimeSpent = developerIssues.reduce(
+      (sum, issue) => sum + (issue.timeSpentHours || 0), 0
+    )
 
     // Calculate efficiency based on delivered work only
     const timePerStoryPoint = totalStoryPoints > 0 ? totalTimeSpent / totalStoryPoints : 0
@@ -139,7 +147,7 @@ const EffortEffectivenessChart = ({
       allStoryPoints,
       allTimeSpent: Math.round(allTimeSpent * 100) / 100
     }
-  }, [developerData, timeframe])
+  }, [developerData, selectedDeveloper, timeframe])
 
   // Calculate time-based metrics for trends
   const timeBasedData = useMemo(() => {
@@ -147,11 +155,13 @@ const EffortEffectivenessChart = ({
       return { chartData: null, issuesData: [] }
     }
 
-    // Use IssueUtils for consistent delivered issue filtering
-    const deliveredIssues = IssueUtils.filterDeliveredIssues(
-      developerData.timeTrackingIssues
-      // Delivered statuses are mandatory - no additional filtering needed
-    )
+    // CRITICAL FIX: Use the same data source as DeveloperTicketTable for consistency
+    const { data } = useDeveloperQualityStore()
+    const storeIssues = data?.minimalIssues || []
+    
+    // Filter by developer first, then apply delivered filter (same as DeveloperTicketTable)
+    const developerIssues = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
+    const deliveredIssues = IssueUtils.filterDeliveredIssues(developerIssues)
 
     // Group issues by time period for the velocity trends chart
     const timeGroups = new Map()
@@ -210,7 +220,7 @@ const EffortEffectivenessChart = ({
     return { 
       chartData
     }
-  }, [developerData, timeframe])
+  }, [developerData, selectedDeveloper, timeframe])
 
 
   // Chart data configuration
