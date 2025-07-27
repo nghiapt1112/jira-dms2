@@ -1,9 +1,11 @@
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Paper, Typography, Chip } from '@mui/material'
 import { TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material'
 import { performanceMonitor } from '../../utils/PerformanceMonitor'
 import TeamOverviewChart from './TeamOverviewChart'
+import ProjectMembersContribution from './ProjectMembersContribution'
+import TimePeriodDetail from './TimePeriodDetail'
 
 const TeamContributionChart = React.memo(({ 
   data, 
@@ -17,12 +19,29 @@ const TeamContributionChart = React.memo(({
   showTargetLines = false,
   performanceFilter = 'all'
 }) => {
-  // 1. Single project detection
+  // 1. State for time period selection
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState(null)
+  
+  // 2. Single project detection
   const isSingleProject = useMemo(() => {
     return filters?.projects?.length === 1
   }, [filters?.projects])
   
-  // 2. Memoized values - following .cursorrules pattern
+  // 3. Time period click handler
+  const handleTimePeriodClick = useMemo(() => (timePeriodData) => {
+    setSelectedTimePeriod(timePeriodData)
+  }, [])
+  
+  const handleBackToOverview = useMemo(() => () => {
+    setSelectedTimePeriod(null)
+  }, [])
+  
+  // Clear selection when project changes
+  useEffect(() => {
+    setSelectedTimePeriod(null)
+  }, [filters?.projects])
+  
+  // 4. Memoized values - following .cursorrules pattern
   const teamSize = useMemo(() => {
     if (!data?.data || data.data.length === 0) return 0
     
@@ -61,7 +80,7 @@ const TeamContributionChart = React.memo(({
     grid: { horizontal: true }
   }), [height, data?.data?.length])
   
-  // 3. Effects - consolidated following .cursorrules
+  // 5. Effects - consolidated following .cursorrules
   useEffect(() => {
     const timer = performanceMonitor.startTimer('chartRender')
     
@@ -79,7 +98,7 @@ const TeamContributionChart = React.memo(({
     }
   }, [data, filters, teamSize])
   
-  // 4. Early returns - following .cursorrules pattern
+  // 6. Early returns - following .cursorrules pattern
   if (!data?.data || !metrics) {
     return (
       <Paper 
@@ -97,7 +116,7 @@ const TeamContributionChart = React.memo(({
     )
   }
   
-  // 6. Render
+  // 7. Render
   return (
     <Paper 
       elevation={1} 
@@ -156,7 +175,39 @@ const TeamContributionChart = React.memo(({
         showTargetLines={isSingleProject && showTargetLines}
         performanceFilter={isSingleProject && showTargetLines ? performanceFilter : 'all'}
         selectedProjectKey={isSingleProject ? filters.projects[0] : null}
+        onTimePeriodClick={isSingleProject ? handleTimePeriodClick : null}
       />
+      
+      {/* Time Period Detail View - Only shown when a time period is selected */}
+      {selectedTimePeriod && isSingleProject && (
+        <Box sx={{ mt: { xs: 2, sm: 3 } }}>
+          <TimePeriodDetail
+            timePeriodData={selectedTimePeriod}
+            metrics={metrics}
+            selectedProjectKey={filters.projects[0]}
+            filters={filters}
+            onBack={handleBackToOverview}
+            height={height}
+            showTargetLines={showTargetLines}
+            performanceFilter={performanceFilter}
+          />
+        </Box>
+      )}
+
+      {/* Project Members Contribution Chart - Only shown when single project is selected and no time period selected */}
+      {isSingleProject && !selectedTimePeriod && (
+        <Box sx={{ mt: { xs: 2, sm: 3 } }}>
+          <ProjectMembersContribution
+            data={data}
+            metrics={metrics}
+            title="Project Members Contribution"
+            height={height}
+            filters={filters}
+            showTargetLines={showTargetLines}
+            performanceFilter={performanceFilter}
+          />
+        </Box>
+      )}
       
       {/* Metrics Summary */}
       <Box sx={{ 

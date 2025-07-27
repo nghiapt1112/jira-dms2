@@ -1,3 +1,5 @@
 export { default } from './TeamContributionChart'
 export { default as PerformanceToggle } from './PerformanceToggle'
-export { default as PerformanceFilter } from './PerformanceFilter' 
+export { default as PerformanceFilter } from './PerformanceFilter'
+export { default as ProjectMembersContribution } from './ProjectMembersContribution'
+export { default as TimePeriodDetail } from './TimePeriodDetail' 

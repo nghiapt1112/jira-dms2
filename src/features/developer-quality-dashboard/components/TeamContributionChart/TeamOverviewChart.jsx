@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useRef } from 'react'
 import PropTypes from 'prop-types'
 import { Box, Typography } from '@mui/material'
 import {
@@ -12,7 +12,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
-import { Chart } from 'react-chartjs-2'
+import { Chart, getElementAtEvent } from 'react-chartjs-2'
 import { getPreprocessedFilteredData } from '../../services/performancePreprocessor.js'
 import { getWeekDateRange } from '../../../../shared/utils/timeUtils.js'
 import { memberConfiguration } from '../../../../constants/memberConfiguration.js'
@@ -52,8 +52,29 @@ const TeamOverviewChart = ({
   filters = {},
   showTargetLines = false,
   performanceFilter = 'all',
-  selectedProjectKey = null
+  selectedProjectKey = null,
+  onTimePeriodClick = null
 }) => {
+  const chartRef = useRef()
+  
+  // Handle chart click events
+  const handleChartClick = (event) => {
+    if (!onTimePeriodClick || !chartRef.current) return
+    
+    const elements = getElementAtEvent(chartRef.current, event)
+    
+    if (elements.length > 0) {
+      const elementIndex = elements[0].index
+      const clickedTimePeriod = data[elementIndex]?.timePeriod
+      
+      if (clickedTimePeriod) {
+        // Find the full data for this time period
+        const timePeriodData = data[elementIndex]
+        onTimePeriodClick(timePeriodData)
+      }
+    }
+  }
+  
   // Generate Chart.js data structure
   const chartData = useMemo(() => {
 
@@ -406,9 +427,11 @@ const TeamOverviewChart = ({
       width: '100%'
     }}>
       <Chart 
+        ref={chartRef}
         type="bar"
         data={chartData}
         options={chartOptions}
+        onClick={handleChartClick}
         height={height}
       />
     </Box>
@@ -439,7 +462,8 @@ TeamOverviewChart.propTypes = {
   }),
   showTargetLines: PropTypes.bool,
   performanceFilter: PropTypes.oneOf(['all', 'under', 'over']),
-  selectedProjectKey: PropTypes.string
+  selectedProjectKey: PropTypes.string,
+  onTimePeriodClick: PropTypes.func
 }
 
 export default TeamOverviewChart
