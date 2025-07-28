@@ -55,7 +55,7 @@ export class IssueUtils {
       return []
     }
 
-    const { projectFilter = null, developerFilter = null } = filters
+    const { projectFilter = null, developerFilter = null, statusFilter = null, issueTypeFilter = null } = filters
 
     return issues.filter(issue => {
       // Must have delivered status (mandatory)
@@ -79,6 +79,20 @@ export class IssueUtils {
       // Developer filter
       if (developerFilter && developerFilter.length > 0) {
         if (!developerFilter.includes(issue.assignee)) {
+          return false
+        }
+      }
+
+      // User-selected status filter
+      if (statusFilter && statusFilter.length > 0) {
+        if (!statusFilter.includes(issue.status)) {
+          return false
+        }
+      }
+
+      // Issue type filter
+      if (issueTypeFilter && issueTypeFilter.length > 0) {
+        if (!issueTypeFilter.includes(issue.issueType)) {
           return false
         }
       }
@@ -186,11 +200,19 @@ export class IssueUtils {
     // Filter by developer first, then apply delivered filter
     const developerIssues = issues.filter(issue => issue.assignee === developerName)
     const deliveredIssues = this.filterDeliveredIssues(developerIssues, filters)
+    
+    // Apply user-selected status filter if provided
+    let finalIssues = deliveredIssues
+    if (filters.statusFilter && filters.statusFilter.length > 0) {
+      finalIssues = deliveredIssues.filter(issue => 
+        filters.statusFilter.includes(issue.status)
+      )
+    }
 
     // Group by time period
     const groupedTickets = new Map()
 
-    deliveredIssues.forEach(issue => {
+    finalIssues.forEach(issue => {
       const timePeriod = getTimePeriodKey(issue.deliveredDate, timeframe)
       
       if (!timePeriod) {
@@ -243,7 +265,7 @@ export class IssueUtils {
       filteredIssues = issues.filter(issue => issue.assignee === developerName)
     }
 
-    // Apply delivered filter (mandatory)
+    // Apply delivered filter (mandatory) - now includes status filter
     const deliveredIssues = this.filterDeliveredIssues(filteredIssues, filters)
 
     // Sum story points

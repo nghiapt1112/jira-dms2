@@ -211,6 +211,40 @@ describe('IssueUtils', () => {
       const filtered = IssueUtils.filterDeliveredIssues(null)
       expect(filtered).toEqual([])
     })
+
+    it('should filter by status when statusFilter is provided', () => {
+      const issues = [
+        { id: '1', status: 'Done', storyPoints: 5, assignee: 'Developer A', resolved: '2024-01-15' },
+        { id: '2', status: 'In Progress', storyPoints: 3, assignee: 'Developer A', updated: '2024-01-14' },
+        { id: '3', status: 'Done', storyPoints: 8, assignee: 'Developer A', resolved: '2024-01-13' }
+      ]
+      
+      const result = IssueUtils.filterDeliveredIssues(issues, {
+        statusFilter: ['Done'] // Only show Done status
+      })
+      
+      expect(result).toHaveLength(2)
+      expect(result.every(issue => issue.status === 'Done')).toBe(true)
+      expect(result[0].id).toBe('1')
+      expect(result[1].id).toBe('3')
+    })
+
+    it('should filter by issue type when issueTypeFilter is provided', () => {
+      const issues = [
+        { id: '1', status: 'Done', storyPoints: 5, assignee: 'Developer A', issueType: 'Bug', resolved: '2024-01-15' },
+        { id: '2', status: 'Done', storyPoints: 3, assignee: 'Developer A', issueType: 'Story', resolved: '2024-01-14' },
+        { id: '3', status: 'Done', storyPoints: 8, assignee: 'Developer A', issueType: 'Epic', resolved: '2024-01-13' }
+      ]
+      
+      const result = IssueUtils.filterDeliveredIssues(issues, {
+        issueTypeFilter: ['Bug', 'Story'] // Only show Bug and Story, exclude Epic
+      })
+      
+      expect(result).toHaveLength(2)
+      expect(result.every(issue => ['Bug', 'Story'].includes(issue.issueType))).toBe(true)
+      expect(result[0].id).toBe('1')
+      expect(result[1].id).toBe('2')
+    })
   })
 
   describe('calculateStoryPointsByTimePeriod', () => {

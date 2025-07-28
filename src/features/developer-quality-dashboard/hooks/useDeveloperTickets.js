@@ -78,8 +78,9 @@ export const useDeveloperTickets = (developerName) => {
         developerName, 
         timeframe, // Dynamic from Zustand filters.timeframe
         {
-          projectFilter: filters?.projects || null
-          // Delivered statuses are mandatory - no exclusion logic needed
+          projectFilter: filters?.projects || null,
+          statusFilter: filters?.statuses || null, // Apply user-selected status filter
+          issueTypeFilter: filters?.issueTypes || null // Apply user-selected issue type filter
         }
       )
       
@@ -130,7 +131,7 @@ export const useDeveloperTickets = (developerName) => {
         error: error.message || 'Unknown error filtering developer tickets'
       }
     }
-  }, [data?.minimalIssues, developerName, filters?.timeframe, filters?.projects])
+  }, [data?.minimalIssues, developerName, filters?.timeframe, filters?.projects, filters?.statuses, filters?.issueTypes])
   
   // Additional computed values
   const computedData = useMemo(() => {

@@ -22,4 +22,6 @@ module.exports = {
     '!src/setupTests.js',
   ],
   verbose: true,
+  // Ensure proper module resolution
+  moduleDirectories: ['node_modules', 'src'],
 }

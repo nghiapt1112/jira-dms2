@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { getSeverityColor } from '../../../../shared/constants/severityConstants.js'
+import { memberConfiguration } from '../../../../constants/memberConfiguration.js'
 import { Box, Paper, Typography, Chip } from '@mui/material'
 import { ChartJSLineChart } from '../../../../components/charts/ChartJS'
 import { transformSeriesData } from '../../../../utils/dataTransformers'
@@ -15,6 +16,14 @@ const BugTrendAnalysis = React.memo(({
   // 1. Hooks first (none needed)
   
   // 2. Memoized values
+  const bugStatusMapping = useMemo(() => {
+    return memberConfiguration.BUG_STATUS_MAPPING || {
+      resolved: ["Done", "Resolved", "Closed", "Fixed"],
+      notFixed: ["Won't Fix", "Duplicate", "Cannot Reproduce", "Invalid"],
+      new: ["To Do", "Open"],
+      inProgress: ["In Progress", "In Review", "Testing"]
+    }
+  }, [])
   const chartData = useMemo(() => {
     
     if (!data || !data.data || data.data.length === 0) {
@@ -25,6 +34,9 @@ const BugTrendAnalysis = React.memo(({
       })
       return null
     }
+    
+    // Chart now shows 4 lines: Total, Resolved, Not Fixed, New, In Progress
+    // Using BUG_STATUS_MAPPING from memberConfiguration for consistent categorization
     
     // Get time period from config or default to month
     const timePeriod = data.config?.timePeriod || 'month'
@@ -46,9 +58,21 @@ const BugTrendAnalysis = React.memo(({
           curve: 'linear'
         },
         {
-          dataKey: 'pending',
-          label: 'Pending',
-          color: '#ed6c02',
+          dataKey: 'notFixed',
+          label: 'Not Fixed',
+          color: '#f44336',
+          curve: 'linear'
+        },
+        {
+          dataKey: 'new',
+          label: 'New',
+          color: '#2196f3',
+          curve: 'linear'
+        },
+        {
+          dataKey: 'inProgress',
+          label: 'In Progress',
+          color: '#ff9800',
           curve: 'linear'
         }
       ],
@@ -424,7 +448,9 @@ BugTrendAnalysis.propTypes = {
       month: PropTypes.string.isRequired,
       total: PropTypes.number.isRequired,
       resolved: PropTypes.number.isRequired,
-      pending: PropTypes.number.isRequired
+      notFixed: PropTypes.number.isRequired,
+      new: PropTypes.number.isRequired,
+      inProgress: PropTypes.number.isRequired
     }))
   }),
   metrics: PropTypes.shape({

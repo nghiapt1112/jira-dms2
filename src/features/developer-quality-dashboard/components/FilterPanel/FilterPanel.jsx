@@ -340,9 +340,9 @@ const FilterPanel = React.memo(({
           <InputLabel>Statuses</InputLabel>
           <Select
             multiple
-            value={filters.statusFilter || []}
+            value={filters.statuses || []}
             onChange={(e) => {
-              handleFilterChange('statusFilter', e.target.value)
+              handleFilterChange('statuses', e.target.value)
               if (onStatusFilterChange) {
                 onStatusFilterChange(e.target.value)
               }

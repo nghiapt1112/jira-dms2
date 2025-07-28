@@ -662,6 +662,50 @@ export const memberConfiguration = {
     "Cosmetic"
   ],
 
+  // Bug status mapping for trend analysis - centralized configuration
+  BUG_STATUS_MAPPING: {
+    resolved: [
+      "Done", 
+      "Resolved", 
+      "Closed", 
+      "Fixed",
+      "Dev / QA Done",
+      "Dev Test",
+      "Test by Dev",
+      "Test by dev"
+    ],
+    notFixed: [
+      "Won't Fix", 
+      "Duplicate", 
+      "Cannot Reproduce", 
+      "Invalid",
+      "Rejected",
+      "Canceled(DO NOT USE)",
+      "Closed(DO NOT USE)"
+    ],
+    new: [
+      "To Do", 
+      "Open",
+      "Selected for Development"
+    ],
+    inProgress: [
+      "In Progress", 
+      "In Review", 
+      "Testing",
+      "Review",
+      "In QA",
+      "QA in Progress",
+      "Under QA",
+      "Ready for QA",
+      "Waiting for QA",
+      "BACK FROM QA",
+      "QA Blocked",
+      "Blocked by QA",
+      "Blocked By QA",
+      "Blocked (QA)"
+    ]
+  },
+
   // Default filter configuration
   filterDefaults: {
     // Default status filter for "delivered" work metrics
@@ -697,11 +741,12 @@ export const memberConfiguration = {
     
     // Available statuses that can be selected in filters
     availableStatuses: [
-      "To Do",
-      "In Progress", 
-      "In Review",
-      "Done",
-      "Closed"
+      "BACK FROM QA", "BLOCK", "BLOCKED", "Blocked", "Blocked (QA)",
+      "Blocked By QA", "Blocked by QA", "CONFIRM BY PM", "Dev / QA Done",
+      "Dev Test", "Done", "IN QA", "In QA", "Log Time", "NO ACTION",
+      "ON HOLD", "Pending", "QA", "QA Blocked", "QA in Progress",
+      "Ready for QA", "Review", "Selected for Development", "Test by Dev",
+      "Test by dev", "Under QA", "Verify(DO NOT USE)", "Waiting for QA"
     ]
   },
 
