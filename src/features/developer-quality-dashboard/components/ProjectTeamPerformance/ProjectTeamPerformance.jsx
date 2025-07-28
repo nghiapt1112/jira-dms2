@@ -71,7 +71,7 @@ const ProjectTeamPerformance = React.memo(({
     // CRITICAL: Calculate number of time periods to multiply target by
     const numberOfPeriods = data.data.length
     
-    if (pointType === 'HOURS_BASE') {
+    if (pointType === 'STORYPOINT_HOURS_BASE') {
       const config = targets.all
       let perPeriodTarget
       switch (timeframe) {
@@ -93,7 +93,7 @@ const ProjectTeamPerformance = React.memo(({
       return [{ 
         value: totalTarget, 
         label: `Target (All) - ${numberOfPeriods} ${timeframe}s`, 
-        config: memberConfiguration.targetLineConfig.HOURS_BASE.all 
+        config: memberConfiguration.targetLineConfig.STORYPOINT_HOURS_BASE.all 
       }]
     } else if (pointType === 'STORYPOINT_BASE') {
       const middleTargets = targets.middle
@@ -146,7 +146,7 @@ const ProjectTeamPerformance = React.memo(({
     }
     
     // For STORYPOINT_BASE projects, we need to check developer level
-    // For HOURS_BASE projects, use the single target value
+    // For STORYPOINT_HOURS_BASE projects, use the single target value
     return developers.filter(dev => {
       const performance = dev.storyPoints || 0
       
@@ -164,7 +164,7 @@ const ProjectTeamPerformance = React.memo(({
           return performance >= targetValue
         }
       } else {
-        // HOURS_BASE projects use single target
+        // STORYPOINT_HOURS_BASE projects use single target
         const targetValue = targetValues[0]?.value
         if (performanceFilter === 'under') {
           return performance < targetValue

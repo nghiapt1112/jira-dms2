@@ -17,11 +17,11 @@ const mockMemberConfiguration = {
     { jiraId: "7", name: "nhat nguyen", level: "senior" }
   ],
   projects: [
-    { key: "BCP", name: "Borderless City Project", pointType: "HOURS_BASE" },
+    { key: "BCP", name: "Borderless City Project", pointType: "STORYPOINT_HOURS_BASE" },
     { key: "CF", name: "Calbee-FfF", pointType: "STORYPOINT_BASE" },
-    { key: "DAICO", name: "Daicolo", pointType: "HOURS_BASE" },
-    { key: "WON", name: "WonderTable", pointType: "HOURS_BASE" },
-    { key: "ENT", name: "Enterprise Team", pointType: "HOURS_BASE" }
+    { key: "DAICO", name: "Daicolo", pointType: "STORYPOINT_HOURS_BASE" },
+    { key: "WON", name: "WonderTable", pointType: "STORYPOINT_HOURS_BASE" },
+    { key: "ENT", name: "Enterprise Team", pointType: "STORYPOINT_HOURS_BASE" }
   ]
 }
 

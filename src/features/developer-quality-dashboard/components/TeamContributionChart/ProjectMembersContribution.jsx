@@ -93,7 +93,7 @@ const ProjectMembersContribution = React.memo(({
     // Calculate number of time periods to multiply target by
     const numberOfPeriods = data.data.length
     
-    if (pointType === 'HOURS_BASE') {
+    if (pointType === 'STORYPOINT_HOURS_BASE') {
       const config = targets.all
       let perPeriodTarget
       switch (timeframe) {
@@ -115,7 +115,7 @@ const ProjectMembersContribution = React.memo(({
       return [{ 
         value: totalTarget, 
         label: `Target (All) - ${numberOfPeriods} ${timeframe}s`, 
-        config: memberConfiguration.targetLineConfig.HOURS_BASE.all 
+        config: memberConfiguration.targetLineConfig.STORYPOINT_HOURS_BASE.all 
       }]
     } else if (pointType === 'STORYPOINT_BASE') {
       const middleTargets = targets.middle

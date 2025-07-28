@@ -128,7 +128,7 @@ const FilterPanel = React.memo(({
     onFiltersChange({
       developers: [],
       projects: [],
-      issueTypes: [],
+      issueTypes: memberConfiguration.issueTypes || [],
       statuses: [],
       severities: [],
       rootCauses: [],

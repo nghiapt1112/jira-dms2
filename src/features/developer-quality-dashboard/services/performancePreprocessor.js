@@ -53,7 +53,7 @@ export const preprocessPerformanceData = (performanceMetadata, chartData, filter
     // Pre-calculate target lines for this project
     preprocessedData.targetLines[projectKey] = []
 
-    if (pointType === 'HOURS_BASE') {
+    if (pointType === 'STORYPOINT_HOURS_BASE') {
       // Single target line for all developers
       const targets = targetConfig.all
       if (targets) {

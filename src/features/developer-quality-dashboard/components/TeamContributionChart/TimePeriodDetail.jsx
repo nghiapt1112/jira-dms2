@@ -75,7 +75,7 @@ const TimePeriodDetail = React.memo(({
     const timeframe = filters?.timeframe || 'month'
     const targets = memberConfiguration.performanceTargets[pointType]
     
-    if (pointType === 'HOURS_BASE') {
+    if (pointType === 'STORYPOINT_HOURS_BASE') {
       const config = targets.all
       let perPeriodTarget
       switch (timeframe) {
@@ -94,7 +94,7 @@ const TimePeriodDetail = React.memo(({
       return [{ 
         value: perPeriodTarget, // Single period target (not multiplied)
         label: `Target (All) - ${timeframe}`, 
-        config: memberConfiguration.targetLineConfig.HOURS_BASE.all 
+        config: memberConfiguration.targetLineConfig.STORYPOINT_HOURS_BASE.all 
       }]
     } else if (pointType === 'STORYPOINT_BASE') {
       const middleTargets = targets.middle

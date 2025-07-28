@@ -164,10 +164,10 @@ const TeamOverviewChart = ({
       const timeframe = filters.timeframe || 'month'
       
       
-      if (pointType === 'HOURS_BASE') {
-        // SINGLE line for HOURS_BASE projects
-        const config = memberConfiguration.targetLineConfig.HOURS_BASE.all
-        const targets = memberConfiguration.performanceTargets.HOURS_BASE.all
+      if (pointType === 'STORYPOINT_HOURS_BASE') {
+        // SINGLE line for STORYPOINT_HOURS_BASE projects
+        const config = memberConfiguration.targetLineConfig.STORYPOINT_HOURS_BASE.all
+        const targets = memberConfiguration.performanceTargets.STORYPOINT_HOURS_BASE.all
         
         
         let targetValue

@@ -54,7 +54,7 @@ export const useDeveloperQualityStore = create(
       filters: {
         developers: [],
         projects: [],
-        issueTypes: [],
+        issueTypes: memberConfiguration.issueTypes || [],
         statuses: [],
         severities: [],
         rootCauses: [],
@@ -167,7 +167,7 @@ export const useDeveloperQualityStore = create(
         filters: {
           developers: [],
           projects: [],
-          issueTypes: [],
+          issueTypes: memberConfiguration.issueTypes || [],
           statuses: [],
           severities: [],
           rootCauses: [],
@@ -193,7 +193,7 @@ export const useDeveloperQualityStore = create(
         filters: {
           developers: [],
           projects: [],
-          issueTypes: [],
+          issueTypes: memberConfiguration.issueTypes || [],
           statuses: [],
           severities: [],
           rootCauses: [],

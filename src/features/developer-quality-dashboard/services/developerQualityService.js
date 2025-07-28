@@ -170,7 +170,7 @@ export const developerQualityService = {
             const project = memberConfiguration.projects.find(p => p.key === projectKey)
             if (project?.pointType) {
               const targetConfig = memberConfiguration.performanceTargets[project.pointType]
-              if (project.pointType === 'HOURS_BASE') {
+              if (project.pointType === 'STORYPOINT_HOURS_BASE') {
                 const allTargets = targetConfig?.all
                 if (allTargets) {
                   switch (period) {
