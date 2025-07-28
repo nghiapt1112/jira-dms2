@@ -1,0 +1,13 @@
+test YUIME only: curl 'https://jira-dms-store-issues.s3.ap-southeast-1.amazonaws.com/jira-current-quarter/Q3-2025-487145.json?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA4EIMUWY2RDMRS5YJ%2F20250728%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20250728T171303Z&X-Amz-Expires=3600&X-Amz-Signature=8a2039c3c1d3db134a6dfa7d6975908e67987276b137b790355019339d5ee4c0&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject' \
+  -H 'Accept: application/json' \
+  -H 'Accept-Language: en-GB,en-US;q=0.9,en;q=0.8' \
+  -H 'Connection: keep-alive' \
+  -H 'Origin: http://localhost:3000' \
+  -H 'Referer: http://localhost:3000/' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: cross-site' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"'

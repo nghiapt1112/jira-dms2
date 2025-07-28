@@ -15,6 +15,10 @@ import {
 } from '../../../shared/utils/timeUtils.js'
 // Import IssueUtils for centralized story point calculations
 import { IssueUtils } from '../../../shared/utils/IssueUtils.js'
+// Import bug categorization utilities
+import { 
+  getInitialBugTrendData 
+} from '../../../shared/utils/bugCategorization.js'
 // REMOVED: targetCalculationService imports - now using preprocessed data (caching strategy fix)
 
 export const filterService = {
@@ -408,7 +412,7 @@ export const filterService = {
         metrics.bugAnalysis.severityDistribution[severity] = 
           (metrics.bugAnalysis.severityDistribution[severity] || 0) + 1
         
-        // Time-based bug trend (supports week, month, quarter)
+        // Time-based bug trend - use pre-processed data from single-loop processing
         if (updated) {
           let timePeriod
           switch (timeframe) {
@@ -424,16 +428,17 @@ export const filterService = {
           
 
           if (!metrics.bugAnalysis.monthlyBugTrend.has(timePeriod)) {
-            metrics.bugAnalysis.monthlyBugTrend.set(timePeriod, { total: 0, resolved: 0, pending: 0 })
+            metrics.bugAnalysis.monthlyBugTrend.set(timePeriod, getInitialBugTrendData())
           }
           const periodData = metrics.bugAnalysis.monthlyBugTrend.get(timePeriod)
+          
+          // Use pre-processed categorization data from single-loop processing
+          // No re-processing during filtering - data should already be categorized
           periodData.total += 1
           
-          if (issue.resolved) {
-            periodData.resolved += 1
-          } else {
-            periodData.pending += 1
-          }
+          // Use the issue's pre-processed categorization
+          const category = issue.bugCategory || (issue.resolved ? 'resolved' : 'inProgress')
+          periodData[category] += 1
         }
       }
       
@@ -490,7 +495,12 @@ export const filterService = {
               const result = { 
                 [periodKey]: String(period), 
                 ...data,
-                bugs: data.total || 0  // Map 'total' to 'bugs' for PropTypes compatibility
+                bugs: data.total || 0,  // Map 'total' to 'bugs' for PropTypes compatibility
+                // Ensure all new categories are present
+                resolved: data.resolved || 0,
+                notFixed: data.notFixed || 0,
+                new: data.new || 0,
+                inProgress: data.inProgress || 0
               }
               
               // Add additional metadata for tooltips

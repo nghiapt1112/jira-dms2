@@ -1,9 +1,7 @@
 export const JIRA_CONSTANTS = {
   // Default projects from your curl command
   DEFAULT_PROJECTS: [
-    "WON", "YUIM", "STU", "DAAI", "DAICO", "TOUC", "TG", "NKR2", 
-    "SG", "BCP", "SIP", "IP", "HG", "CF", "TIT", "OOPS", "JSR", 
-    "RAG", "ECHO", "SEK", "PMAX", "MIT", "IS", "KB", "PDS", "TS", "YUB"
+    "YUIM"
   ],
   
   // Standard JIRA fields

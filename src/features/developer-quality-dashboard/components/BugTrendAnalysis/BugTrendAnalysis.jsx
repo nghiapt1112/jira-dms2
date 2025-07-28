@@ -16,14 +16,7 @@ const BugTrendAnalysis = React.memo(({
   // 1. Hooks first (none needed)
   
   // 2. Memoized values
-  const bugStatusMapping = useMemo(() => {
-    return memberConfiguration.BUG_STATUS_MAPPING || {
-      resolved: ["Done", "Resolved", "Closed", "Fixed"],
-      notFixed: ["Won't Fix", "Duplicate", "Cannot Reproduce", "Invalid"],
-      new: ["To Do", "Open"],
-      inProgress: ["In Progress", "In Review", "Testing"]
-    }
-  }, [])
+  // Use centralized bug categorization utility instead of duplicating mapping
   const chartData = useMemo(() => {
     
     if (!data || !data.data || data.data.length === 0) {

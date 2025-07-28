@@ -55,7 +55,7 @@ export const useDeveloperQualityStore = create(
         developers: [],
         projects: [],
         issueTypes: memberConfiguration.issueTypes || [],
-        statuses: [],
+        statuses: memberConfiguration.filterDefaults.statusFilter || [],
         severities: [],
         rootCauses: [],
         dateRange: {
@@ -168,7 +168,7 @@ export const useDeveloperQualityStore = create(
           developers: [],
           projects: [],
           issueTypes: memberConfiguration.issueTypes || [],
-          statuses: [],
+          statuses: memberConfiguration.filterDefaults.statusFilter || [],
           severities: [],
           rootCauses: [],
           dateRange: {
@@ -194,7 +194,7 @@ export const useDeveloperQualityStore = create(
           developers: [],
           projects: [],
           issueTypes: memberConfiguration.issueTypes || [],
-          statuses: [],
+          statuses: memberConfiguration.filterDefaults.statusFilter || [],
           severities: [],
           rootCauses: [],
           dateRange: {

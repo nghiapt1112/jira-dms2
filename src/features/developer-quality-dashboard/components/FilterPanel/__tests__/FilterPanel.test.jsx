@@ -2,6 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material/styles'
 import theme from '../../../../../theme'
+import { memberConfiguration } from '../../../../../constants/memberConfiguration'
 
 import FilterPanel from '../FilterPanel'
 
@@ -280,9 +281,16 @@ describe('FilterPanel', () => {
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
         developers: [],
         projects: [],
-        issueTypes: [],
+        issueTypes: memberConfiguration.issueTypes || [],
+        statuses: memberConfiguration.filterDefaults.statusFilter || [],
         severities: [],
-        dateRange: null
+        rootCauses: [],
+        dateRange: {
+          startDate: null,
+          endDate: null
+        },
+        timeframe: 'month',
+        statusFilter: memberConfiguration.filterDefaults.statusFilter
       })
     })
   })
@@ -416,7 +424,7 @@ describe('FilterPanel', () => {
 
       // Check that select elements have proper roles
       const selects = screen.getAllByRole('combobox')
-      expect(selects).toHaveLength(4)
+      expect(selects).toHaveLength(7)
       
       selects.forEach(select => {
         expect(select).toHaveAttribute('aria-haspopup', 'listbox')

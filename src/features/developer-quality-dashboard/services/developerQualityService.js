@@ -36,6 +36,12 @@ import {
   calculateDeveloperTimeEfficiency
 } from '../utils/metricCalculations'
 
+import { 
+  processBugForTrendAnalysis, 
+  getInitialBugTrendData,
+  categorizeBugForTrend
+} from '../../../shared/utils/bugCategorization.js'
+
 // Cache configured project names for efficient lookup
 const CONFIGURED_PROJECT_NAMES = new Set(
   memberConfiguration.projects?.map(p => p.name) || []
@@ -61,21 +67,22 @@ export const developerQualityService = {
   processJiraIssuesForDeveloperQuality: async (issues) => {
     const startTime = performance.now()
     
-    // Initialize data structures
-    const developerQualityData = {
-      metrics: developerQualityService.initializeMetrics(),
-      chartData: developerQualityService.initializeChartData(),
-      indices: developerQualityService.initializeIndices(),
-      filterOptions: developerQualityService.initializeFilterOptions(),
-      minimalIssues: [],
-      performanceMetadata: {
-        // Performance metadata by project -> developer -> period -> {actualPoints, target, performance}
-        projectPerformance: new Map(), // projectKey -> Map(developerName -> Map(periodKey -> {actualPoints, target, performance}))
-        periodKeys: new Set(), // All unique period keys encountered
-        developers: new Set(), // All developers encountered
-        projects: new Set() // All projects encountered
+    try {
+      // Initialize data structures
+      const developerQualityData = {
+        metrics: developerQualityService.initializeMetrics(),
+        chartData: developerQualityService.initializeChartData(),
+        indices: developerQualityService.initializeIndices(),
+        filterOptions: developerQualityService.initializeFilterOptions(),
+        minimalIssues: [],
+        performanceMetadata: {
+          // Performance metadata by project -> developer -> period -> {actualPoints, target, performance}
+          projectPerformance: new Map(), // projectKey -> Map(developerName -> Map(periodKey -> {actualPoints, target, performance}))
+          periodKeys: new Set(), // All unique period keys encountered
+          developers: new Set(), // All developers encountered
+          projects: new Set() // All projects encountered
+        }
       }
-    }
     
     // SPECIAL DEBUG: Check for specific missing tickets in source data
     const missingTickets = ['YUIM-328', 'YUIM-521', 'YUIM-689', 'YUIM-690']
@@ -94,6 +101,7 @@ export const developerQualityService = {
 
     // SINGLE LOOP PROCESSING - integrate with existing main loop
     issues.forEach((issue, index) => {
+      try {
       // Enhanced logging for comprehensive data pipeline tracking
       const assignee = issue.fields?.assignee?.displayName || 'Unassigned'
       const assigneeAccountId = issue.fields?.assignee?.accountId || null
@@ -247,8 +255,14 @@ export const developerQualityService = {
         // CRITICAL FIX: Add time tracking data to minimalIssues for consistency
         timeSpentHours: timeMetrics.timeSpentHours,
         hasTimeLogged: timeMetrics.hasTimeLogged,
-        estimationAccuracy: timeMetrics.estimationAccuracy
+        estimationAccuracy: timeMetrics.estimationAccuracy,
+        // Add bug categorization for reuse during filtering (caching strategy compliance)
+        bugCategory: issueType === 'Bug' ? categorizeBugForTrend(issue) : null
       })
+      } catch (issueError) {
+        console.warn(`Error processing issue ${index}:`, issueError, issue)
+        // Continue processing other issues
+      }
     })
     
     // Log processing completion
@@ -304,6 +318,30 @@ export const developerQualityService = {
     }
     
     return finalData
+    } catch (error) {
+      console.error('Error processing JIRA issues for developer quality:', error)
+      
+      // Return fallback data structure
+      return {
+        metrics: developerQualityService.initializeMetrics(),
+        chartData: developerQualityService.initializeChartData(),
+        indices: developerQualityService.initializeIndices(),
+        filterOptions: developerQualityService.initializeFilterOptions(),
+        minimalIssues: [],
+        performanceMetadata: {
+          projectPerformance: new Map(),
+          periodKeys: new Set(),
+          developers: new Set(),
+          projects: new Set()
+        },
+        error: error.message,
+        metadata: {
+          processingTime: performance.now() - startTime,
+          totalIssues: issues.length,
+          error: true
+        }
+      }
+    }
   },
 
   /**
@@ -394,7 +432,7 @@ export const developerQualityService = {
       data: [],
       config: {
         xAxisKey: 'month',
-        lines: ['total', 'resolved', 'pending']
+        lines: ['total', 'resolved', 'notFixed', 'new', 'inProgress']
       }
     },
     rootCauseChart: {
@@ -561,7 +599,7 @@ export const developerQualityService = {
       data.metrics.bugAnalysis.severityDistribution[severity] = 
         (data.metrics.bugAnalysis.severityDistribution[severity] || 0) + 1
       
-      // Bug trends by time period
+      // Bug trends by time period with new categorization - integrated into single-loop processing
       if (issue.fields?.created) {
         const periods = {
           month: getTimePeriodKey(issue.fields.updated, 'month'),
@@ -569,20 +607,16 @@ export const developerQualityService = {
           quarter: getTimePeriodKey(issue.fields.updated, 'quarter')
         }
         
-        // Track bugs by all time periods
+        // Track bugs by all time periods with new categorization
         Object.entries(periods).forEach(([periodType, periodKey]) => {
           const trendMap = data.metrics.bugAnalysis[`${periodType}lyBugTrend`]
           if (!trendMap.has(periodKey)) {
-            trendMap.set(periodKey, { total: 0, resolved: 0, pending: 0 })
+            trendMap.set(periodKey, getInitialBugTrendData())
           }
           const periodData = trendMap.get(periodKey)
-          periodData.total += 1
           
-          if (issue.fields?.resolutiondate) {
-            periodData.resolved += 1
-          } else {
-            periodData.pending += 1
-          }
+          // Use new categorization logic - processed once during initial data processing
+          processBugForTrendAnalysis(issue, periodData, periodKey)
         })
       }
     }

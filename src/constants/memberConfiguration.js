@@ -670,9 +670,6 @@ export const memberConfiguration = {
       "Closed", 
       "Fixed",
       "Dev / QA Done",
-      "Dev Test",
-      "Test by Dev",
-      "Test by dev"
     ],
     notFixed: [
       "Won't Fix", 
@@ -684,9 +681,10 @@ export const memberConfiguration = {
       "Closed(DO NOT USE)"
     ],
     new: [
-      "To Do", 
+      "To Do", "TODO",
       "Open",
-      "Selected for Development"
+      "Selected for Development",
+      "BACK FROM QA",
     ],
     inProgress: [
       "In Progress", 
@@ -702,7 +700,9 @@ export const memberConfiguration = {
       "QA Blocked",
       "Blocked by QA",
       "Blocked By QA",
-      "Blocked (QA)"
+      "Blocked (QA)",
+      "Dev Test",
+      "Test by Dev",
     ]
   },
 
@@ -710,14 +710,19 @@ export const memberConfiguration = {
   filterDefaults: {
     // Default status filter for "delivered" work metrics
     // This is used for story points, time tracking, and efficiency calculations
-    statusFilter: ["BACK FROM QA",
+    statusFilter: [
+      "BACK FROM QA",
       "BLOCK",
       "BLOCKED",
+      "Back from QA",
       "Blocked",
       "Blocked (QA)",
       "Blocked By QA",
       "Blocked by QA",
       "CONFIRM BY PM",
+      "Canceled(DO NOT USE)",
+      "Closed(DO NOT USE)",
+      "Create Document",
       "Dev / QA Done",
       "Dev Test",
       "Done",
@@ -731,7 +736,6 @@ export const memberConfiguration = {
       "QA Blocked",
       "QA in Progress",
       "Ready for QA",
-      "Review",
       "Selected for Development",
       "Test by Dev",
       "Test by dev",
@@ -741,12 +745,11 @@ export const memberConfiguration = {
     
     // Available statuses that can be selected in filters
     availableStatuses: [
-      "BACK FROM QA", "BLOCK", "BLOCKED", "Blocked", "Blocked (QA)",
-      "Blocked By QA", "Blocked by QA", "CONFIRM BY PM", "Dev / QA Done",
-      "Dev Test", "Done", "IN QA", "In QA", "Log Time", "NO ACTION",
-      "ON HOLD", "Pending", "QA", "QA Blocked", "QA in Progress",
-      "Ready for QA", "Review", "Selected for Development", "Test by Dev",
-      "Test by dev", "Under QA", "Verify(DO NOT USE)", "Waiting for QA"
+     "To Do",
+     "Review",
+     "Rejected",
+      "In Progress", 
+      "In Review",
     ]
   },
 

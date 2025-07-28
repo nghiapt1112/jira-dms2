@@ -129,7 +129,7 @@ const FilterPanel = React.memo(({
       developers: [],
       projects: [],
       issueTypes: memberConfiguration.issueTypes || [],
-      statuses: [],
+      statuses: memberConfiguration.filterDefaults.statusFilter || [],
       severities: [],
       rootCauses: [],
       dateRange: {
@@ -204,6 +204,72 @@ const FilterPanel = React.memo(({
     }
   }, [showTargetLines, onPerformanceControlsChange])
   
+  // Generic function to sort filter options with three-tier hierarchy:
+  // 1. filterDefaults.availableStatuses always on top
+  // 2. Unselected items (excluding availableStatuses)
+  // 3. Selected items sorted alphabetically
+  const getSortedOptions = useCallback((options, selectedValues, availableStatuses = []) => {
+    if (!options?.length) return []
+    
+    const allOptions = Array.from(options)
+    
+    // Separate selected and unselected
+    const selected = allOptions.filter(option => selectedValues.includes(option))
+    const unselected = allOptions.filter(option => !selectedValues.includes(option))
+    
+    // Sort selected alphabetically
+    const sortedSelected = selected.sort((a, b) => a.localeCompare(b))
+    
+    // For statuses, use three-tier hierarchy
+    if (availableStatuses.length > 0) {
+      // 1. Available statuses always on top (in their original order)
+      const availableOnTop = availableStatuses.filter(status => allOptions.includes(status))
+      
+      // 2. Unselected items (excluding available statuses) - also sorted alphabetically
+      const unselectedExcludingAvailable = unselected
+        .filter(option => !availableStatuses.includes(option))
+        .sort((a, b) => a.localeCompare(b))
+      
+      // 3. Selected items sorted alphabetically
+      return [...availableOnTop, ...unselectedExcludingAvailable, ...sortedSelected]
+    }
+    
+    // For other filters, use two-tier hierarchy (unselected first, then selected)
+    return [...unselected, ...sortedSelected]
+  }, [])
+
+  // Sort statuses with three-tier hierarchy: availableStatuses on top, then unselected, then selected alphabetically
+  const sortedStatuses = useMemo(() => {
+    const currentSelected = filters.statuses || memberConfiguration.filterDefaults.statusFilter || []
+    const availableStatuses = memberConfiguration.filterDefaults.availableStatuses || []
+    return getSortedOptions(filterOptions?.statuses, currentSelected, availableStatuses)
+  }, [filterOptions?.statuses, filters.statuses, getSortedOptions])
+
+  // Sort developers with unselected on top and selected sorted alphabetically
+  const sortedDevelopers = useMemo(() => {
+    return getSortedOptions(filterOptions?.developers, filters.developers || [])
+  }, [filterOptions?.developers, filters.developers, getSortedOptions])
+
+  // Sort projects with unselected on top and selected sorted alphabetically
+  const sortedProjects = useMemo(() => {
+    return getSortedOptions(filterOptions?.projects, filters.projects || [])
+  }, [filterOptions?.projects, filters.projects, getSortedOptions])
+
+  // Sort issue types with unselected on top and selected sorted alphabetically
+  const sortedIssueTypes = useMemo(() => {
+    return getSortedOptions(filterOptions?.issueTypes, filters.issueTypes || [])
+  }, [filterOptions?.issueTypes, filters.issueTypes, getSortedOptions])
+
+  // Sort severities with unselected on top and selected sorted alphabetically
+  const sortedSeverities = useMemo(() => {
+    return getSortedOptions(filterOptions?.severities, filters.severities || [])
+  }, [filterOptions?.severities, filters.severities, getSortedOptions])
+
+  // Sort root causes with unselected on top and selected sorted alphabetically
+  const sortedRootCauses = useMemo(() => {
+    return getSortedOptions(filterOptions?.rootCauses, filters.rootCauses || [])
+  }, [filterOptions?.rootCauses, filters.rootCauses, getSortedOptions])
+
   // Performance filter options
   const performanceFilterOptions = useMemo(() => [
     {
@@ -340,7 +406,7 @@ const FilterPanel = React.memo(({
           <InputLabel>Statuses</InputLabel>
           <Select
             multiple
-            value={filters.statuses || []}
+            value={filters.statuses || memberConfiguration.filterDefaults.statusFilter || []}
             onChange={(e) => {
               handleFilterChange('statuses', e.target.value)
               if (onStatusFilterChange) {
@@ -368,8 +434,8 @@ const FilterPanel = React.memo(({
               },
             }}
           >
-            {filterOptions.statuses?.length > 0 ? (
-              filterOptions.statuses.map((status) => (
+            {sortedStatuses.length > 0 ? (
+              sortedStatuses.map((status) => (
                 <MenuItem key={status} value={status}>
                   {status}
                 </MenuItem>
@@ -414,8 +480,8 @@ const FilterPanel = React.memo(({
               },
             }}
           >
-            {filterOptions.developers?.length > 0 ? (
-              filterOptions.developers.map((developer) => (
+            {sortedDevelopers.length > 0 ? (
+              sortedDevelopers.map((developer) => (
                 <MenuItem key={developer} value={developer}>
                   {developer}
                 </MenuItem>
@@ -475,8 +541,8 @@ const FilterPanel = React.memo(({
               },
             }}
           >
-            {filterOptions.projects?.length > 0 ? (
-              filterOptions.projects.map((project) => (
+            {sortedProjects.length > 0 ? (
+              sortedProjects.map((project) => (
                 <MenuItem key={project} value={project}>
                   {project}
                 </MenuItem>
@@ -521,8 +587,8 @@ const FilterPanel = React.memo(({
               },
             }}
           >
-            {filterOptions.issueTypes?.length > 0 ? (
-              filterOptions.issueTypes.map((type) => (
+            {sortedIssueTypes.length > 0 ? (
+              sortedIssueTypes.map((type) => (
                 <MenuItem key={type} value={type}>
                   {type}
                 </MenuItem>
@@ -567,8 +633,8 @@ const FilterPanel = React.memo(({
               },
             }}
           >
-            {filterOptions.severities?.length > 0 ? (
-              filterOptions.severities.map((severity) => (
+            {sortedSeverities.length > 0 ? (
+              sortedSeverities.map((severity) => (
                 <MenuItem key={severity} value={severity}>
                   {severity}
                 </MenuItem>
@@ -613,8 +679,8 @@ const FilterPanel = React.memo(({
               },
             }}
           >
-            {filterOptions.rootCauses?.length > 0 ? (
-              filterOptions.rootCauses.map((rootCause) => (
+            {sortedRootCauses.length > 0 ? (
+              sortedRootCauses.map((rootCause) => (
                 <MenuItem key={rootCause} value={rootCause}>
                   {rootCause}
                 </MenuItem>
