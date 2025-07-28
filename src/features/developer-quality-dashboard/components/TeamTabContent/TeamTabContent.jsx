@@ -71,6 +71,7 @@ const TeamTabContent = React.memo(({
         <Grid item {...gridConfig.primary}>
           <ProjectTeamPerformance
             data={filteredData.filteredChartData.teamContributionChart}
+            metrics={filteredData.filteredMetrics}
             filters={filters}
             showTargetLines={performanceControls.showTargetLines}
             performanceFilter={performanceControls.performanceFilter}

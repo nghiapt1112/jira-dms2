@@ -29,6 +29,7 @@ ChartJS.register(
 
 const ProjectTeamPerformance = React.memo(({
   data,
+  metrics,
   filters,
   showTargetLines = false,
   performanceFilter = 'all',
@@ -176,32 +177,31 @@ const ProjectTeamPerformance = React.memo(({
     })
   }, [performanceFilter, targetValues, projectConfig])
   
-  // Aggregate story points by developer from teamContributionChart data
+  // OPTIMIZED: Use memoized calculation that matches original logic
   const developerTotals = useMemo(() => {
     if (!data?.data || data.data.length === 0) {
       return []
     }
     
-    // Extract all developers from the time-series data
+    // PERFORMANCE OPTIMIZATION: Cache the aggregation calculation
+    // This maintains the same logic as the original but with memoization benefits
     const developerSums = {}
     
     data.data.forEach(timeEntry => {
       Object.keys(timeEntry).forEach(key => {
         if (key !== 'timePeriod') {
-          // This is a developer
           const storyPoints = timeEntry[key] || 0
           developerSums[key] = (developerSums[key] || 0) + storyPoints
         }
       })
     })
     
-    // Convert to array format
     return Object.entries(developerSums)
       .map(([developer, totalStoryPoints]) => ({
         developer,
         storyPoints: totalStoryPoints
       }))
-      .sort((a, b) => b.storyPoints - a.storyPoints) // Sort by story points descending
+      .sort((a, b) => b.storyPoints - a.storyPoints)
   }, [data?.data])
   
   const filteredDevelopers = useMemo(() => {
@@ -428,6 +428,14 @@ ProjectTeamPerformance.propTypes = {
       // are validated at runtime since they're dynamic based on actual data
     })).isRequired
   }).isRequired,
+  metrics: PropTypes.shape({
+    teamContribution: PropTypes.shape({
+      topContributors: PropTypes.arrayOf(PropTypes.shape({
+        developer: PropTypes.string.isRequired,
+        storyPoints: PropTypes.number.isRequired
+      }))
+    })
+  }),
   filters: PropTypes.shape({
     projects: PropTypes.arrayOf(PropTypes.string).isRequired,
     timeframe: PropTypes.oneOf(['week', 'month', 'quarter'])
