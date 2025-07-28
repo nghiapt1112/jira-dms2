@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material'
 import { useDeveloperTickets } from '../../hooks/useDeveloperTickets'
 import { formatDateDDMMYYYY, getWeekDateRange } from '../../../../shared/utils/timeUtils'
+import { IssueUtils } from '../../../../shared/utils/IssueUtils'
 
 /**
  * Get icon for issue type
@@ -188,15 +189,10 @@ TimeGroupHeader.propTypes = {
 const TicketTableRow = React.memo(({ ticket, isCompact }) => {
   const theme = useTheme()
   
-  // Format date (resolved date primary, updated date fallback)
+  // Format date using centralized delivered date logic (resolved -> updated -> created)
   const formatTicketDate = (ticket) => {
-    if (ticket.resolved) {
-      return formatDateDDMMYYYY(ticket.resolved)
-    }
-    if (ticket.updated) {
-      return formatDateDDMMYYYY(ticket.updated)
-    }
-    return 'No date'
+    const deliveredDate = IssueUtils.getDeliveredDate(ticket)
+    return deliveredDate ? formatDateDDMMYYYY(deliveredDate) : 'No date'
   }
   
   return (
