@@ -70,7 +70,7 @@ class CacheOptimizationService {
       }
       
       timer?.end()
-      console.log('Memory cleanup completed')
+  
     } catch (error) {
       timer?.end()
       console.error('Memory cleanup failed:', error)
@@ -98,7 +98,7 @@ class CacheOptimizationService {
       }
       
       timer?.end()
-      console.log('Cache warmup completed')
+  
     } catch (error) {
       timer?.end()
       console.error('Cache warmup failed:', error)

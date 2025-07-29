@@ -16,7 +16,7 @@ import {
   getQuarterFromMonth
 } from '../../../shared/utils/timeUtils.js'
 
-import { dataPipelineLogger } from '../../../shared/services/dataPipelineLogger'
+
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
 import { 
@@ -46,7 +46,8 @@ import {
 import { 
   processBugForTrendAnalysis, 
   getInitialBugTrendData,
-  categorizeBugForTrend
+  categorizeBugForTrend,
+  categorizeBugStatus
 } from '../../../shared/utils/bugCategorization.js'
 
 // Cache configured project names for efficient lookup
@@ -91,20 +92,7 @@ export const developerQualityService = {
         }
       }
     
-    // SPECIAL DEBUG: Check for specific missing tickets in source data
-    const missingTickets = ['YUIM-328', 'YUIM-521', 'YUIM-689', 'YUIM-690']
-    const foundMissingInSource = issues.filter(issue => missingTickets.includes(issue.key))
-    console.log(`🔍 SOURCE DATA DEBUG: Found ${foundMissingInSource.length} out of ${missingTickets.length} missing tickets in source data:`, 
-      foundMissingInSource.map(issue => ({
-        key: issue.key,
-        assignee: issue.fields?.assignee?.displayName || 'Unassigned',
-        project: issue.fields?.project?.name || 'Unknown',
-        status: issue.fields?.status?.name || 'Unknown',
-        resolved: issue.fields?.resolutiondate,
-        updated: issue.fields?.updated,
-        created: issue.fields?.created
-      }))
-    )
+
 
     // Initialize project-specific bug type tracking for master data configuration
     const projectBugTypeTracker = new Map() // project -> Set of raw values
@@ -120,32 +108,14 @@ export const developerQualityService = {
       const projectName = issue.fields?.project?.name || 'Unknown'
       const projectKey = issue.fields?.project?.key || 'Unknown'
       
-      // SPECIAL DEBUG: Log processing of missing tickets
-      if (missingTickets.includes(issue.key)) {
-        console.log(`🔍 PROCESSING MISSING TICKET: ${issue.key}`, {
-          assignee,
-          projectName,
-          projectKey,
-          status: issue.fields?.status?.name,
-          resolved: issue.fields?.resolutiondate,
-          updated: issue.fields?.updated,
-          memberStatus: shouldIncludeMember(assignee, assigneeAccountId)
-        })
-      }
+
       
-      // Log member filtering decision
+      // Check if member should be included
       const memberStatus = shouldIncludeMember(assignee, assigneeAccountId)
-      dataPipelineLogger.logMemberFiltering(issue, memberStatus)
       
-      // Log project filtering decision
+      // Check if project should be included  
       const CONFIGURED_PROJECT_NAMES = new Set(memberConfiguration.projects?.map(p => p.name) || [])
       const isProjectIncluded = CONFIGURED_PROJECT_NAMES.has(projectName)
-      dataPipelineLogger.logProjectFiltering(issue, isProjectIncluded)
-      
-      // Log issue type and status breakdown
-      dataPipelineLogger.logIssueTypeBreakdown(issue)
-      dataPipelineLogger.logStatusBreakdown(issue)
-      dataPipelineLogger.logTimeRangeAnalysis(issue)
       
       // Collect project-specific bug type data for master configuration (only for Bug issues)
       if (issue.fields?.issuetype?.name === 'Bug') {
@@ -335,21 +305,11 @@ export const developerQualityService = {
       }
     })
     
-    // Log processing completion
-    dataPipelineLogger.logProcessingComplete(developerQualityData)
-    
     // Post-process calculations
     developerQualityService.finalizeMetrics(developerQualityData.metrics)
     developerQualityService.finalizeChartData(developerQualityData.chartData, developerQualityData.metrics)
     
-    // Debug: Log filterOptions before and after finalization
-    console.log(`🔍 FILTER OPTIONS BEFORE finalization: developers Set size = ${developerQualityData.filterOptions.developers.size}`)
-    console.log(`🔍 FILTER OPTIONS developers Set contents:`, Array.from(developerQualityData.filterOptions.developers))
-    
     developerQualityService.finalizeFilterOptions(developerQualityData.filterOptions, developerQualityData.indices)
-    
-    console.log(`🔍 FILTER OPTIONS AFTER finalization: developers array length = ${developerQualityData.filterOptions.developers.length}`)
-    console.log(`🔍 FILTER OPTIONS developers array contents:`, developerQualityData.filterOptions.developers)
     
     const processingTime = performance.now() - startTime
     
@@ -428,6 +388,8 @@ export const developerQualityService = {
     // console.log(`Total Unique Values: ${totalUniqueValues}`)
     // console.log(`Standard Categories: ${getStandardBugTypeCategories().join(', ')}`)
     // console.log('='.repeat(80) + '\n')
+    
+
     
     // CRITICAL FIX: Preprocess performance data during initial processing (caching strategy)
     // This eliminates on-demand calculations in chart components
@@ -540,6 +502,26 @@ export const developerQualityService = {
         trends: new Map()
       }
     },
+    bugStatusAnalysis: {
+      byProject: new Map(), // projectKey -> Map(timePeriod -> statusCounts)
+      aggregated: new Map(), // timePeriod -> statusCounts (all projects combined)
+      totalBugs: 0,
+      statusBreakdown: {
+        new: 0,
+        inProgress: 0,
+        resolved: 0,
+        notFixed: 0
+      },
+      // Time period breakdown for different chart views
+      byWeek: new Map(),
+      byMonth: new Map(),
+      byQuarter: new Map(),
+      metadata: {
+        processedAt: null,
+        timePeriods: new Set(),
+        projects: new Set()
+      }
+    },
     rootCauseAnalysis: {
       categories: new Map(),
       trends: new Map()
@@ -628,6 +610,21 @@ export const developerQualityService = {
         showLegend: true,
         colorScheme: 'bugType',
         responsive: true
+      }
+    },
+    bugStatusChart: {
+      type: 'line',
+      data: [],
+      config: {
+        xAxisKey: 'timePeriod',
+        lines: ['new', 'inProgress', 'resolved', 'notFixed'],
+        timePeriod: 'month', // 'week', 'month', 'quarter'
+        colors: {
+          new: '#1976d2',
+          inProgress: '#ff9800',
+          resolved: '#2e7d32',
+          notFixed: '#d32f2f'
+        }
       }
     }
   }),
@@ -809,6 +806,9 @@ export const developerQualityService = {
       
       // Bug type analysis - process bug type distribution
       developerQualityService.processBugTypeAnalysis(issue, data)
+      
+      // Bug status analysis - process bug status trends by time period
+      developerQualityService.processBugStatusAnalysis(issue, data)
     }
 
     // NEW PROCESSING - APPENDED AFTER EXISTING (SAFE)
@@ -965,7 +965,7 @@ export const developerQualityService = {
       const debugKey = `unconfigured_project_${projectName}`
       if (!data._debug_logged) data._debug_logged = new Set()
       if (!data._debug_logged.has(debugKey) && data._debug_logged.size < 10) {
-        console.log(`🚫 PROJECT FILTER: "${projectName}" not in configured projects - skipping`)
+
         data._debug_logged.add(debugKey)
       }
     }
@@ -1985,19 +1985,7 @@ export const developerQualityService = {
   extractBugType: (issue) => {
     const projectKey = issue.fields?.project?.key || 'Unknown'
     const bugTypeField = issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE]
-    
-    // Debug logging to understand the actual data structure
-    if (issue.fields?.issuetype?.name === 'Bug' && Math.random() < 0.01) { // Log 1% of bugs
-      console.log('🐛 BUG TYPE DEBUG:', {
-        issueKey: issue.key,
-        projectKey: projectKey,
-        bugTypeField: bugTypeField,
-        bugTypeFieldType: typeof bugTypeField,
-        bugTypeFieldKeys: bugTypeField ? Object.keys(bugTypeField) : null,
-        customFieldId: JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE,
-        allCustomFields: Object.keys(issue.fields || {}).filter(key => key.startsWith('customfield_'))
-      })
-    }
+
     
     if (bugTypeField) {
       let rawBugType = null
@@ -2025,7 +2013,7 @@ export const developerQualityService = {
       if (rawBugType) {
         // Use project-specific mapping
         const mappedCategory = mapBugTypeToCategory(rawBugType, projectKey)
-        // console.log(`🔄 [DEBUG] Project ${projectKey}: "${rawBugType}" -> "${mappedCategory}"`)
+
         return mappedCategory
       }
     }
@@ -2108,6 +2096,116 @@ export const developerQualityService = {
     // Update metadata
     totalDistribution.metadata.calculatedAt = new Date().toISOString()
   },
+
+  /**
+   * Process bug status analysis for trending by time period
+   * @param {Object} issue - JIRA issue
+   * @param {Object} data - Developer quality data structure
+   */
+  processBugStatusAnalysis: (issue, data) => {
+    // Only process Bug type issues
+    if (issue.fields?.issuetype?.name !== 'Bug') return
+    
+    const projectKey = issue.fields?.project?.key
+    const status = issue.fields?.status?.name
+    
+    if (!projectKey || !status) {
+      return
+    }
+    
+    // Use existing bugCategorization utility with memberConfiguration mapping
+    const statusCategory = categorizeBugStatus(status)
+    
+    // Determine which date to use based on status category (following user specs)
+    const dates = {
+      created: issue.fields?.created,
+      updated: issue.fields?.updated,
+      resolved: issue.fields?.resolutiondate
+    }
+    
+    const relevantDate = developerQualityService.getRelevantDateForBugStatus(dates, statusCategory)
+    if (!relevantDate) return
+    
+    // Process for all time periods (week, month, quarter)
+    const timePeriods = {
+      week: getTimePeriodKey(relevantDate, 'week'),
+      month: getTimePeriodKey(relevantDate, 'month'),
+      quarter: getTimePeriodKey(relevantDate, 'quarter')
+    }
+    
+    // Update project-specific metrics
+    if (!data.metrics.bugStatusAnalysis.byProject.has(projectKey)) {
+      data.metrics.bugStatusAnalysis.byProject.set(projectKey, new Map())
+    }
+    const projectData = data.metrics.bugStatusAnalysis.byProject.get(projectKey)
+    
+    // Update aggregated metrics and time period specific maps
+    Object.entries(timePeriods).forEach(([periodType, periodKey]) => {
+      if (!periodKey) return
+      
+      // Update project-specific data
+      if (!projectData.has(periodKey)) {
+        projectData.set(periodKey, {
+          new: 0, inProgress: 0, resolved: 0, notFixed: 0, total: 0
+        })
+      }
+      const projectPeriodData = projectData.get(periodKey)
+      projectPeriodData[statusCategory] += 1
+      projectPeriodData.total += 1
+      
+      // Update aggregated data
+      if (!data.metrics.bugStatusAnalysis.aggregated.has(periodKey)) {
+        data.metrics.bugStatusAnalysis.aggregated.set(periodKey, {
+          new: 0, inProgress: 0, resolved: 0, notFixed: 0, total: 0
+        })
+      }
+      const aggregatedPeriodData = data.metrics.bugStatusAnalysis.aggregated.get(periodKey)
+      aggregatedPeriodData[statusCategory] += 1
+      aggregatedPeriodData.total += 1
+      
+      // Update time period specific maps
+      const periodMap = data.metrics.bugStatusAnalysis[`by${periodType.charAt(0).toUpperCase() + periodType.slice(1)}`]
+      if (!periodMap.has(periodKey)) {
+        periodMap.set(periodKey, {
+          new: 0, inProgress: 0, resolved: 0, notFixed: 0, total: 0
+        })
+      }
+      const periodMapData = periodMap.get(periodKey)
+      periodMapData[statusCategory] += 1
+      periodMapData.total += 1
+      
+      // Update metadata
+      data.metrics.bugStatusAnalysis.metadata.timePeriods.add(periodKey)
+      data.metrics.bugStatusAnalysis.metadata.projects.add(projectKey)
+    })
+    
+    // Update total counters
+    data.metrics.bugStatusAnalysis.totalBugs += 1
+    data.metrics.bugStatusAnalysis.statusBreakdown[statusCategory] += 1
+  },
+
+  /**
+   * Determine which date to use based on bug status category
+   * Following user specifications for date precedence
+   * @param {Object} dates - Object with created, updated, resolved dates
+   * @param {string} statusCategory - Bug status category
+   * @returns {string|null} Relevant date string
+   */
+  getRelevantDateForBugStatus: (dates, statusCategory) => {
+    switch (statusCategory) {
+      case 'resolved':
+      case 'notFixed':
+        // Use resolutionDate first, fallback to updated
+        return dates.resolved || dates.updated
+      case 'new':
+        // Use created first, fallback to updated
+        return dates.created || dates.updated
+      case 'inProgress':
+      default:
+        // All others use updated (JIRA sets updated == created for new issues)
+        return dates.updated
+    }
+  }
 
 }
 

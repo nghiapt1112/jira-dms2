@@ -500,6 +500,81 @@ export const getSprintMetricsTimeframe = (date) => {
   return `${d.getFullYear()}-W${weekOfYear.toString().padStart(2, '0')}`
 }
 
+/**
+ * Format tooltip date range in DD/MM/YYYY format
+ * Used for bug status chart tooltips (DRY principle)
+ * @param {string} periodKey - Time period key (e.g., '2024-01', '2024-W12', '2024-Q1')
+ * @param {string} timeframe - Time frame type ('week', 'month', 'quarter')
+ * @returns {string} Formatted date range string
+ */
+export const formatTooltipDateRange = (periodKey, timeframe) => {
+  if (!periodKey || !timeframe) return 'Unknown Date Range'
+  
+  const formatDateDDMMYYYY = (date) => {
+    if (!date || (!(date instanceof Date) && typeof date !== 'string')) return 'Invalid Date'
+    
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(dateObj.getTime())) return 'Invalid Date'
+    
+    const day = dateObj.getDate().toString().padStart(2, '0')
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+    const year = dateObj.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+  
+  switch (timeframe) {
+    case 'week': {
+      // Handle week format (e.g., '2024-W12')
+      if (!periodKey.includes('-W')) return periodKey
+      
+      const [yearStr, weekStr] = periodKey.split('-W')
+      const year = parseInt(yearStr)
+      const week = parseInt(weekStr)
+      
+      // ISO week calculation
+      const firstThursday = new Date(year, 0, 4)
+      firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3)
+      
+      const targetThursday = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000)
+      
+      const startDate = new Date(targetThursday)
+      startDate.setDate(targetThursday.getDate() - 3) // Monday
+      
+      const endDate = new Date(targetThursday)
+      endDate.setDate(targetThursday.getDate() + 3) // Sunday
+      
+      return `${formatDateDDMMYYYY(startDate)} - ${formatDateDDMMYYYY(endDate)}`
+    }
+    case 'quarter': {
+      // Handle quarter format (e.g., '2024-Q1')
+      if (!periodKey.includes('-Q')) return periodKey
+      
+      const [year, quarter] = periodKey.split('-Q')
+      const quarterNum = parseInt(quarter)
+      const startMonth = (quarterNum - 1) * 3 + 1
+      const endMonth = startMonth + 2
+      
+      const startDate = new Date(year, startMonth - 1, 1)
+      const endDate = new Date(year, endMonth, 0) // Last day of end month
+      
+      return `${formatDateDDMMYYYY(startDate)} - ${formatDateDDMMYYYY(endDate)}`
+    }
+    case 'month':
+    default: {
+      // Handle month format (e.g., '2024-01')
+      if (!periodKey.includes('-')) return periodKey
+      
+      const [year, month] = periodKey.split('-')
+      const monthNum = parseInt(month)
+      
+      const startDate = new Date(year, monthNum - 1, 1)
+      const endDate = new Date(year, monthNum, 0) // Last day of month
+      
+      return `${formatDateDDMMYYYY(startDate)} - ${formatDateDDMMYYYY(endDate)}`
+    }
+  }
+}
+
 // ==========================================
 // EXPORTS
 // ==========================================
@@ -556,5 +631,6 @@ export default {
   getCacheAge,
   getRecentActivityCutoff,
   calculateProjectDelayDays,
-  getSprintMetricsTimeframe
+  getSprintMetricsTimeframe,
+  formatTooltipDateRange
 }

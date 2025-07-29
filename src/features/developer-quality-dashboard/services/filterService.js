@@ -6,6 +6,7 @@
 
 import { memberConfiguration } from '../../../constants/memberConfiguration'
 import { initializeSeverityBreakdown } from '../../../shared/constants/severityConstants.js'
+
 // Import unified time utilities to eliminate DRY violation
 import { 
   getWeekFromDate,
@@ -642,6 +643,21 @@ export const filterService = {
               typeof val === 'number' ? sum + val : sum, 0)
             return bTotal - aTotal
           })
+      },
+      bugStatusChart: {
+        type: 'line',
+        data: filterService.calculateBugStatusChartData(indices, cacheData, timeframe),
+        config: {
+          xAxisKey: 'timePeriod',
+          lines: ['new', 'inProgress', 'resolved', 'notFixed'],
+          timePeriod: timeframe,
+          colors: {
+            new: '#1976d2',
+            inProgress: '#ff9800',
+            resolved: '#2e7d32',
+            notFixed: '#d32f2f'
+          }
+        }
       }
     }
     
@@ -919,4 +935,47 @@ export const filterService = {
     // Update metadata
     totalDistribution.metadata.calculatedAt = new Date().toISOString()
   },
+
+  /**
+   * Calculate bug status chart data from filtered indices
+   * @param {Set} indices - Filtered issue indices
+   * @param {Object} cacheData - Cached data with bug status metrics
+   * @param {string} timeframe - Time period ('week', 'month', 'quarter')
+   * @returns {Object} Bug status chart data
+   */
+  calculateBugStatusChartData: (indices, cacheData, timeframe = 'month') => {
+    // Get bug status analysis from cache
+    const bugStatusAnalysis = cacheData.metrics?.bugStatusAnalysis
+    
+    if (!bugStatusAnalysis) {
+      return { aggregated: new Map() }
+    }
+    
+    // Use the appropriate time period data
+    const periodKey = `by${timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}`
+    const timePeriodData = bugStatusAnalysis[periodKey] || new Map()
+    
+    // For now, return the full time period data
+    // TODO: In the future, we could filter this based on the indices if needed
+    // This would require cross-referencing indices with time periods
+    
+    // Convert Map data to the format expected by the chart component
+    const chartData = {
+      data: {
+        aggregated: timePeriodData,
+        byProject: bugStatusAnalysis.byProject || new Map(),
+        metadata: {
+          timePeriod: timeframe,
+          totalBugs: bugStatusAnalysis.totalBugs || 0,
+          processedAt: new Date().toISOString()
+        }
+      },
+      config: {
+        timePeriod: timeframe,
+        periodKey: timeframe === 'week' ? 'week' : timeframe === 'quarter' ? 'quarter' : 'month'
+      }
+    }
+    
+    return chartData
+  }
 } 

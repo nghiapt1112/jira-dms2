@@ -138,7 +138,7 @@ export const useDeveloperQualityFilters = () => {
       const result = filterService.applyFilters(filters, dataToFilter)
       const endTime = performance.now()
       
-      console.log(`Filters applied in ${(endTime - startTime).toFixed(2)}ms`)
+
       performanceMonitor.recordMetric('filterTime', endTime - startTime)
       
       return result

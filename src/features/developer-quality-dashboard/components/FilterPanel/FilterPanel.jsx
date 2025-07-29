@@ -105,12 +105,12 @@ const FilterPanel = React.memo(({
   
   // 3. Callbacks
   const handleFilterChange = useCallback((filterType, value) => {
-    console.log(`FilterPanel: Changing ${filterType} filter:`, value)
+    
     
     // Force filter change by creating new array reference for arrays
     if (Array.isArray(value)) {
       const newValue = [...value] // Create a new array reference
-      console.log(`FilterPanel: Created new array reference for ${filterType}:`, newValue)
+
       
       onFiltersChange(prev => ({
         ...prev,
@@ -297,13 +297,13 @@ const FilterPanel = React.memo(({
   
   // 4. Early returns
   if (!filterOptions) {
-    console.log('❌ FILTER PANEL: No filterOptions provided')
+
     return null
   }
 
   // Debug filterOptions (only when empty)
   if (filterOptions?.developers?.length === 0) {
-    console.log('⚠️ FILTER PANEL: No developers in filterOptions, check memberConfiguration')
+
   }
   
   // 5. Render
@@ -511,13 +511,13 @@ const FilterPanel = React.memo(({
               // Create a new array from the selected values
               const newProjects = Array.from(e.target.value)
               
-              console.log('Project filter changing to:', newProjects)
+        
               
               // First, update through normal channels for UI consistency
               handleFilterChange('projects', newProjects)
               
               // Use the dedicated project filter setter to ensure change is detected
-              console.log('Using dedicated setProjectFilters with:', newProjects)
+        
               setProjectFilters(newProjects)
             }}
             input={<OutlinedInput label="Projects" />}

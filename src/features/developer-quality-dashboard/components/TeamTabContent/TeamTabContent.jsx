@@ -1,11 +1,16 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from '@mui/material'
+import { Grid, Box, Button, Chip } from '@mui/material'
+import { BugReport as BugReportIcon } from '@mui/icons-material'
+
+// Import debugging
+import { dataPipelineLogger } from '../../../../shared/services/dataPipelineLogger'
 
 // Import team-focused components
 import TeamContributionChart from '../TeamContributionChart'
 import ProjectTeamPerformance from '../ProjectTeamPerformance'
 import BugTrendAnalysis from '../BugTrendAnalysis'
+import BugStatusChart, { BugStatusDebugPanel } from '../BugStatusChart'
 import BugTypeDistributionChart from '../BugTypeDistributionChart'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
@@ -49,6 +54,9 @@ const TeamTabContent = React.memo(({
     fullWidth: { xs: 12 }
   }), [])
 
+  // Debug panel state
+  const [showBugStatusDebug, setShowBugStatusDebug] = useState(false)
+
   // 3. Render optimized team layout
   return (
     <Grid container spacing={{ xs: 2, sm: 3 }}>
@@ -68,7 +76,7 @@ const TeamTabContent = React.memo(({
       </Grid>
 
       {/* Project Team Performance - Conditional based on single project selection */}
-      {selectedSingleProject && (
+      {/* {selectedSingleProject && (
         <Grid item {...gridConfig.primary}>
           <ProjectTeamPerformance
             data={filteredData.filteredChartData.teamContributionChart}
@@ -78,7 +86,7 @@ const TeamTabContent = React.memo(({
             performanceFilter={performanceControls.performanceFilter}
           />
         </Grid>
-      )}
+      )} */}
 
       {/* Supporting Analytics Section */}
       
@@ -98,6 +106,64 @@ const TeamTabContent = React.memo(({
         />
       </Grid>
 
+      {/* Bug Status Chart - Team context */}
+      <Grid item {...gridConfig.primary}>
+        {(() => {
+          const bugStatusData = filteredData.filteredChartData.bugStatusChart
+          dataPipelineLogger.log('DEBUG', 'BUG_STATUS', 'TeamTabContent passing data to BugStatusChart', {
+            hasBugStatusData: !!bugStatusData,
+            dataStructure: bugStatusData ? Object.keys(bugStatusData) : null,
+            hasData: !!bugStatusData?.data,
+            dataKeys: bugStatusData?.data ? Object.keys(bugStatusData.data) : null,
+            aggregatedSize: bugStatusData?.data?.aggregated?.size || 0,
+            byProjectSize: bugStatusData?.data?.byProject?.size || 0,
+            filters,
+            filterKeys: filters ? Object.keys(filters) : null
+          })
+          return (
+            <Box>
+              {/* Debug Toggle Button */}
+              <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<BugReportIcon />}
+                  onClick={() => setShowBugStatusDebug(!showBugStatusDebug)}
+                  color={showBugStatusDebug ? 'secondary' : 'primary'}
+                >
+                  {showBugStatusDebug ? 'Hide' : 'Show'} Debug Data
+                </Button>
+                {showBugStatusDebug && (
+                  <Chip 
+                    label="Live Debug Mode" 
+                    color="warning" 
+                    size="small" 
+                    variant="outlined"
+                  />
+                )}
+              </Box>
+              
+              {/* Bug Status Chart */}
+              <BugStatusChart
+                data={bugStatusData}
+                filters={filters}
+                height={400}
+                title="Bug Status Trends"
+              />
+              
+              {/* Debug Panel */}
+              {showBugStatusDebug && (
+                <BugStatusDebugPanel
+                  data={bugStatusData}
+                  filters={filters}
+                  title="Bug Status Chart - Live Debug Data"
+                />
+              )}
+            </Box>
+          )
+        })()}
+      </Grid>
+
       {/* Bug Type Distribution Chart - Project-specific */}
       <Grid item {...gridConfig.supporting}>
         <BugTypeDistributionChart
@@ -107,7 +173,7 @@ const TeamTabContent = React.memo(({
           showLegend={true}
           onChartClick={(event, elements) => {
             // Future enhancement: Could filter by bug type
-            console.log('Bug type clicked:', elements)
+    
           }}
         />
       </Grid>
@@ -130,7 +196,7 @@ const TeamTabContent = React.memo(({
           data={filteredData.filteredMetrics.bugRateAnalysis}
           onRowClick={(developer) => {
             // Future enhancement: Could auto-switch to Developer tab
-            console.log('Team view - Show details for developer:', developer)
+      
           }}
           context="team"
         />
@@ -146,6 +212,7 @@ TeamTabContent.propTypes = {
       filteredChartData: PropTypes.shape({
         teamContributionChart: PropTypes.object.isRequired,
         bugTrendChart: PropTypes.object.isRequired,
+        bugStatusChart: PropTypes.object, // Added for BugStatusChart
         rootCauseChart: PropTypes.object.isRequired
       }).isRequired,
       filteredMetrics: PropTypes.shape({

@@ -23,6 +23,7 @@ const CACHE_KEYS = {
   METRICS: {
     TEAM_CONTRIBUTION: 'team_contribution',
     BUG_ANALYSIS: 'bug_analysis',
+    BUG_STATUS_ANALYSIS: 'bug_status_analysis',
     ROOT_CAUSE_ANALYSIS: 'root_cause_analysis',
     DEVELOPER_ROOT_CAUSE: 'developer_root_cause',
     BUG_RATE_ANALYSIS: 'bug_rate_analysis'
@@ -30,6 +31,7 @@ const CACHE_KEYS = {
   CHART_DATA: {
     TEAM_CONTRIBUTION: 'team_contribution_chart',
     BUG_TREND: 'bug_trend_chart',
+    BUG_STATUS: 'bug_status_chart',
     ROOT_CAUSE: 'root_cause_chart',
     DEVELOPER_ROOT_CAUSE: 'developer_root_cause_chart'
   },
@@ -76,7 +78,7 @@ class DeveloperQualityIndexedDB {
     }
 
     return new Promise((resolve, reject) => {
-      console.log(`🔧 Opening IndexedDB: ${DB_NAME} v${DB_VERSION}`)
+
       const request = indexedDB.open(DB_NAME, DB_VERSION)
       
       request.onerror = () => {
@@ -86,17 +88,17 @@ class DeveloperQualityIndexedDB {
       
       request.onsuccess = () => {
         this.db = request.result
-        console.log(`✅ Successfully opened IndexedDB ${DB_NAME} with ${this.db.objectStoreNames.length} stores`)
+
         resolve(this.db)
       }
       
       request.onupgradeneeded = (event) => {
-        console.log(`🔧 Upgrading IndexedDB ${DB_NAME} from v${event.oldVersion} to v${event.newVersion}`)
+
         const db = event.target.result
         
         // Create metrics store
         if (!db.objectStoreNames.contains(STORES.METRICS)) {
-          console.log(`  📦 Creating object store: ${STORES.METRICS}`)
+          
           const metricsStore = db.createObjectStore(STORES.METRICS, { keyPath: 'key' })
           metricsStore.createIndex('timestamp', 'timestamp', { unique: false })
           metricsStore.createIndex('type', 'type', { unique: false })
@@ -104,7 +106,7 @@ class DeveloperQualityIndexedDB {
         
         // Create chart data store
         if (!db.objectStoreNames.contains(STORES.CHART_DATA)) {
-          console.log(`  📦 Creating object store: ${STORES.CHART_DATA}`)
+          
           const chartStore = db.createObjectStore(STORES.CHART_DATA, { keyPath: 'key' })
           chartStore.createIndex('timestamp', 'timestamp', { unique: false })
           chartStore.createIndex('type', 'type', { unique: false })
@@ -112,7 +114,7 @@ class DeveloperQualityIndexedDB {
         
         // Create indices store
         if (!db.objectStoreNames.contains(STORES.INDICES)) {
-          console.log(`  📦 Creating object store: ${STORES.INDICES}`)
+          
           const indicesStore = db.createObjectStore(STORES.INDICES, { keyPath: 'key' })
           indicesStore.createIndex('timestamp', 'timestamp', { unique: false })
           indicesStore.createIndex('type', 'type', { unique: false })
@@ -120,14 +122,14 @@ class DeveloperQualityIndexedDB {
         
         // Create filter options store
         if (!db.objectStoreNames.contains(STORES.FILTER_OPTIONS)) {
-          console.log(`  📦 Creating object store: ${STORES.FILTER_OPTIONS}`)
+          
           const filterStore = db.createObjectStore(STORES.FILTER_OPTIONS, { keyPath: 'key' })
           filterStore.createIndex('timestamp', 'timestamp', { unique: false })
         }
         
         // Create minimal issues store
         if (!db.objectStoreNames.contains(STORES.MINIMAL_ISSUES)) {
-          console.log(`  📦 Creating object store: ${STORES.MINIMAL_ISSUES}`)
+          
           const issuesStore = db.createObjectStore(STORES.MINIMAL_ISSUES, { keyPath: 'id' })
           issuesStore.createIndex('assignee', 'assignee', { unique: false })
           issuesStore.createIndex('project', 'project', { unique: false })
@@ -137,12 +139,12 @@ class DeveloperQualityIndexedDB {
         
         // Create metadata store
         if (!db.objectStoreNames.contains(STORES.METADATA)) {
-          console.log(`  📦 Creating object store: ${STORES.METADATA}`)
+          
           const metadataStore = db.createObjectStore(STORES.METADATA, { keyPath: 'key' })
           metadataStore.createIndex('timestamp', 'timestamp', { unique: false })
         }
         
-        console.log(`✅ Database upgrade complete. Total stores: ${db.objectStoreNames.length}`)
+        
       }
     })
   }

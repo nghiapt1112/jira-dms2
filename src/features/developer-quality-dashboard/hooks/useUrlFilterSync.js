@@ -89,7 +89,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = 
             
             if (config.logOperations) {
               const duration = performance.now() - startTime
-              console.log(`🔄 URL updated from filters/tab in ${duration.toFixed(2)}ms:`, newUrlState)
+      
             }
           }
           
@@ -149,7 +149,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = 
           
           if (config.logOperations) {
             const duration = performance.now() - startTime
-            console.log(`🔄 Filters updated from URL in ${duration.toFixed(2)}ms:`, urlFilters)
+      
           }
           
           return newFilters
@@ -161,7 +161,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = 
         setActiveTab(urlActiveTab)
         
         if (config.logOperations) {
-          console.log(`🔄 Tab updated from URL: ${urlActiveTab}`)
+    
         }
       }
       
@@ -193,12 +193,12 @@ export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = 
                           searchParams.has('tab')
       
       if (hasUrlParams && !refsCache.initialized.current) {
-        console.log('🚀 Initializing filters/tab from URL parameters:', urlState)
+  
         refsCache.initialized.current = true
         refsCache.lastUrlState.current = urlState
         updateFiltersFromUrl(searchParams)
       } else if (!hasUrlParams && !refsCache.initialized.current) {
-        console.log('🚀 No URL parameters found, using current filter/tab state')
+  
         refsCache.initialized.current = true
         // Initialize URL from current filters and tab if no URL params exist
         const currentUrlState = encodeFiltersToUrlParams(filters, activeTab).toString()
@@ -239,7 +239,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = 
     
     // Only update if URL actually changed
     if (currentUrlState !== refsCache.lastUrlState.current) {
-      console.log('🔄 URL changed externally, updating filters:', currentUrlState)
+      
       refsCache.lastUrlState.current = currentUrlState
       updateFiltersFromUrl(searchParams)
     }
