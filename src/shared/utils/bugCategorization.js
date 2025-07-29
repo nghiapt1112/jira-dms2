@@ -28,10 +28,12 @@ export const categorizeBugStatus = (status) => {
   if (!status) return 'unknown'
   
   const statusMapping = getBugStatusMapping()
+  const normalizedStatus = status.toString().trim().toUpperCase()
   
   // Check each category
   for (const [category, statuses] of Object.entries(statusMapping)) {
-    if (statuses.includes(status)) {
+    const normalizedStatuses = statuses.map(s => s.toString().trim().toUpperCase())
+    if (normalizedStatuses.includes(normalizedStatus)) {
       return category
     }
   }
@@ -55,22 +57,33 @@ export const getInitialBugTrendData = () => {
 
 /**
  * Categorize bug status and return category
- * @param {Object} issue - JIRA issue object
+ * @param {Object} issue - JIRA issue object (raw or processed format)
  * @returns {string} Category: 'resolved', 'notFixed', 'new', 'inProgress'
  */
 export const categorizeBugForTrend = (issue) => {
   try {
-    if (!issue || !issue.fields) {
+    if (!issue) {
       console.warn('Invalid issue object provided to categorizeBugForTrend:', issue)
       return 'inProgress' // Default fallback
     }
     
-    const status = issue.fields?.status?.name || 'Unknown'
+    // Handle both raw JIRA format (issue.fields.status.name) and processed format (issue.status)
+    const status = issue.fields?.status?.name || issue.status || 'Unknown'
     const category = categorizeBugStatus(status)
     
     // For unknown statuses, categorize based on resolution date
     if (category === 'unknown') {
-      return issue.fields?.resolutiondate ? 'resolved' : 'inProgress'
+      console.log('Unknown status:', status)
+      // Handle both raw and processed formats for resolution date
+      const resolutionDate = issue.fields?.resolutiondate || issue.resolved
+      return resolutionDate ? 'resolved' : 'new'
+    }
+    
+    // Debug logging for OOPS project - handle both formats
+    const projectKey = issue.fields?.project?.key || issue.project
+    const projectName = issue.fields?.project?.name || issue.project
+    if (projectKey === 'OOPS' || projectName === 'OOPS' || projectKey === 'Oops' || projectName === 'Oops') {
+      console.log('OOPS project - Status:', status, 'Category:', category, 'Issue:', issue.key)
     }
     
     return category

@@ -683,14 +683,15 @@ export const memberConfiguration = {
     new: [
       "To Do", "TODO",
       "Open",
-      "Selected for Development",
-      "BACK FROM QA",
+      "Selected for Development", "Blocked", "Pending", "BLOCK", "Verify(DO NOT USE)", "Create Document"
     ],
     inProgress: [
       "In Progress", 
       "In Review", 
       "Testing",
       "Review",
+      "QA",
+      
       "In QA",
       "QA in Progress",
       "Under QA",

@@ -270,8 +270,8 @@ const BugTrendAnalysis = ({
   }, [data, context, selectedDeveloper])
 
   const contextualTitle = title || (context === 'developer' 
-    ? `Bug Trends - ${selectedDeveloper}` 
-    : 'Team Bug Trends')
+    ? `Bug Trends - ${selectedDeveloper} (Base on selected Statuses)` 
+    : 'Team Bug Trends - Base on selected Statuses')
 
   return (
     <Paper>

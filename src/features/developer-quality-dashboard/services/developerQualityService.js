@@ -354,9 +354,9 @@ export const developerQualityService = {
     const processingTime = performance.now() - startTime
     
     // 📊 LOG PROJECT-SPECIFIC BUG TYPE DATA FOR MASTER CONFIGURATION
-    console.log('\n' + '='.repeat(80))
-    console.log('🐛 PROJECT-SPECIFIC BUG TYPE MASTER DATA COLLECTION')
-    console.log('='.repeat(80))
+    // console.log('\n' + '='.repeat(80))
+    // console.log('🐛 PROJECT-SPECIFIC BUG TYPE MASTER DATA COLLECTION')
+    // console.log('='.repeat(80))
     
     // Calculate totals
     let totalBugIssues = 0
@@ -370,9 +370,9 @@ export const developerQualityService = {
       totalBugIssues += Array.from(values).length
       totalUniqueValues += values.size
       
-      console.log(`\n🏗️  PROJECT: ${projectKey}`)
-      console.log('-'.repeat(50))
-      console.log(`📋 Unique Bug Type Values (${values.size}):`)
+      // console.log(`\n🏗️  PROJECT: ${projectKey}`)
+      // console.log('-'.repeat(50))
+      // console.log(`📋 Unique Bug Type Values (${values.size}):`)
       
       const sortedValues = Array.from(values).sort()
       sortedValues.forEach(value => {
@@ -382,10 +382,10 @@ export const developerQualityService = {
                      mappedCategory === 'Security' ? '🔒' : 
                      mappedCategory === 'Integration' ? '🔗' : 
                      mappedCategory === 'Regression' ? '🔄' : '⚙️'
-        console.log(`  "${value}" -> "${mappedCategory}" ${emoji}`)
+        // console.log(`  "${value}" -> "${mappedCategory}" ${emoji}`)
       })
       
-      console.log(`\n🔍 Field Structure Examples:`)
+      // console.log(`\n🔍 Field Structure Examples:`)
       projectExamples.forEach((example, idx) => {
         console.log(`  ${idx + 1}. ${example.type} - ${example.issueKey}:`, {
           structure: example.structure,
@@ -394,40 +394,40 @@ export const developerQualityService = {
       })
     })
     
-    console.log('\n📝 CURRENT CONFIGURATION STATUS:')
-    console.log('Project-specific mappings from memberConfiguration:')
+    // console.log('\n📝 CURRENT CONFIGURATION STATUS:')
+    // console.log('Project-specific mappings from memberConfiguration:')
     projectBugTypeMappings.forEach((mapping, projectKey) => {
-      console.log(`\n${projectKey}:`)
+      // console.log(`\n${projectKey}:`)
       Object.entries(mapping).forEach(([rawValue, category]) => {
         const isProjectSpecific = memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey] && 
                                  memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey][rawValue]
         const source = isProjectSpecific ? '(Project-specific)' : '(Default)'
-        console.log(`  "${rawValue}" -> "${category}" ${source}`)
+        // console.log(`  "${rawValue}" -> "${category}" ${source}`)
       })
     })
     
-    console.log('\n💡 TO ADD NEW PROJECT-SPECIFIC MAPPINGS:')
-    console.log('Update memberConfiguration.js -> bugTypeConfiguration.projectSpecific:')
+    // console.log('\n💡 TO ADD NEW PROJECT-SPECIFIC MAPPINGS:')
+    // console.log('Update memberConfiguration.js -> bugTypeConfiguration.projectSpecific:')
     projectBugTypeTracker.forEach((values, projectKey) => {
       const unmappedValues = Array.from(values).filter(value => 
         !projectBugTypeMappings.get(projectKey)[value]
       )
       
-      if (unmappedValues.length > 0) {
-        console.log(`\n"${projectKey}": {`)
-        unmappedValues.forEach(value => {
-          console.log(`  "${value}": "Functional", // ⚙️ Add appropriate category`)
-        })
-        console.log('},')
-      }
+      // if (unmappedValues.length > 0) {
+      //   console.log(`\n"${projectKey}": {`)
+      //   unmappedValues.forEach(value => {
+      //     console.log(`  "${value}": "Functional", // ⚙️ Add appropriate category`)
+      //   })
+      //   console.log('},')
+      // }
     })
     
-    console.log('\n📊 SUMMARY:')
-    console.log(`Projects Processed: ${projectBugTypeTracker.size}`)
-    console.log(`Total Bug Issues: ${totalBugIssues}`)
-    console.log(`Total Unique Values: ${totalUniqueValues}`)
-    console.log(`Standard Categories: ${getStandardBugTypeCategories().join(', ')}`)
-    console.log('='.repeat(80) + '\n')
+    // console.log('\n📊 SUMMARY:')
+    // console.log(`Projects Processed: ${projectBugTypeTracker.size}`)
+    // console.log(`Total Bug Issues: ${totalBugIssues}`)
+    // console.log(`Total Unique Values: ${totalUniqueValues}`)
+    // console.log(`Standard Categories: ${getStandardBugTypeCategories().join(', ')}`)
+    // console.log('='.repeat(80) + '\n')
     
     // CRITICAL FIX: Preprocess performance data during initial processing (caching strategy)
     // This eliminates on-demand calculations in chart components
@@ -2025,7 +2025,7 @@ export const developerQualityService = {
       if (rawBugType) {
         // Use project-specific mapping
         const mappedCategory = mapBugTypeToCategory(rawBugType, projectKey)
-        console.log(`🔄 [DEBUG] Project ${projectKey}: "${rawBugType}" -> "${mappedCategory}"`)
+        // console.log(`🔄 [DEBUG] Project ${projectKey}: "${rawBugType}" -> "${mappedCategory}"`)
         return mappedCategory
       }
     }
