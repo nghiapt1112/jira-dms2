@@ -52,7 +52,7 @@ const DeveloperQualityDashboard = React.memo(() => {
   })
   
   
-  // Debug logging for cache state
+
   useEffect(() => {
   }, [cacheData, isLoading, error, needsInitialization, filteredData])
   
@@ -104,7 +104,7 @@ const DeveloperQualityDashboard = React.memo(() => {
     // Logger functionality removed
   }, [])
 
-  // Temporary function to load test data for debugging
+
   const handleLoadTestData = useCallback(async () => {
     try {
       const response = await fetch('/api/test-data/Q1-2025-tickets-256KB.json')
@@ -268,7 +268,7 @@ const DeveloperQualityDashboard = React.memo(() => {
             size="small"
             startIcon={<LogIcon />}
             onClick={handleExportLogs}
-            title="Export debug logs to file"
+                          title="Export logs to file"
           >
             Export Logs
           </Button>

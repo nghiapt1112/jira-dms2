@@ -14,7 +14,7 @@ const performanceMonitor = {
     if (duration > 25) {
       console.warn(`🐌 URL operation '${operation}' took ${duration.toFixed(2)}ms (expected <25ms)`)
     } else {
-      console.log(`⚡ URL operation '${operation}' completed in ${duration.toFixed(2)}ms`)
+  
     }
     return duration
   }

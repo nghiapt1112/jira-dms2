@@ -313,10 +313,7 @@ export const developerQualityService = {
     
     const processingTime = performance.now() - startTime
     
-    // 📊 LOG PROJECT-SPECIFIC BUG TYPE DATA FOR MASTER CONFIGURATION
-    // console.log('\n' + '='.repeat(80))
-    // console.log('🐛 PROJECT-SPECIFIC BUG TYPE MASTER DATA COLLECTION')
-    // console.log('='.repeat(80))
+
     
     // Calculate totals
     let totalBugIssues = 0
@@ -330,9 +327,7 @@ export const developerQualityService = {
       totalBugIssues += Array.from(values).length
       totalUniqueValues += values.size
       
-      // console.log(`\n🏗️  PROJECT: ${projectKey}`)
-      // console.log('-'.repeat(50))
-      // console.log(`📋 Unique Bug Type Values (${values.size}):`)
+
       
       const sortedValues = Array.from(values).sort()
       sortedValues.forEach(value => {
@@ -342,52 +337,34 @@ export const developerQualityService = {
                      mappedCategory === 'Security' ? '🔒' : 
                      mappedCategory === 'Integration' ? '🔗' : 
                      mappedCategory === 'Regression' ? '🔄' : '⚙️'
-        // console.log(`  "${value}" -> "${mappedCategory}" ${emoji}`)
+
       })
       
-      // console.log(`\n🔍 Field Structure Examples:`)
-      projectExamples.forEach((example, idx) => {
-        console.log(`  ${idx + 1}. ${example.type} - ${example.issueKey}:`, {
-          structure: example.structure,
-          value: example.value
-        })
-      })
+
+
     })
     
-    // console.log('\n📝 CURRENT CONFIGURATION STATUS:')
-    // console.log('Project-specific mappings from memberConfiguration:')
+
     projectBugTypeMappings.forEach((mapping, projectKey) => {
-      // console.log(`\n${projectKey}:`)
+
       Object.entries(mapping).forEach(([rawValue, category]) => {
         const isProjectSpecific = memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey] && 
                                  memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey][rawValue]
         const source = isProjectSpecific ? '(Project-specific)' : '(Default)'
-        // console.log(`  "${rawValue}" -> "${category}" ${source}`)
+
       })
     })
     
-    // console.log('\n💡 TO ADD NEW PROJECT-SPECIFIC MAPPINGS:')
-    // console.log('Update memberConfiguration.js -> bugTypeConfiguration.projectSpecific:')
+
     projectBugTypeTracker.forEach((values, projectKey) => {
       const unmappedValues = Array.from(values).filter(value => 
         !projectBugTypeMappings.get(projectKey)[value]
       )
       
-      // if (unmappedValues.length > 0) {
-      //   console.log(`\n"${projectKey}": {`)
-      //   unmappedValues.forEach(value => {
-      //     console.log(`  "${value}": "Functional", // ⚙️ Add appropriate category`)
-      //   })
-      //   console.log('},')
-      // }
+
     })
     
-    // console.log('\n📊 SUMMARY:')
-    // console.log(`Projects Processed: ${projectBugTypeTracker.size}`)
-    // console.log(`Total Bug Issues: ${totalBugIssues}`)
-    // console.log(`Total Unique Values: ${totalUniqueValues}`)
-    // console.log(`Standard Categories: ${getStandardBugTypeCategories().join(', ')}`)
-    // console.log('='.repeat(80) + '\n')
+
     
 
     
@@ -414,14 +391,13 @@ export const developerQualityService = {
     // Cache the processed data for future use with comprehensive logging
     try {
       const cacheStartTime = Date.now()
-      dataPipelineLogger.logStorageStart()
+  
       
       const cacheSuccess = await developerQualityService.cacheProcessedData(finalData)
-      dataPipelineLogger.logStorageComplete(cacheSuccess, finalData)
-      dataPipelineLogger.logPerformance('storageTime', Date.now() - cacheStartTime)
+
     } catch (error) {
       console.error('Failed to cache processed developer quality data:', error)
-      dataPipelineLogger.logStorageComplete(false, finalData)
+
       // Don't fail the entire operation if caching fails
     }
     
@@ -879,8 +855,7 @@ export const developerQualityService = {
         }
       }
       
-      // Store ALL issues in timeTrackingIssues for debug/analysis purposes
-      // This ensures the debug panel shows all statuses, not just those with logged time
+              // Store ALL issues in timeTrackingIssues for analysis purposes
       // Note: JIRA's 'updated' field might be in displayFields for enriched data
       const updatedDate = issue.fields?.updated || 
                          issue.displayFields?.updated || 
@@ -952,8 +927,8 @@ export const developerQualityService = {
     if (memberStatus.isIncluded) {
       data.filterOptions.developers.add(assignee)
     } else {
-      // Debug: Log why developers aren't being added to filterOptions
-      // console.log(`🚫 FILTER OPTIONS: Not adding "${assignee}" to filterOptions - memberStatus:`, memberStatus)
+      
+      
     }
     // Only add projects that are configured in memberConfiguration
     if (CONFIGURED_PROJECT_NAMES.has(projectName)) {
@@ -961,13 +936,7 @@ export const developerQualityService = {
       // Build project name to key mapping only for configured projects
       data.indices.projectNameToKey.set(projectName, project)
     } else if (projectName !== 'Unknown') {
-      // Debug: Log projects that are not configured (first 10 times only)
-      const debugKey = `unconfigured_project_${projectName}`
-      if (!data._debug_logged) data._debug_logged = new Set()
-      if (!data._debug_logged.has(debugKey) && data._debug_logged.size < 10) {
-
-        data._debug_logged.add(debugKey)
-      }
+      
     }
     
     // Don't add to filter options during processing - use master data from memberConfiguration
@@ -2209,7 +2178,7 @@ export const developerQualityService = {
 
 }
 
-// Make the service available globally for debugging
+
 if (typeof window !== 'undefined') {
   window.developerQualityService = developerQualityService
   // Add a global function to clear cache for testing the time tracking fix

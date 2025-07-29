@@ -93,7 +93,7 @@ export const groupTicketsByTimeframe = (tickets, timeframe = 'month', options = 
     groupedTickets.get(periodKey).push(ticket)
   })
   
-  // Log skipped tickets if any (for debugging)
+  
   if (skippedTickets.length > 0) {
     console.warn(`groupTicketsByTimeframe: skipped ${skippedTickets.length} tickets`, {
       totalTickets: tickets.length,
@@ -102,7 +102,7 @@ export const groupTicketsByTimeframe = (tickets, timeframe = 'month', options = 
         acc[item.reason] = (acc[item.reason] || 0) + 1
         return acc
       }, {}),
-      skippedTickets: skippedTickets.slice(0, 5) // Show first 5 for debugging
+      skippedTickets: skippedTickets.slice(0, 5)
     })
   }
   

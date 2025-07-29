@@ -325,7 +325,7 @@ export const useUrlFilterSync = (filters, setFilters, options = {}, activeTab = 
     // Status getter
     getUrlSyncStatus: () => urlSyncStatus,
     
-    // Utilities (for debugging)
+    // Utilities
     currentUrlParams: searchParams.toString(),
     urlFeatures
   }), [

@@ -25,7 +25,7 @@ class MemoryManager {
     }, 10000) // Check every 10 seconds
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('Memory monitoring started')
+  
     }
   }
 
@@ -40,7 +40,7 @@ class MemoryManager {
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('Memory monitoring stopped')
+  
     }
   }
 
@@ -102,7 +102,7 @@ class MemoryManager {
     
     try {
       if (process.env.NODE_ENV === 'development') {
-        console.log('Performing standard memory cleanup...')
+    
       }
       
       // Execute normal priority cleanup callbacks
@@ -116,7 +116,7 @@ class MemoryManager {
       
       timer?.end()
       if (process.env.NODE_ENV === 'development') {
-        console.log('Standard memory cleanup completed')
+    
       }
     } catch (error) {
       timer?.end()
@@ -130,7 +130,7 @@ class MemoryManager {
     
     try {
       if (process.env.NODE_ENV === 'development') {
-        console.log('Performing emergency memory cleanup...')
+    
       }
       
       // Execute all cleanup callbacks, starting with high priority
@@ -146,7 +146,7 @@ class MemoryManager {
       
       timer?.end()
       if (process.env.NODE_ENV === 'development') {
-        console.log('Emergency memory cleanup completed')
+    
       }
     } catch (error) {
       timer?.end()
@@ -191,7 +191,7 @@ class MemoryManager {
     if (global.gc) {
       global.gc()
       if (process.env.NODE_ENV === 'development') {
-        console.log('Garbage collection triggered')
+    
       }
     } else if (force) {
       // Alternative approaches for browsers

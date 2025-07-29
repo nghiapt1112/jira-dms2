@@ -24,13 +24,7 @@ const DeveloperAnalysisChart = ({
 }) => {
   // Process and merge data for hybrid chart
   const chartData = useMemo(() => {
-    console.log('📊 DEVELOPER ANALYSIS: Processing chart data', {
-      selectedDeveloper,
-      hasStoryPointsData: !!storyPointsData,
-      hasTimeTrackingData: !!timeTrackingData,
-      storyPointsDataLength: storyPointsData?.length || 0,
-      timeTrackingDataLength: timeTrackingData?.length || 0
-    })
+
 
     if (!storyPointsData || storyPointsData.length === 0 || !selectedDeveloper) {
       return null
@@ -41,14 +35,7 @@ const DeveloperAnalysisChart = ({
       item[selectedDeveloper] && item[selectedDeveloper] > 0
     )
 
-    console.log('📊 DEVELOPER ANALYSIS: Time tracking availability', {
-      developerHasTimeData,
-      timeTrackingDataStructure: timeTrackingData?.map(item => ({
-        timePeriod: item.timePeriod,
-        [selectedDeveloper]: item[selectedDeveloper] || 0,
-        allKeys: Object.keys(item)
-      }))
-    })
+
 
     // Merge story points and time tracking data
     const mergedDataset = storyPointsData.map(storyItem => {
@@ -79,11 +66,7 @@ const DeveloperAnalysisChart = ({
       connectNulls: true
     }] : null
 
-    console.log('📊 DEVELOPER ANALYSIS: Generated chart data', {
-      mergedDatasetLength: mergedDataset.length,
-      hasTimeTrackingSeries: !!timeTrackingSeries,
-      sampleData: mergedDataset[0]
-    })
+
 
     return {
       dataset: mergedDataset,

@@ -167,44 +167,12 @@ export const useStoryPointValidation = (options = {}) => {
     })
   }, [data, filters])
   
-  /**
-   * Debug function to log detailed validation information
-   */
-  const debugValidation = useMemo(() => () => {
-    if (!enableLogging) return
-    
-    console.group('📊 Story Point Validation Debug')
-    console.log('Validation Results:', validation)
-    console.log('Data Summary:', getDataSummary())
-    console.log('Current Filters:', filters)
-    
-    if (!validation.isConsistent) {
-      console.warn('❌ Inconsistencies Found:', validation.inconsistencies)
-      console.table(validation.totals)
-    } else {
-      console.log('✅ All data is consistent')
-    }
-    
-    console.groupEnd()
-  }, [validation, getDataSummary, filters, enableLogging])
-  
-  // Continuous validation logging
-  useEffect(() => {
-    if (enableLogging && enableContinuousValidation && validation.isValidationPossible) {
-      if (!validation.isConsistent) {
-        console.warn('🚨 Story Point Inconsistency Detected:', validation.inconsistencies)
-        console.table(validation.totals)
-      } else if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Story Point Validation: All data consistent')
-      }
-    }
-  }, [validation, enableLogging, enableContinuousValidation])
+
   
   return {
     validation,
     validateDeveloper,
     getDataSummary,
-    debugValidation,
     isValid: validation.isConsistent,
     hasData: validation.isValidationPossible
   }

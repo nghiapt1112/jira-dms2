@@ -70,12 +70,6 @@ const BugStatusChart = React.memo(({
   
   // 3. Early returns
   if (!data) {
-    dataPipelineLogger.log('ERROR', 'BUG_STATUS', 'BugStatusChart component received no data prop', { 
-      data, 
-      filters, 
-      title,
-      propsReceived: Object.keys(arguments[0] || {})
-    })
     return (
       <Paper elevation={1} sx={{ p: 2, height }}>
         <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>

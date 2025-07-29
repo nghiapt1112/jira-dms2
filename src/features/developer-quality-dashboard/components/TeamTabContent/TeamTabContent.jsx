@@ -1,16 +1,13 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
-import { Grid, Box, Button, Chip } from '@mui/material'
-import { BugReport as BugReportIcon } from '@mui/icons-material'
+import { Grid, Box } from '@mui/material'
 
-// Import debugging
-import { dataPipelineLogger } from '../../../../shared/services/dataPipelineLogger'
 
 // Import team-focused components
 import TeamContributionChart from '../TeamContributionChart'
 import ProjectTeamPerformance from '../ProjectTeamPerformance'
 import BugTrendAnalysis from '../BugTrendAnalysis'
-import BugStatusChart, { BugStatusDebugPanel } from '../BugStatusChart'
+import BugStatusChart from '../BugStatusChart'
 import BugTypeDistributionChart from '../BugTypeDistributionChart'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
@@ -54,8 +51,7 @@ const TeamTabContent = React.memo(({
     fullWidth: { xs: 12 }
   }), [])
 
-  // Debug panel state
-  const [showBugStatusDebug, setShowBugStatusDebug] = useState(false)
+
 
   // 3. Render optimized team layout
   return (
@@ -110,38 +106,10 @@ const TeamTabContent = React.memo(({
       <Grid item {...gridConfig.primary}>
         {(() => {
           const bugStatusData = filteredData.filteredChartData.bugStatusChart
-          dataPipelineLogger.log('DEBUG', 'BUG_STATUS', 'TeamTabContent passing data to BugStatusChart', {
-            hasBugStatusData: !!bugStatusData,
-            dataStructure: bugStatusData ? Object.keys(bugStatusData) : null,
-            hasData: !!bugStatusData?.data,
-            dataKeys: bugStatusData?.data ? Object.keys(bugStatusData.data) : null,
-            aggregatedSize: bugStatusData?.data?.aggregated?.size || 0,
-            byProjectSize: bugStatusData?.data?.byProject?.size || 0,
-            filters,
-            filterKeys: filters ? Object.keys(filters) : null
-          })
+
           return (
             <Box>
-              {/* Debug Toggle Button */}
-              <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<BugReportIcon />}
-                  onClick={() => setShowBugStatusDebug(!showBugStatusDebug)}
-                  color={showBugStatusDebug ? 'secondary' : 'primary'}
-                >
-                  {showBugStatusDebug ? 'Hide' : 'Show'} Debug Data
-                </Button>
-                {showBugStatusDebug && (
-                  <Chip 
-                    label="Live Debug Mode" 
-                    color="warning" 
-                    size="small" 
-                    variant="outlined"
-                  />
-                )}
-              </Box>
+
               
               {/* Bug Status Chart */}
               <BugStatusChart
@@ -151,14 +119,6 @@ const TeamTabContent = React.memo(({
                 title="Bug Status Trends"
               />
               
-              {/* Debug Panel */}
-              {showBugStatusDebug && (
-                <BugStatusDebugPanel
-                  data={bugStatusData}
-                  filters={filters}
-                  title="Bug Status Chart - Live Debug Data"
-                />
-              )}
             </Box>
           )
         })()}

@@ -65,7 +65,7 @@ export const useDeveloperQualityCache = () => {
     
     // If we have JIRA data, just process it - don't worry about cached processed data
     if (jiraData && Array.isArray(jiraData) && jiraData.length > 0) {
-      console.log('🔍 CACHE HOOK: Processing JIRA data for developer quality:', jiraData.length, 'issues')
+
       try {
         loadData(jiraData)
       } catch (loadError) {
@@ -76,7 +76,7 @@ export const useDeveloperQualityCache = () => {
     
     // Proactively try to load cached data (like MainDashboard does)
     if (!jiraData) {
-      console.log('🔍 CACHE HOOK: No JIRA data in memory, proactively loading from cache...')
+
       try {
         loadCachedData()
       } catch (cacheError) {
@@ -89,7 +89,7 @@ export const useDeveloperQualityCache = () => {
   // Additional mount effect to be more proactive (like MainDashboard)
   useEffect(() => {
     if (!data && !isLoading && !error && !jiraLoading) {
-      console.log('🔍 CACHE HOOK: Mount effect - trying to load cached data')
+
       loadCachedData()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +103,7 @@ export const useDeveloperQualityCache = () => {
   //     const cachedCount = data?.metadata?.totalIssues || 0
       
   //     if (currentCount > 0 && currentCount !== cachedCount) {
-  //       console.log('JIRA data updated, refreshing developer quality data')
+  
   //       refreshData()
   //     }
   //   }
@@ -137,7 +137,7 @@ export const useDeveloperQualityCache = () => {
       const { developerQualityService } = await import('../services/developerQualityService')
       await developerQualityService.clearCachedData()
       reset()
-      console.log('🔍 CACHE HOOK: Cache cleared successfully')
+  
     } catch (error) {
       console.error('Failed to clear cache:', error)
       reset() // Fallback to just clearing the store

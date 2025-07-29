@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useDeveloperQualityStore } from '../store/developerQualityStore'
 import { performanceMonitor } from '../utils/PerformanceMonitor'
-import { dataPipelineLogger } from '../../../shared/services/dataPipelineLogger'
+
 import { IssueUtils } from '../../../shared/utils/IssueUtils'
 
 /**
@@ -39,18 +39,9 @@ export const useDeveloperTickets = (developerName) => {
       const { minimalIssues } = data
       const timeframe = filters?.timeframe || 'month'
       
-      // Debug logging for filter state
-      dataPipelineLogger.logDeveloperFiltering(developerName, {
-        totalIssues: minimalIssues.length,
-        timeframe,
-        projectsFilter: filters?.projects || [],
-        hasProjectsFilter: !!(filters?.projects && filters.projects.length > 0)
-      })
+
       
-      // SPECIAL DEBUG: Check for specific missing tickets
-      const missingTickets = ['YUIM-328', 'YUIM-521', 'YUIM-689', 'YUIM-690']
-      const foundMissingTickets = minimalIssues.filter(ticket => missingTickets.includes(ticket.key))
-      dataPipelineLogger.logMissingTicketsDebug(missingTickets, foundMissingTickets)
+      
       
       // Check if Yudanis tickets exist with different assignee names
       const yudanisVariations = minimalIssues.filter(ticket => 
@@ -58,7 +49,7 @@ export const useDeveloperTickets = (developerName) => {
         ticket.assignee?.toLowerCase().includes('taqwin') ||
         ticket.assignee?.toLowerCase().includes('rohman')
       )
-      dataPipelineLogger.logYudanisVariations(yudanisVariations)
+
       
       // CRITICAL: timeframe must come from Zustand filters.timeframe
       if (!timeframe) {
@@ -84,12 +75,7 @@ export const useDeveloperTickets = (developerName) => {
         }
       )
       
-      // Debug logging using IssueUtils
-      if (process.env.NODE_ENV === 'development') {
-        const developerIssues = minimalIssues.filter(issue => issue.assignee === developerName)
-        const deliveredIssues = Array.from(groupedTickets.values()).flat()
-        IssueUtils.debugCalculation(developerIssues, deliveredIssues, 'Individual Tickets')
-      }
+
       
       // Calculate total tickets
       const totalTickets = Array.from(groupedTickets.values()).reduce((total, tickets) => total + tickets.length, 0)

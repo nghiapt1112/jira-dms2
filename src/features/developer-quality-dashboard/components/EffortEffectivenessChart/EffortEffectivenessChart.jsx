@@ -122,14 +122,7 @@ const EffortEffectivenessChart = ({
     // Apply delivered filter to get final issues for calculation
     const deliveredIssues = IssueUtils.filterDeliveredIssues(issuesToProcess)
 
-    // Debug logging using IssueUtils
-    if (process.env.NODE_ENV === 'development') {
-      IssueUtils.debugCalculation(
-        issuesToProcess,
-        deliveredIssues,
-        'Velocity Trends (Fixed)'
-      )
-    }
+
 
     // Calculate delivered metrics using IssueUtils
     const totalStoryPoints = IssueUtils.calculateTotalStoryPoints(deliveredIssues)

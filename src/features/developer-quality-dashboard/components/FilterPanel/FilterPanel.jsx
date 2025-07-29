@@ -301,7 +301,7 @@ const FilterPanel = React.memo(({
     return null
   }
 
-  // Debug filterOptions (only when empty)
+  
   if (filterOptions?.developers?.length === 0) {
 
   }

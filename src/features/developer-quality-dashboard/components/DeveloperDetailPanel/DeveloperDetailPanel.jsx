@@ -233,31 +233,7 @@ const DeveloperDetailPanel = ({
         />
       </Box>
 
-      {/* Optional: Keep debug data in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Developer Data (Debug):
-          </Typography>
-          
-          <Box 
-            component="pre" 
-            sx={{ 
-              backgroundColor: '#f5f5f5',
-              padding: 2,
-              borderRadius: 1,
-              overflow: 'auto',
-              fontSize: '0.75rem',
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              wordWrap: 'break-word',
-              maxHeight: '300px'
-            }}
-          >
-            {JSON.stringify(developerData, null, 2)}
-          </Box>
-        </Paper>
-      )}
+
     </Box>
   )
 }
