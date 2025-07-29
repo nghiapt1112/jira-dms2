@@ -800,7 +800,157 @@ export const memberConfiguration = {
         label: 'Target (Senior)'
       }
     }
+  },
+
+  /**
+   * Bug Type Configuration - Project-specific mappings
+   * Supports different bug type taxonomies per project
+   * Raw JIRA values are mapped to standardized categories
+   */
+  bugTypeConfiguration: {
+    // Default mapping applied to all projects (fallback)
+    default: {
+      // Functional variations
+      "Functional": "Functional",
+      "Function": "Functional", 
+      "Business Logic": "Functional",
+      "Logic": "Functional",
+      
+      // UI/Design variations
+      "Design": "UI",
+      "UI": "UI",
+      "User Interface": "UI", 
+      "Interface": "UI",
+      "Frontend": "UI",
+      "Layout": "UI",
+      "Styling": "UI",
+      "Visual": "UI",
+      "Responsive": "UI",
+      
+      // Performance variations
+      "Performance": "Performance",
+      "Slow": "Performance",
+      "Speed": "Performance",
+      "Memory": "Performance",
+      "Load": "Performance",
+      
+      // Security variations
+      "Security": "Security",
+      "Auth": "Security",
+      "Authentication": "Security",
+      "Permission": "Security",
+      "Vulnerability": "Security",
+      
+      // Integration variations  
+      "Integration": "Integration",
+      "API": "Integration",
+      "Service": "Integration",
+      "External": "Integration",
+      "Third Party": "Integration",
+      
+      // Regression variations
+      "Regression": "Regression",
+      "Broken": "Regression",
+      "Reoccurred": "Regression"
+    },
+    
+    // Project-specific overrides
+    // Each project can have its own bug type taxonomy
+    projectSpecific: {
+      "YUIM": {
+        // YUIM-specific mappings override default
+        "Design": "UI/UX",           // More specific category for YUIM
+        "Backend Issue": "Integration", // Project-specific type
+        "Data Issue": "Integration",    // YUIM-specific categorization
+        "Mobile UI": "UI",             // Mobile-specific UI issues
+        "API Performance": "Performance" // Specific performance category
+      },
+      
+      // Example for future projects
+      "PROJ2": {
+        "Design": "Visual Design",   // Different taxonomy
+        "Component": "UI",           // Component-level issues
+        "Database": "Integration"    // Database-specific issues
+      }
+    },
+
+    // Standard categories used for chart display
+    // These should match the categories used in charts
+    standardCategories: [
+      "Functional",
+      "UI", 
+      "Performance",
+      "Security",
+      "Integration", 
+      "Regression"
+    ],
+
+    // Fallback category for unmapped types
+    fallbackCategory: "Functional"
   }
+}
+
+/**
+ * Get bug type mapping for a specific project
+ * @param {string} projectKey - The project key (e.g., "YUIM", "PROJ2")
+ * @returns {Object} - Combined mapping (project-specific + default)
+ */
+export const getBugTypeMapping = (projectKey) => {
+  const defaultMapping = memberConfiguration.bugTypeConfiguration.default
+  const projectMapping = memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey] || {}
+  
+  // Project-specific mappings override default mappings
+  return { ...defaultMapping, ...projectMapping }
+}
+
+/**
+ * Map a raw bug type value to standardized category for a project
+ * @param {string} bugType - Raw bug type from JIRA
+ * @param {string} projectKey - Project key
+ * @returns {string} - Standardized category
+ */
+export const mapBugTypeToCategory = (bugType, projectKey) => {
+  if (!bugType || typeof bugType !== 'string') {
+    return memberConfiguration.bugTypeConfiguration.fallbackCategory
+  }
+
+  const mapping = getBugTypeMapping(projectKey)
+  const mappedCategory = mapping[bugType.trim()]
+  
+  if (mappedCategory) {
+    return mappedCategory
+  }
+  
+  // Try case-insensitive match
+  const lowerBugType = bugType.trim().toLowerCase()
+  const caseInsensitiveMatch = Object.keys(mapping).find(key => 
+    key.toLowerCase() === lowerBugType
+  )
+  
+  if (caseInsensitiveMatch) {
+    return mapping[caseInsensitiveMatch]
+  }
+  
+  // Return fallback
+  return memberConfiguration.bugTypeConfiguration.fallbackCategory
+}
+
+/**
+ * Get all unique bug type values for a project (for data collection)
+ * @param {string} projectKey - Project key
+ * @returns {Array} - Array of configured bug type values
+ */
+export const getProjectBugTypeValues = (projectKey) => {
+  const mapping = getBugTypeMapping(projectKey)
+  return Object.keys(mapping)
+}
+
+/**
+ * Get standard bug type categories
+ * @returns {Array} - Array of standard categories
+ */
+export const getStandardBugTypeCategories = () => {
+  return memberConfiguration.bugTypeConfiguration.standardCategories
 }
 
 /**

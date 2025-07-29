@@ -19,7 +19,14 @@ import {
 import { dataPipelineLogger } from '../../../shared/services/dataPipelineLogger'
 
 import { JIRA_CONSTANTS } from '../../../constants/jiraConstants'
-import { shouldIncludeMember, memberConfiguration, getSeverityConfig } from '../../../constants/memberConfiguration'
+import { 
+  shouldIncludeMember, 
+  memberConfiguration, 
+  getSeverityConfig,
+  mapBugTypeToCategory,
+  getBugTypeMapping,
+  getStandardBugTypeCategories 
+} from '../../../constants/memberConfiguration'
 import { parseSeverity } from '../../../shared/utils/severityParser.js'
 // REMOVED: targetCalculationService import - now using preprocessed data (caching strategy fix)
 import { preprocessPerformanceData } from './performancePreprocessor.js'
@@ -99,6 +106,11 @@ export const developerQualityService = {
       }))
     )
 
+    // Initialize project-specific bug type tracking for master data configuration
+    const projectBugTypeTracker = new Map() // project -> Set of raw values
+    const projectBugTypeStructureExamples = new Map() // project -> examples
+    const projectBugTypeMappings = new Map() // project -> effective mapping
+    
     // SINGLE LOOP PROCESSING - integrate with existing main loop
     issues.forEach((issue, index) => {
       try {
@@ -134,6 +146,62 @@ export const developerQualityService = {
       dataPipelineLogger.logIssueTypeBreakdown(issue)
       dataPipelineLogger.logStatusBreakdown(issue)
       dataPipelineLogger.logTimeRangeAnalysis(issue)
+      
+      // Collect project-specific bug type data for master configuration (only for Bug issues)
+      if (issue.fields?.issuetype?.name === 'Bug') {
+        const projectKey = issue.fields?.project?.key || 'Unknown'
+        const bugTypeField = issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE]
+        
+        // Initialize project tracking if not exists
+        if (!projectBugTypeTracker.has(projectKey)) {
+          projectBugTypeTracker.set(projectKey, new Set())
+          projectBugTypeStructureExamples.set(projectKey, [])
+          projectBugTypeMappings.set(projectKey, getBugTypeMapping(projectKey))
+        }
+        
+        const projectValues = projectBugTypeTracker.get(projectKey)
+        const projectExamples = projectBugTypeStructureExamples.get(projectKey)
+        
+        if (bugTypeField) {
+          // Track the structure and collect values per project
+          if (Array.isArray(bugTypeField)) {
+            bugTypeField.forEach((option, idx) => {
+              if (option && option.value) {
+                projectValues.add(option.value)
+                // Store structure example for the first few entries per project
+                if (projectExamples.length < 2) {
+                  projectExamples.push({
+                    issueKey: issue.key,
+                    structure: option,
+                    value: option.value,
+                    type: `Array[${idx}]`
+                  })
+                }
+              }
+            })
+          } else if (typeof bugTypeField === 'object' && bugTypeField.value) {
+            projectValues.add(bugTypeField.value)
+            if (projectExamples.length < 2) {
+              projectExamples.push({
+                issueKey: issue.key,
+                structure: bugTypeField,
+                value: bugTypeField.value,
+                type: 'Object'
+              })
+            }
+          } else if (typeof bugTypeField === 'string') {
+            projectValues.add(bugTypeField)
+            if (projectExamples.length < 2) {
+              projectExamples.push({
+                issueKey: issue.key,
+                structure: bugTypeField,
+                value: bugTypeField,
+                type: 'String'
+              })
+            }
+          }
+        }
+      }
       
       // Process developer quality metrics
       developerQualityService.processDeveloperQualityMetrics(issue, index, developerQualityData)
@@ -257,7 +325,9 @@ export const developerQualityService = {
         hasTimeLogged: timeMetrics.hasTimeLogged,
         estimationAccuracy: timeMetrics.estimationAccuracy,
         // Add bug categorization for reuse during filtering (caching strategy compliance)
-        bugCategory: issueType === 'Bug' ? categorizeBugForTrend(issue) : null
+        bugCategory: issueType === 'Bug' ? categorizeBugForTrend(issue) : null,
+        // Add bug type for Bug Type Distribution Chart
+        bugType: issueType === 'Bug' ? developerQualityService.extractBugType(issue) : null
       })
       } catch (issueError) {
         console.warn(`Error processing issue ${index}:`, issueError, issue)
@@ -282,6 +352,82 @@ export const developerQualityService = {
     console.log(`🔍 FILTER OPTIONS developers array contents:`, developerQualityData.filterOptions.developers)
     
     const processingTime = performance.now() - startTime
+    
+    // 📊 LOG PROJECT-SPECIFIC BUG TYPE DATA FOR MASTER CONFIGURATION
+    console.log('\n' + '='.repeat(80))
+    console.log('🐛 PROJECT-SPECIFIC BUG TYPE MASTER DATA COLLECTION')
+    console.log('='.repeat(80))
+    
+    // Calculate totals
+    let totalBugIssues = 0
+    let totalUniqueValues = 0
+    
+    // Log each project's data
+    projectBugTypeTracker.forEach((values, projectKey) => {
+      const projectExamples = projectBugTypeStructureExamples.get(projectKey) || []
+      const projectMapping = projectBugTypeMappings.get(projectKey) || {}
+      
+      totalBugIssues += Array.from(values).length
+      totalUniqueValues += values.size
+      
+      console.log(`\n🏗️  PROJECT: ${projectKey}`)
+      console.log('-'.repeat(50))
+      console.log(`📋 Unique Bug Type Values (${values.size}):`)
+      
+      const sortedValues = Array.from(values).sort()
+      sortedValues.forEach(value => {
+        const mappedCategory = projectMapping[value] || mapBugTypeToCategory(value, projectKey)
+        const emoji = mappedCategory === 'UI' ? '🎨' : 
+                     mappedCategory === 'Performance' ? '⚡' : 
+                     mappedCategory === 'Security' ? '🔒' : 
+                     mappedCategory === 'Integration' ? '🔗' : 
+                     mappedCategory === 'Regression' ? '🔄' : '⚙️'
+        console.log(`  "${value}" -> "${mappedCategory}" ${emoji}`)
+      })
+      
+      console.log(`\n🔍 Field Structure Examples:`)
+      projectExamples.forEach((example, idx) => {
+        console.log(`  ${idx + 1}. ${example.type} - ${example.issueKey}:`, {
+          structure: example.structure,
+          value: example.value
+        })
+      })
+    })
+    
+    console.log('\n📝 CURRENT CONFIGURATION STATUS:')
+    console.log('Project-specific mappings from memberConfiguration:')
+    projectBugTypeMappings.forEach((mapping, projectKey) => {
+      console.log(`\n${projectKey}:`)
+      Object.entries(mapping).forEach(([rawValue, category]) => {
+        const isProjectSpecific = memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey] && 
+                                 memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey][rawValue]
+        const source = isProjectSpecific ? '(Project-specific)' : '(Default)'
+        console.log(`  "${rawValue}" -> "${category}" ${source}`)
+      })
+    })
+    
+    console.log('\n💡 TO ADD NEW PROJECT-SPECIFIC MAPPINGS:')
+    console.log('Update memberConfiguration.js -> bugTypeConfiguration.projectSpecific:')
+    projectBugTypeTracker.forEach((values, projectKey) => {
+      const unmappedValues = Array.from(values).filter(value => 
+        !projectBugTypeMappings.get(projectKey)[value]
+      )
+      
+      if (unmappedValues.length > 0) {
+        console.log(`\n"${projectKey}": {`)
+        unmappedValues.forEach(value => {
+          console.log(`  "${value}": "Functional", // ⚙️ Add appropriate category`)
+        })
+        console.log('},')
+      }
+    })
+    
+    console.log('\n📊 SUMMARY:')
+    console.log(`Projects Processed: ${projectBugTypeTracker.size}`)
+    console.log(`Total Bug Issues: ${totalBugIssues}`)
+    console.log(`Total Unique Values: ${totalUniqueValues}`)
+    console.log(`Standard Categories: ${getStandardBugTypeCategories().join(', ')}`)
+    console.log('='.repeat(80) + '\n')
     
     // CRITICAL FIX: Preprocess performance data during initial processing (caching strategy)
     // This eliminates on-demand calculations in chart components
@@ -409,6 +555,35 @@ export const developerQualityService = {
         good: '10-15%',
         needsImprovement: '>15%'
       }
+    },
+    bugTypeAnalysis: {
+      byProject: new Map(), // project -> bug type distribution
+      byTimePeriod: new Map(), // time period -> bug type distribution
+      byProjectAndTimePeriod: new Map(), // composite key -> bug type distribution
+      totalDistribution: {
+        bugTypes: {
+          'Functional': { count: 0, percentage: 0 },
+          'UI': { count: 0, percentage: 0 },
+          'Performance': { count: 0, percentage: 0 },
+          'Security': { count: 0, percentage: 0 },
+          'Regression': { count: 0, percentage: 0 },
+          'Integration': { count: 0, percentage: 0 },
+          'Unknown': { count: 0, percentage: 0 }
+        },
+        totalBugs: 0,
+        metadata: {
+          calculatedAt: null,
+          source: 'single-loop-processing'
+        }
+      },
+              metadata: {
+          totalBugs: 0,
+          projectCount: 0,
+          timePeriods: [],
+          bugTypes: [],
+          projectConfigurations: new Map(), // project -> { rawValues: Set, mapping: Object, categories: Set }
+          standardCategories: getStandardBugTypeCategories()
+        }
     }
   }),
 
@@ -442,6 +617,18 @@ export const developerQualityService = {
     developerRootCauseChart: {
       type: 'stacked-bar',
       data: []
+    },
+    bugTypeDistributionChart: {
+      type: 'pie',
+      data: {
+        labels: [],
+        datasets: []
+      },
+      config: {
+        showLegend: true,
+        colorScheme: 'bugType',
+        responsive: true
+      }
     }
   }),
 
@@ -619,6 +806,9 @@ export const developerQualityService = {
           processBugForTrendAnalysis(issue, periodData, periodKey)
         })
       }
+      
+      // Bug type analysis - process bug type distribution
+      developerQualityService.processBugTypeAnalysis(issue, data)
     }
 
     // NEW PROCESSING - APPENDED AFTER EXISTING (SAFE)
@@ -1057,6 +1247,36 @@ export const developerQualityService = {
           .sort((a, b) => a.period.localeCompare(b.period))
       }
     })
+    
+    // Finalize bug type analysis metadata
+    if (metrics.bugTypeAnalysis) {
+      // Sort arrays for consistency
+      metrics.bugTypeAnalysis.metadata.timePeriods.sort()
+      metrics.bugTypeAnalysis.metadata.bugTypes.sort()
+      metrics.bugTypeAnalysis.metadata.projectCount = metrics.bugTypeAnalysis.byProject.size
+      
+      // Store project-specific configurations in metadata for IndexedDB caching
+      metrics.bugTypeAnalysis.byProject.forEach((projectData, projectKey) => {
+        const rawValues = new Set()
+        const categories = new Set()
+        
+        // Extract raw values and categories from the processed data
+        Object.entries(projectData.bugTypes || {}).forEach(([rawType, data]) => {
+          rawValues.add(rawType)
+          categories.add(data.category || rawType)
+        })
+        
+        const mapping = getBugTypeMapping(projectKey)
+        
+        metrics.bugTypeAnalysis.metadata.projectConfigurations.set(projectKey, {
+          rawValues,
+          mapping,
+          categories,
+          totalBugs: projectData.totalBugs || 0,
+          hasProjectSpecificMapping: !!(memberConfiguration.bugTypeConfiguration.projectSpecific[projectKey])
+        })
+      })
+    }
   },
 
   /**
@@ -1511,6 +1731,64 @@ export const developerQualityService = {
           typeof val === 'number' ? sum + val : sum, 0)
         return bTotal - aTotal
       })
+    
+    // Bug type distribution chart
+    chartData.bugTypeDistributionChart.data = developerQualityService.generateBugTypeChartData(metrics.bugTypeAnalysis)
+  },
+
+  /**
+   * Generate bug type chart data from bug type analysis
+   * @param {Object} bugTypeAnalysis - Bug type analysis data
+   * @returns {Object} Chart.js compatible data structure
+   */
+  generateBugTypeChartData: (bugTypeAnalysis) => {
+    const totalDistribution = bugTypeAnalysis.totalDistribution
+    
+    if (!totalDistribution || totalDistribution.totalBugs === 0) {
+      return {
+        labels: [],
+        datasets: []
+      }
+    }
+    
+    // Filter out bug types with zero count and sort by count descending
+    const bugTypes = Object.entries(totalDistribution.bugTypes)
+      .filter(([_, data]) => data.count > 0)
+      .sort(([, a], [, b]) => b.count - a.count)
+    
+    // Generate colors for bug types
+    const colors = developerQualityService.getBugTypeColors(bugTypes.map(([bugType]) => bugType))
+    
+    return {
+      labels: bugTypes.map(([bugType]) => bugType),
+      datasets: [{
+        label: 'Bug Count',
+        data: bugTypes.map(([_, data]) => data.count),
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverBorderWidth: 3
+      }]
+    }
+  },
+
+  /**
+   * Get colors for bug types
+   * @param {Array} bugTypes - Array of bug type names
+   * @returns {Array} Array of colors
+   */
+  getBugTypeColors: (bugTypes) => {
+    const colorMap = {
+      'Functional': '#2196f3',    // Blue
+      'UI': '#4caf50',           // Green  
+      'Performance': '#ff9800',   // Orange
+      'Security': '#f44336',      // Red
+      'Regression': '#9c27b0',    // Purple
+      'Integration': '#607d8b',   // Blue Grey
+      'Unknown': '#9e9e9e'        // Grey
+    }
+    
+    return bugTypes.map(bugType => colorMap[bugType] || '#9e9e9e')
   },
 
   /**
@@ -1657,6 +1935,178 @@ export const developerQualityService = {
       console.error(`Failed to get cached filter options ${filterType}:`, error)
       return null
     }
+  },
+
+  /**
+   * Process bug type analysis for the current issue
+   * @param {Object} issue - JIRA issue
+   * @param {Object} data - Developer quality data structure
+   */
+  processBugTypeAnalysis: (issue, data) => {
+    // Only process Bug type issues
+    if (issue.fields?.issuetype?.name !== 'Bug') return
+    
+    const projectKey = issue.fields?.project?.key
+    const bugType = developerQualityService.extractBugType(issue)
+    const timePeriod = issue.fields?.created ? getTimePeriodKey(issue.fields.created, 'month') : null
+    
+    if (!projectKey || !bugType) return
+    
+    // Update by Project
+    developerQualityService.updateBugTypeDistribution(data.metrics.bugTypeAnalysis.byProject, projectKey, bugType)
+    
+    // Update by Time Period
+    if (timePeriod) {
+      developerQualityService.updateBugTypeDistribution(data.metrics.bugTypeAnalysis.byTimePeriod, timePeriod, bugType)
+      
+      // Update composite index
+      const compositeKey = `${projectKey}::${timePeriod}`
+      developerQualityService.updateBugTypeDistribution(data.metrics.bugTypeAnalysis.byProjectAndTimePeriod, compositeKey, bugType)
+    }
+    
+    // Update total distribution
+    developerQualityService.updateBugTypeCount(data.metrics.bugTypeAnalysis.totalDistribution, bugType)
+    
+    // Update metadata
+    data.metrics.bugTypeAnalysis.metadata.totalBugs++
+    if (!data.metrics.bugTypeAnalysis.metadata.bugTypes.includes(bugType)) {
+      data.metrics.bugTypeAnalysis.metadata.bugTypes.push(bugType)
+    }
+    if (timePeriod && !data.metrics.bugTypeAnalysis.metadata.timePeriods.includes(timePeriod)) {
+      data.metrics.bugTypeAnalysis.metadata.timePeriods.push(timePeriod)
+    }
+  },
+
+  /**
+   * Extract bug type from JIRA issue
+   * @param {Object} issue - JIRA issue
+   * @returns {string} Bug type or 'Unknown'
+   */
+  extractBugType: (issue) => {
+    const projectKey = issue.fields?.project?.key || 'Unknown'
+    const bugTypeField = issue.fields?.[JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE]
+    
+    // Debug logging to understand the actual data structure
+    if (issue.fields?.issuetype?.name === 'Bug' && Math.random() < 0.01) { // Log 1% of bugs
+      console.log('🐛 BUG TYPE DEBUG:', {
+        issueKey: issue.key,
+        projectKey: projectKey,
+        bugTypeField: bugTypeField,
+        bugTypeFieldType: typeof bugTypeField,
+        bugTypeFieldKeys: bugTypeField ? Object.keys(bugTypeField) : null,
+        customFieldId: JIRA_CONSTANTS.CUSTOM_FIELDS.BUG_TYPE,
+        allCustomFields: Object.keys(issue.fields || {}).filter(key => key.startsWith('customfield_'))
+      })
+    }
+    
+    if (bugTypeField) {
+      let rawBugType = null
+      
+      // Handle array format (JIRA custom field options)
+      if (Array.isArray(bugTypeField) && bugTypeField.length > 0) {
+        const firstOption = bugTypeField[0]
+        if (firstOption && firstOption.value) {
+          rawBugType = firstOption.value
+        } else if (firstOption && firstOption.name) {
+          rawBugType = firstOption.name
+        }
+      }
+      // Handle string format
+      else if (typeof bugTypeField === 'string') {
+        rawBugType = bugTypeField
+      }
+      // Handle object format
+      else if (bugTypeField.value) {
+        rawBugType = bugTypeField.value
+      } else if (bugTypeField.name) {
+        rawBugType = bugTypeField.name
+      }
+      
+      if (rawBugType) {
+        // Use project-specific mapping
+        const mappedCategory = mapBugTypeToCategory(rawBugType, projectKey)
+        console.log(`🔄 [DEBUG] Project ${projectKey}: "${rawBugType}" -> "${mappedCategory}"`)
+        return mappedCategory
+      }
+    }
+    
+    // Fallback to configured fallback category
+    return memberConfiguration.bugTypeConfiguration.fallbackCategory
+  },
+
+  // REMOVED: normalizeBugType - now using project-specific configuration via mapBugTypeToCategory
+
+  /**
+   * Update bug type distribution for a given key
+   * @param {Map} distributionMap - Map to update
+   * @param {string} key - Key (project, time period, etc.)
+   * @param {string} bugType - Bug type to count
+   */
+  updateBugTypeDistribution: (distributionMap, key, bugType) => {
+    if (!distributionMap.has(key)) {
+      distributionMap.set(key, {
+        bugTypes: {
+          'Functional': { count: 0, percentage: 0 },
+          'UI': { count: 0, percentage: 0 },
+          'Performance': { count: 0, percentage: 0 },
+          'Security': { count: 0, percentage: 0 },
+          'Regression': { count: 0, percentage: 0 },
+          'Integration': { count: 0, percentage: 0 },
+          'Unknown': { count: 0, percentage: 0 }
+        },
+        totalBugs: 0,
+        projectKey: key.includes('::') ? key.split('::')[0] : key,
+        timePeriod: key.includes('::') ? key.split('::')[1] : null,
+        metadata: {
+          calculatedAt: new Date().toISOString(),
+          source: 'single-loop-processing'
+        }
+      })
+    }
+    
+    const distribution = distributionMap.get(key)
+    
+    // Initialize bug type if it doesn't exist
+    if (!distribution.bugTypes[bugType]) {
+      distribution.bugTypes[bugType] = { count: 0, percentage: 0 }
+    }
+    
+    // Update counts
+    distribution.bugTypes[bugType].count++
+    distribution.totalBugs++
+    
+    // Recalculate percentages
+    Object.values(distribution.bugTypes).forEach(bugTypeData => {
+      if (distribution.totalBugs > 0) {
+        bugTypeData.percentage = (bugTypeData.count / distribution.totalBugs) * 100
+      }
+    })
+  },
+
+  /**
+   * Update total bug type count
+   * @param {Object} totalDistribution - Total distribution object
+   * @param {string} bugType - Bug type to count
+   */
+  updateBugTypeCount: (totalDistribution, bugType) => {
+    // Initialize bug type if it doesn't exist
+    if (!totalDistribution.bugTypes[bugType]) {
+      totalDistribution.bugTypes[bugType] = { count: 0, percentage: 0 }
+    }
+    
+    // Update counts
+    totalDistribution.bugTypes[bugType].count++
+    totalDistribution.totalBugs++
+    
+    // Recalculate percentages
+    Object.values(totalDistribution.bugTypes).forEach(bugTypeData => {
+      if (totalDistribution.totalBugs > 0) {
+        bugTypeData.percentage = (bugTypeData.count / totalDistribution.totalBugs) * 100
+      }
+    })
+    
+    // Update metadata
+    totalDistribution.metadata.calculatedAt = new Date().toISOString()
   },
 
 }

@@ -374,6 +374,33 @@ export const filterService = {
       bugRateAnalysis: {
         developers: new Map(),
         teamAverage: 0
+      },
+      bugTypeAnalysis: {
+        byProject: new Map(),
+        byTimePeriod: new Map(),
+        byProjectAndTimePeriod: new Map(),
+        totalDistribution: {
+          bugTypes: {
+            'Functional': { count: 0, percentage: 0 },
+            'UI': { count: 0, percentage: 0 },
+            'Performance': { count: 0, percentage: 0 },
+            'Security': { count: 0, percentage: 0 },
+            'Regression': { count: 0, percentage: 0 },
+            'Integration': { count: 0, percentage: 0 },
+            'Unknown': { count: 0, percentage: 0 }
+          },
+          totalBugs: 0,
+          metadata: {
+            calculatedAt: new Date().toISOString(),
+            source: 'filter-recalculation'
+          }
+        },
+        metadata: {
+          totalBugs: 0,
+          projectCount: 0,
+          timePeriods: new Set(),
+          bugTypes: new Set()
+        }
       }
     }
     
@@ -458,7 +485,45 @@ export const filterService = {
           devRootCause.set(rootCause, (devRootCause.get(rootCause) || 0) + 1)
         }
       }
+      
+      // Bug type analysis - only for Bug type issues
+      if (issueType === 'Bug') {
+        const projectKey = issue.project
+        const bugType = issue.bugType || 'Unknown'
+        const timePeriod = updated ? updated.substring(0, 7) : null // Use month format
+        
+        if (projectKey && bugType) {
+          // Update by Project
+          filterService.updateBugTypeDistribution(metrics.bugTypeAnalysis.byProject, projectKey, bugType)
+          
+          // Update by Time Period
+          if (timePeriod) {
+            filterService.updateBugTypeDistribution(metrics.bugTypeAnalysis.byTimePeriod, timePeriod, bugType)
+            
+            // Update composite index
+            const compositeKey = `${projectKey}::${timePeriod}`
+            filterService.updateBugTypeDistribution(metrics.bugTypeAnalysis.byProjectAndTimePeriod, compositeKey, bugType)
+          }
+          
+          // Update total distribution
+          filterService.updateBugTypeCount(metrics.bugTypeAnalysis.totalDistribution, bugType)
+          
+          // Update metadata
+          metrics.bugTypeAnalysis.metadata.totalBugs++
+          metrics.bugTypeAnalysis.metadata.bugTypes.add(bugType)
+          if (timePeriod) {
+            metrics.bugTypeAnalysis.metadata.timePeriods.add(timePeriod)
+          }
+        }
+      }
     })
+    
+    // Finalize bug type analysis metadata
+    if (metrics.bugTypeAnalysis) {
+      metrics.bugTypeAnalysis.metadata.timePeriods = Array.from(metrics.bugTypeAnalysis.metadata.timePeriods).sort()
+      metrics.bugTypeAnalysis.metadata.bugTypes = Array.from(metrics.bugTypeAnalysis.metadata.bugTypes).sort()
+      metrics.bugTypeAnalysis.metadata.projectCount = metrics.bugTypeAnalysis.byProject.size
+    }
     
     // Finalize calculations
     filterService.finalizeFilteredMetrics(metrics, cacheData)
@@ -781,4 +846,77 @@ export const filterService = {
   },
 
   // REMOVED: applyPerformanceFilter method - now using preprocessed data (caching strategy fix)
+
+  /**
+   * Update bug type distribution for a given key
+   * @param {Map} distributionMap - Map to update
+   * @param {string} key - Key (project, time period, etc.)
+   * @param {string} bugType - Bug type to count
+   */
+  updateBugTypeDistribution: (distributionMap, key, bugType) => {
+    if (!distributionMap.has(key)) {
+      distributionMap.set(key, {
+        bugTypes: {
+          'Functional': { count: 0, percentage: 0 },
+          'UI': { count: 0, percentage: 0 },
+          'Performance': { count: 0, percentage: 0 },
+          'Security': { count: 0, percentage: 0 },
+          'Regression': { count: 0, percentage: 0 },
+          'Integration': { count: 0, percentage: 0 },
+          'Unknown': { count: 0, percentage: 0 }
+        },
+        totalBugs: 0,
+        projectKey: key.includes('::') ? key.split('::')[0] : key,
+        timePeriod: key.includes('::') ? key.split('::')[1] : null,
+        metadata: {
+          calculatedAt: new Date().toISOString(),
+          source: 'filter-recalculation'
+        }
+      })
+    }
+    
+    const distribution = distributionMap.get(key)
+    
+    // Initialize bug type if it doesn't exist
+    if (!distribution.bugTypes[bugType]) {
+      distribution.bugTypes[bugType] = { count: 0, percentage: 0 }
+    }
+    
+    // Update counts
+    distribution.bugTypes[bugType].count++
+    distribution.totalBugs++
+    
+    // Recalculate percentages
+    Object.values(distribution.bugTypes).forEach(bugTypeData => {
+      if (distribution.totalBugs > 0) {
+        bugTypeData.percentage = (bugTypeData.count / distribution.totalBugs) * 100
+      }
+    })
+  },
+
+  /**
+   * Update total bug type count
+   * @param {Object} totalDistribution - Total distribution object
+   * @param {string} bugType - Bug type to count
+   */
+  updateBugTypeCount: (totalDistribution, bugType) => {
+    // Initialize bug type if it doesn't exist
+    if (!totalDistribution.bugTypes[bugType]) {
+      totalDistribution.bugTypes[bugType] = { count: 0, percentage: 0 }
+    }
+    
+    // Update counts
+    totalDistribution.bugTypes[bugType].count++
+    totalDistribution.totalBugs++
+    
+    // Recalculate percentages
+    Object.values(totalDistribution.bugTypes).forEach(bugTypeData => {
+      if (totalDistribution.totalBugs > 0) {
+        bugTypeData.percentage = (bugTypeData.count / totalDistribution.totalBugs) * 100
+      }
+    })
+    
+    // Update metadata
+    totalDistribution.metadata.calculatedAt = new Date().toISOString()
+  },
 } 

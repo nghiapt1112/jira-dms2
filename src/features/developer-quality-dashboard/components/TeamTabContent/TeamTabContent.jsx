@@ -6,6 +6,7 @@ import { Grid } from '@mui/material'
 import TeamContributionChart from '../TeamContributionChart'
 import ProjectTeamPerformance from '../ProjectTeamPerformance'
 import BugTrendAnalysis from '../BugTrendAnalysis'
+import BugTypeDistributionChart from '../BugTypeDistributionChart'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
 
@@ -41,9 +42,9 @@ const TeamTabContent = React.memo(({
   // 2. Memoized grid configurations for consistent responsive design
   const gridConfig = useMemo(() => ({
     // Primary team charts - responsive layout
-    primary: { xs: 12, lg: 6 },
+    primary: { xs: 12, lg: 3 ,},
     // Supporting analytics - balanced on medium+ screens
-    supporting: { xs: 12, md: 6 },
+    supporting: { xs: 12, md: 6 , lg: 3},
     // Full-width components
     fullWidth: { xs: 12 }
   }), [])
@@ -97,6 +98,20 @@ const TeamTabContent = React.memo(({
         />
       </Grid>
 
+      {/* Bug Type Distribution Chart - Project-specific */}
+      <Grid item {...gridConfig.supporting}>
+        <BugTypeDistributionChart
+          bugTypeData={filteredData.filteredMetrics?.bugTypeAnalysis?.totalDistribution}
+          title="Bug Type Distribution"
+          height={400}
+          showLegend={true}
+          onChartClick={(event, elements) => {
+            // Future enhancement: Could filter by bug type
+            console.log('Bug type clicked:', elements)
+          }}
+        />
+      </Grid>
+
       {/* Root Cause Analysis - Team context */}
       <Grid item {...gridConfig.supporting}>
         <RootCauseAnalysis
@@ -137,7 +152,8 @@ TeamTabContent.propTypes = {
         teamContribution: PropTypes.object.isRequired,
         bugAnalysis: PropTypes.object.isRequired,
         rootCauseAnalysis: PropTypes.object.isRequired,
-        bugRateAnalysis: PropTypes.object.isRequired
+        bugRateAnalysis: PropTypes.object.isRequired,
+        bugTypeAnalysis: PropTypes.object // Added for BugTypeDistributionChart
       }).isRequired
     }).isRequired,
     filters: PropTypes.shape({
