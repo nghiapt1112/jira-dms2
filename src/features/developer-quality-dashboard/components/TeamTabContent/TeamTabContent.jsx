@@ -6,26 +6,22 @@ import { Grid, Box } from '@mui/material'
 // Import team-focused components
 import TeamContributionChart from '../TeamContributionChart'
 import ProjectTeamPerformance from '../ProjectTeamPerformance'
-import BugTrendAnalysis from '../BugTrendAnalysis'
-import BugStatusChart from '../BugStatusChart'
-import BugStatusDistributionChart from '../BugStatusDistributionChart'
-import BugTypeDistributionChart from '../BugTypeDistributionChart'
-import RootCauseAnalysis from '../RootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
 import RawJsonViewer from '../RawJsonViewer'
+// Removed: BugTrendAnalysis, BugStatusChart, BugStatusDistributionChart, BugTypeDistributionChart, RootCauseAnalysis
 
 /**
- * TeamTabContent - Team-focused dashboard layout
+ * TeamTabContent - Simplified team-focused dashboard layout
  * 
- * Optimized workflow for team analysis:
+ * Streamlined workflow for team analysis:
  * - Team performance metrics (TeamContributionChart, ProjectTeamPerformance)
- * - Shared analytics (BugTrendAnalysis, RootCauseAnalysis) 
  * - Team data table (BugRateAnalysisTable)
+ * - Raw JSON data viewer
  * 
  * Layout Strategy:
  * - Primary charts: TeamContributionChart + conditional ProjectTeamPerformance
- * - Supporting charts: BugTrendAnalysis + RootCauseAnalysis
  * - Full-width table: BugRateAnalysisTable for detailed team data
+ * - Full-width Raw JSON viewer for bug analysis data
  * 
  * @param {Object} props - Component props
  * @param {Object} props.dashboardData - Filtered data, filters, and options
@@ -58,6 +54,10 @@ const TeamTabContent = React.memo(({
   // 3. Render optimized team layout
   return (
     <Grid container spacing={{ xs: 2, sm: 3 }}>
+      {/* Raw JSON Data Section */}
+      <Grid item {...gridConfig.fullWidth}>
+        <RawJsonViewer />
+      </Grid>
       {/* Primary Team Performance Section */}
       
       {/* Team Contribution Chart - Always visible, core team metric */}
@@ -86,79 +86,7 @@ const TeamTabContent = React.memo(({
         </Grid>
       )} */}
 
-      {/* Supporting Analytics Section */}
-      
-      {/* Bug Trend Analysis - Team context */}
-      <Grid item {...gridConfig.supporting}>
-        <BugTrendAnalysis
-          data={{
-            ...filteredData.filteredChartData.bugTrendChart,
-            config: {
-              timePeriod: filters?.timeframe || 'month',
-              periodKey: filters?.timeframe === 'week' ? 'week' : 'month'
-            }
-          }}
-          metrics={filteredData.filteredMetrics.bugAnalysis}
-          context="team"
-          title="Team Bug Trends"
-        />
-      </Grid>
-
-      {/* Bug Status Chart - Team context */}
-      <Grid item {...gridConfig.primary}>
-        {(() => {
-          const bugStatusData = filteredData.filteredChartData.bugStatusChart
-
-          return (
-            <Box>
-
-              
-              {/* Bug Status Chart */}
-              <BugStatusChart
-                data={bugStatusData}
-                filters={filters}
-                height={400}
-                title="Bug Status Trends"
-              />
-              
-            </Box>
-          )
-        })()}
-      </Grid>
-
-      {/* Bug Status Distribution Chart - Team overview */}
-      <Grid item {...gridConfig.supporting}>
-        <BugStatusDistributionChart
-          data={filteredData.filteredChartData.bugStatusChart}
-          filters={filters}
-          height={350}
-          title="Bug Status Distribution"
-        />
-      </Grid>
-
-      {/* Bug Type Distribution Chart - Project-specific */}
-      <Grid item {...gridConfig.supporting}>
-        <BugTypeDistributionChart
-          bugTypeData={filteredData.filteredMetrics?.bugTypeAnalysis?.totalDistribution}
-          title="Bug Type Distribution"
-          height={400}
-          showLegend={true}
-          onChartClick={(event, elements) => {
-            // Future enhancement: Could filter by bug type
-    
-          }}
-        />
-      </Grid>
-
-      {/* Root Cause Analysis - Team context */}
-      <Grid item {...gridConfig.supporting}>
-        <RootCauseAnalysis
-          data={filteredData.filteredChartData.rootCauseChart}
-          metrics={filteredData.filteredMetrics.rootCauseAnalysis}
-          context="team"
-          title="Team Root Cause Analysis"
-        />
-      </Grid>
+      {/* Supporting Analytics Section - Charts removed, keeping underlying logic */}
 
       {/* Detailed Team Data Section */}
       
@@ -174,10 +102,6 @@ const TeamTabContent = React.memo(({
         />
       </Grid>
 
-      {/* Raw JSON Data Section */}
-      <Grid item {...gridConfig.fullWidth}>
-        <RawJsonViewer />
-      </Grid>
     </Grid>
   )
 })
@@ -187,17 +111,13 @@ TeamTabContent.propTypes = {
   dashboardData: PropTypes.shape({
     filteredData: PropTypes.shape({
       filteredChartData: PropTypes.shape({
-        teamContributionChart: PropTypes.object.isRequired,
-        bugTrendChart: PropTypes.object.isRequired,
-        bugStatusChart: PropTypes.object, // Added for BugStatusChart
-        rootCauseChart: PropTypes.object.isRequired
+        teamContributionChart: PropTypes.object.isRequired
+        // Removed: bugTrendChart, bugStatusChart, rootCauseChart (charts removed but logic kept)
       }).isRequired,
       filteredMetrics: PropTypes.shape({
         teamContribution: PropTypes.object.isRequired,
-        bugAnalysis: PropTypes.object.isRequired,
-        rootCauseAnalysis: PropTypes.object.isRequired,
-        bugRateAnalysis: PropTypes.object.isRequired,
-        bugTypeAnalysis: PropTypes.object // Added for BugTypeDistributionChart
+        bugRateAnalysis: PropTypes.object.isRequired
+        // Removed: bugAnalysis, rootCauseAnalysis, bugTypeAnalysis (charts removed but logic kept)
       }).isRequired
     }).isRequired,
     filters: PropTypes.shape({

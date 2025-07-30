@@ -8,11 +8,18 @@ import { Box, Typography, Paper, Button } from '@mui/material'
 import { ContentCopy } from '@mui/icons-material'
 import { useBugAnalysis } from '../../hooks/useBugAnalysis'
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
+import { convertProjectNamesToKeys } from '../../utils/projectMapping'
 
 const RawJsonViewer = () => {
   const { filters } = useDeveloperQualityFilters()
+  
+  // Convert project names to keys for API calls
+  const projectKeys = useMemo(() => {
+    return convertProjectNamesToKeys(filters.projects)
+  }, [filters.projects])
+  
   const { bugAnalysis, isLoading, error } = useBugAnalysis(
-    filters.projects, 
+    projectKeys, 
     filters.timeframe
   )
   
@@ -25,13 +32,13 @@ const RawJsonViewer = () => {
       return bugAnalysis
     }
     
-    // Filter by selected projects from Zustand state
+    // Filter by selected project keys (converted from names)
     return Object.fromEntries(
       Object.entries(bugAnalysis).filter(([projectKey]) => 
-        filters.projects.includes(projectKey)
+        projectKeys.includes(projectKey)
       )
     )
-  }, [bugAnalysis, filters.projects])
+  }, [bugAnalysis, projectKeys])
   
   if (isLoading) {
     return (
@@ -70,7 +77,7 @@ const RawJsonViewer = () => {
   
   const selectedProjects = filters.projects || []
   const projectsText = selectedProjects.length === 0 ? 'All Projects' : 
-                      selectedProjects.length === 1 ? selectedProjects[0] :
+                      selectedProjects.length === 1 ? `${selectedProjects[0]} (${projectKeys[0]})` :
                       `${selectedProjects.length} Projects`
   
   return (
