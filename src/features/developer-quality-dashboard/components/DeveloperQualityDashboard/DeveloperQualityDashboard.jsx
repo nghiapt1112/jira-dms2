@@ -7,6 +7,7 @@ import { memberConfiguration } from '../../../../constants/memberConfiguration'
 import { useDeveloperQualityCache } from '../../hooks/useDeveloperQualityCache'
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
 import { useDeveloperQualityStore } from '../../store/developerQualityStore'
+import { useJiraData } from '../../../jira-data/hooks/useJiraData'
 import DeveloperQualityErrorBoundary from '../ErrorBoundary'
 import FilterPanel from '../FilterPanel'
 import TabContainer from '../TabContainer'
@@ -14,6 +15,13 @@ import useUrlFilterSync from '../../hooks/useUrlFilterSync'
 
 const DeveloperQualityDashboard = React.memo(() => {
   // 1. Hooks first
+  // Get JIRA data hook for refresh functionality (like Main Dashboard)
+  const {
+    refreshData: jiraRefreshData,
+    isLoading: jiraIsLoading,
+    isDataStale
+  } = useJiraData()
+  
   const { 
     data: cacheData, 
     isLoading, 
@@ -148,9 +156,15 @@ const DeveloperQualityDashboard = React.memo(() => {
     }
   }, [loadData])
   
+  // Main refresh handler - like Main Dashboard
+  const handleMainRefresh = useCallback(async () => {
+    // This is the only place that calls the backend API (like Main Dashboard)
+    await jiraRefreshData()
+  }, [jiraRefreshData])
+
   // 4. Early returns - Consolidated loading logic to prevent flashing
   // Show loading if any data loading is happening OR if we need initialization but might have cache
-  const isAnyLoading = isLoading || isFiltersLoading || (needsInitialization && !error)
+  const isAnyLoading = isLoading || isFiltersLoading || jiraIsLoading || (needsInitialization && !error)
   
   if (isAnyLoading) {
     return (
@@ -167,7 +181,7 @@ const DeveloperQualityDashboard = React.memo(() => {
           Loading developer quality data...
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {isLoading ? 'Processing data...' : 'Checking cache...'}
+          {jiraIsLoading ? 'Fetching from server...' : isLoading ? 'Processing data...' : 'Checking cache...'}
         </Typography>
       </Box>
     )
@@ -182,7 +196,7 @@ const DeveloperQualityDashboard = React.memo(() => {
             <Button 
               color="inherit" 
               size="small" 
-              onClick={handleRefresh}
+              onClick={handleMainRefresh}
               startIcon={<RefreshIcon />}
             >
               Retry
@@ -261,26 +275,32 @@ const DeveloperQualityDashboard = React.memo(() => {
           Developer Quality Dashboard
         </Typography>
         
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          {isDataStale() && (
+            <Typography variant="caption" color="warning.main">
+              Data is stale
+            </Typography>
+          )}
+          
           <Button
             variant="outlined"
             color="secondary"
             size="small"
             startIcon={<LogIcon />}
             onClick={handleExportLogs}
-                          title="Export logs to file"
+            title="Export logs to file"
           >
             Export Logs
           </Button>
           <Button
             variant="contained"
             color="primary"
-            startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
-            onClick={handleRefresh}
-            disabled={isLoading}
-            title="Refresh data from server"
+            startIcon={jiraIsLoading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+            onClick={handleMainRefresh}
+            disabled={jiraIsLoading}
+            title="Fetch new data from server"
           >
-            {isLoading ? 'Refreshing...' : 'Refresh Data'}
+            {jiraIsLoading ? 'Fetching from Server...' : 'Refresh Data'}
           </Button>
         </Box>
       </Box>
