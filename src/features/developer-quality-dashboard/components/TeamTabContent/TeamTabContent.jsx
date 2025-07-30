@@ -8,18 +8,28 @@ import TeamContributionChart from '../TeamContributionChart'
 import ProjectTeamPerformance from '../ProjectTeamPerformance'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
 import RawJsonViewer from '../RawJsonViewer'
+import { 
+  BugCreatedResolvedChart, 
+  BugStatusPieChart, 
+  BugTypePieChart, 
+  BugRootCauseBarChart 
+} from '../BugAnalysisCharts'
+import { useBugAnalysis } from '../../hooks/useBugAnalysis'
+import { convertProjectNamesToKeys } from '../../utils/projectMapping'
 // Removed: BugTrendAnalysis, BugStatusChart, BugStatusDistributionChart, BugTypeDistributionChart, RootCauseAnalysis
 
 /**
- * TeamTabContent - Simplified team-focused dashboard layout
+ * TeamTabContent - Team-focused dashboard with bug analysis charts
  * 
- * Streamlined workflow for team analysis:
- * - Team performance metrics (TeamContributionChart, ProjectTeamPerformance)
+ * Comprehensive workflow for team analysis:
+ * - Team performance metrics (TeamContributionChart)
+ * - Bug analysis charts (Created/Resolved, Status, Type, Root Cause)
  * - Team data table (BugRateAnalysisTable)
  * - Raw JSON data viewer
  * 
  * Layout Strategy:
- * - Primary charts: TeamContributionChart + conditional ProjectTeamPerformance
+ * - Primary charts: TeamContributionChart + Bug analysis charts
+ * - Supporting charts: Status and Type pie charts
  * - Full-width table: BugRateAnalysisTable for detailed team data
  * - Full-width Raw JSON viewer for bug analysis data
  * 
@@ -39,10 +49,14 @@ const TeamTabContent = React.memo(({
   const { onStatusFilterChange } = dashboardActions
   const { selectedSingleProject, performanceControls } = dashboardState
 
+  // 2. Get bug analysis data with pre-processed chart data
+  const projectKeys = useMemo(() => convertProjectNamesToKeys(filters.projects), [filters.projects])
+  const { chartData: bugChartData, isLoading: bugDataLoading } = useBugAnalysis(projectKeys, filters.timeframe)
+
   // 2. Memoized grid configurations for consistent responsive design
   const gridConfig = useMemo(() => ({
     // Primary team charts - responsive layout
-    primary: { xs: 12, lg: 3 ,},
+    primary: { xs: 12, lg: 6,},
     // Supporting analytics - balanced on medium+ screens
     supporting: { xs: 12, md: 6 , lg: 3},
     // Full-width components
@@ -86,7 +100,43 @@ const TeamTabContent = React.memo(({
         </Grid>
       )} */}
 
-      {/* Supporting Analytics Section - Charts removed, keeping underlying logic */}
+      {/* Bug Analysis Charts Section - Using pre-processed data */}
+      {bugChartData && !bugDataLoading && (
+        <>
+          {/* Line Chart: Created vs Resolved */}
+          <Grid item {...gridConfig.supporting}>
+            <BugCreatedResolvedChart 
+              chartData={bugChartData.lineChart}
+              timeframe={filters.timeframe}
+              title="Bugs Created vs Resolved"
+            />
+          </Grid>
+          
+          {/* Pie Chart: Status Distribution */}
+          <Grid item {...gridConfig.supporting}>
+            <BugStatusPieChart 
+              chartData={bugChartData.statusPie}
+              title="Bug Status Distribution"
+            />
+          </Grid>
+          
+          {/* Pie Chart: Bug Type Distribution */}
+          <Grid item {...gridConfig.supporting}>
+            <BugTypePieChart 
+              chartData={bugChartData.typePie}
+              title="Bug Type Distribution"
+            />
+          </Grid>
+          
+          {/* Bar Chart: Root Cause Analysis */}
+          <Grid item {...gridConfig.supporting}>
+            <BugRootCauseBarChart 
+              chartData={bugChartData.rootCauseBar}
+              title="Bug Root Cause Analysis"
+            />
+          </Grid>
+        </>
+      )}
 
       {/* Detailed Team Data Section */}
       

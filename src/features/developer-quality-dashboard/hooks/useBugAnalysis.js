@@ -1,10 +1,12 @@
 /**
  * Custom Hook for Bug Analysis Data
- * Provides filtered bug analysis data with project and timeframe filtering
+ * Provides filtered bug analysis data with centralized preprocessing
+ * Follows caching strategy: process data once, provide chart-ready data
  */
 
 import { useMemo, useEffect } from 'react'
 import { useDeveloperQualityStore } from '../store/developerQualityStore'
+import { preprocessBugAnalysisData, transformForChartJs } from '../services/bugAnalysisChartDataService'
 
 export const useBugAnalysis = (projects = [], timeframe = 'month') => {
   const { 
@@ -36,41 +38,48 @@ export const useBugAnalysis = (projects = [], timeframe = 'month') => {
     )
   }, [bugAnalysis, projects])
   
-  // Calculate summary statistics
-  const summary = useMemo(() => {
+  // CACHING STRATEGY: Process data once with centralized service
+  const preprocessedData = useMemo(() => {
     if (!filteredBugAnalysis) return null
-    
-    let totalCreated = 0
-    let totalResolved = 0
-    let totalInProgress = 0
-    let totalNew = 0
-    let totalNotFix = 0
-    
-    Object.values(filteredBugAnalysis).forEach(projectData => {
-      const periods = projectData[timeframe] || {}
-      Object.values(periods).forEach(periodData => {
-        totalCreated += periodData.created || 0
-        totalResolved += periodData.resolved || 0
-        totalInProgress += periodData.inProgress || 0
-        totalNew += periodData.new || 0
-        totalNotFix += periodData.notFix || 0
-      })
-    })
-    
-    return {
-      totalBugs: totalCreated,
-      resolved: totalResolved,
-      inProgress: totalInProgress,
-      new: totalNew,
-      notFix: totalNotFix,
-      resolutionRate: totalCreated > 0 ? 
-        Math.round((totalResolved / totalCreated) * 100) : 0
-    }
+    return preprocessBugAnalysisData(filteredBugAnalysis, timeframe)
   }, [filteredBugAnalysis, timeframe])
   
+  // Pre-processed chart data for Chart.js (memoized for performance)
+  const chartData = useMemo(() => {
+    if (!preprocessedData) return null
+    
+    return {
+      lineChart: transformForChartJs(preprocessedData, 'line'),
+      statusPie: transformForChartJs(preprocessedData, 'statusPie'),
+      typePie: transformForChartJs(preprocessedData, 'typePie'), 
+      rootCauseBar: transformForChartJs(preprocessedData, 'rootCauseBar')
+    }
+  }, [preprocessedData])
+  
+  // Enhanced summary with resolution rate calculation
+  const summary = useMemo(() => {
+    if (!preprocessedData) return null
+    
+    const { summary: baseSummary } = preprocessedData
+    
+    return {
+      ...baseSummary,
+      resolutionRate: baseSummary.totalCreated > 0 ? 
+        Math.round((baseSummary.totalResolved / baseSummary.totalCreated) * 100) : 0
+    }
+  }, [preprocessedData])
+  
   return {
+    // Raw data (for backwards compatibility)
     bugAnalysis: filteredBugAnalysis,
+    
+    // Pre-processed chart data (NEW - follows caching strategy)
+    chartData,
+    
+    // Summary statistics
     summary,
+    
+    // Loading states
     isLoading: bugAnalysisLoading,
     error: bugAnalysisError,
     reload: loadBugAnalysis

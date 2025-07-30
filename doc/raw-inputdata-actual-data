@@ -1,3149 +1,567 @@
 {
-    "type": "line",
-    "data": {
-      "data": {
-        "aggregated": {
-          "2025-07": {
-            "new": 19,
-            "inProgress": 37,
-            "resolved": 122,
-            "notFixed": 13,
-            "total": 191
-          },
-          "2025-06": {
-            "new": 12,
-            "inProgress": 2,
-            "resolved": 325,
-            "notFixed": 0,
-            "total": 339
-          },
-          "2025-05": {
-            "new": 13,
-            "inProgress": 0,
-            "resolved": 333,
-            "notFixed": 1,
-            "total": 347
-          },
-          "2025-04": {
-            "new": 9,
-            "inProgress": 5,
-            "resolved": 296,
-            "notFixed": 1,
-            "total": 311
-          },
-          "2025-02": {
-            "new": 31,
-            "inProgress": 2,
-            "resolved": 372,
-            "notFixed": 0,
-            "total": 405
-          },
-          "2025-01": {
-            "new": 16,
-            "inProgress": 2,
-            "resolved": 262,
-            "notFixed": 2,
-            "total": 282
-          },
-          "2024-10": {
-            "new": 0,
-            "inProgress": 0,
-            "resolved": 0,
-            "notFixed": 1,
-            "total": 1
-          },
-          "2025-03": {
-            "new": 15,
-            "inProgress": 0,
-            "resolved": 367,
-            "notFixed": 0,
-            "total": 382
-          },
-          "2024-12": {
-            "new": 3,
-            "inProgress": 0,
-            "resolved": 35,
-            "notFixed": 0,
-            "total": 38
-          },
-          "2024-11": {
-            "new": 1,
-            "inProgress": 0,
-            "resolved": 2,
-            "notFixed": 0,
-            "total": 3
-          },
-          "2024-09": {
-            "new": 1,
-            "inProgress": 0,
-            "resolved": 0,
-            "notFixed": 0,
-            "total": 1
-          }
-        },
-        "byProject": {
-          "YUIM": {
-            "2025-W31": {
-              "new": 6,
-              "inProgress": 37,
-              "resolved": 12,
-              "notFixed": 13,
-              "total": 68
-            },
-            "2025-07": {
-              "new": 19,
-              "inProgress": 37,
-              "resolved": 122,
-              "notFixed": 13,
-              "total": 191
-            },
-            "2025-Q3": {
-              "new": 19,
-              "inProgress": 37,
-              "resolved": 122,
-              "notFixed": 13,
-              "total": 191
-            },
-            "2025-W30": {
-              "new": 4,
-              "inProgress": 0,
-              "resolved": 75,
-              "notFixed": 0,
-              "total": 79
-            },
-            "2025-W29": {
-              "new": 9,
-              "inProgress": 0,
-              "resolved": 22,
-              "notFixed": 0,
-              "total": 31
-            },
-            "2025-W28": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-Q2": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 69,
-              "notFixed": 1,
-              "total": 72
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W22": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 19,
-              "notFixed": 1,
-              "total": 21
-            },
-            "2025-05": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 38,
-              "notFixed": 1,
-              "total": 40
-            },
-            "2025-W18": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-04": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "WON": {
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-Q2": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 22
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-04": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W15": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "TS": {
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 1,
-              "total": 1
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 2,
-              "total": 2
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 2,
-              "total": 2
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 1,
-              "total": 1
-            },
-            "2024-W43": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 1,
-              "total": 1
-            },
-            "2024-10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 1,
-              "total": 1
-            },
-            "2024-Q4": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 1,
-              "total": 1
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 1,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-Q2": {
-              "new": 1,
-              "inProgress": 1,
-              "resolved": 14,
-              "notFixed": 1,
-              "total": 17
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 1,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-05": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W18": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 1,
-              "total": 2
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 1,
-              "total": 1
-            }
-          },
-          "TOUC": {
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 60,
-              "notFixed": 0,
-              "total": 60
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 215,
-              "notFixed": 0,
-              "total": 215
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 25,
-              "notFixed": 0,
-              "total": 25
-            },
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 28,
-              "notFixed": 0,
-              "total": 28
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 32,
-              "notFixed": 0,
-              "total": 32
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 91,
-              "notFixed": 0,
-              "total": 91
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-W07": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 30,
-              "notFixed": 0,
-              "total": 30
-            },
-            "2025-W06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 14
-            },
-            "2025-W05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 18,
-              "notFixed": 0,
-              "total": 18
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 64,
-              "notFixed": 0,
-              "total": 64
-            },
-            "2025-W04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 14
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 22,
-              "notFixed": 0,
-              "total": 22
-            },
-            "2024-W52": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2024-12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 30,
-              "notFixed": 0,
-              "total": 30
-            },
-            "2024-Q4": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 30,
-              "notFixed": 0,
-              "total": 30
-            },
-            "2025-W01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2024-W51": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2024-W50": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2024-W49": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "TIT": {
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 25,
-              "notFixed": 0,
-              "total": 25
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 26,
-              "notFixed": 0,
-              "total": 26
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 26,
-              "notFixed": 0,
-              "total": 26
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "SIP": {
-            "2025-W04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "SG": {
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 27,
-              "notFixed": 0,
-              "total": 27
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 46,
-              "notFixed": 0,
-              "total": 46
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "RAG": {
-            "2025-W04": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-01": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 23,
-              "notFixed": 0,
-              "total": 26
-            },
-            "2025-Q1": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 23,
-              "notFixed": 0,
-              "total": 26
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-W01": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "PMAX": {
-            "2025-W12": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 36,
-              "notFixed": 0,
-              "total": 37
-            },
-            "2025-03": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 125,
-              "notFixed": 0,
-              "total": 126
-            },
-            "2025-Q1": {
-              "new": 7,
-              "inProgress": 0,
-              "resolved": 255,
-              "notFixed": 0,
-              "total": 262
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 64,
-              "notFixed": 0,
-              "total": 64
-            },
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 25,
-              "notFixed": 0,
-              "total": 25
-            },
-            "2025-W09": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 28,
-              "notFixed": 0,
-              "total": 29
-            },
-            "2025-02": {
-              "new": 4,
-              "inProgress": 0,
-              "resolved": 92,
-              "notFixed": 0,
-              "total": 96
-            },
-            "2025-W08": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 26,
-              "notFixed": 0,
-              "total": 27
-            },
-            "2025-W07": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 31,
-              "notFixed": 0,
-              "total": 32
-            },
-            "2025-W06": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W05": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-01": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 38,
-              "notFixed": 0,
-              "total": 40
-            },
-            "2025-W04": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-W01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 73,
-              "notFixed": 0,
-              "total": 73
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 29,
-              "notFixed": 0,
-              "total": 29
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 31,
-              "notFixed": 0,
-              "total": 31
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-W51": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-12": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-Q4": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "OOPS": {
-            "2025-W13": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-03": {
-              "new": 10,
-              "inProgress": 0,
-              "resolved": 37,
-              "notFixed": 0,
-              "total": 47
-            },
-            "2025-Q1": {
-              "new": 22,
-              "inProgress": 1,
-              "resolved": 119,
-              "notFixed": 0,
-              "total": 142
-            },
-            "2025-W12": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W11": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W10": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 17
-            },
-            "2025-W09": {
-              "new": 5,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 26
-            },
-            "2025-02": {
-              "new": 8,
-              "inProgress": 0,
-              "resolved": 59,
-              "notFixed": 0,
-              "total": 67
-            },
-            "2025-W08": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 29,
-              "notFixed": 0,
-              "total": 30
-            },
-            "2025-W07": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-01": {
-              "new": 4,
-              "inProgress": 1,
-              "resolved": 23,
-              "notFixed": 0,
-              "total": 28
-            },
-            "2025-W04": {
-              "new": 2,
-              "inProgress": 1,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W03": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W01": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2024-W50": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-12": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-Q4": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-06": {
-              "new": 3,
-              "inProgress": 1,
-              "resolved": 58,
-              "notFixed": 0,
-              "total": 62
-            },
-            "2025-Q2": {
-              "new": 11,
-              "inProgress": 1,
-              "resolved": 134,
-              "notFixed": 0,
-              "total": 146
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W25": {
-              "new": 3,
-              "inProgress": 1,
-              "resolved": 28,
-              "notFixed": 0,
-              "total": 32
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-05": {
-              "new": 5,
-              "inProgress": 0,
-              "resolved": 22,
-              "notFixed": 0,
-              "total": 27
-            },
-            "2025-W21": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W19": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-04": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 54,
-              "notFixed": 0,
-              "total": 57
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W16": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W15": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 23,
-              "notFixed": 0,
-              "total": 25
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W06": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-W45": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-W48": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "NKR2": {
-            "2025-W06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 14
-            },
-            "2025-W05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-W04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-W52": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-Q4": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-W51": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "MIT": {
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 69,
-              "notFixed": 0,
-              "total": 69
-            },
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 35,
-              "notFixed": 0,
-              "total": 35
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-W07": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 19,
-              "notFixed": 0,
-              "total": 19
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 40,
-              "notFixed": 0,
-              "total": 40
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 111,
-              "notFixed": 0,
-              "total": 111
-            },
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 46,
-              "notFixed": 0,
-              "total": 46
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 16,
-              "notFixed": 0,
-              "total": 16
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 25,
-              "notFixed": 0,
-              "total": 25
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            }
-          },
-          "IP": {
-            "2025-W06": {
-              "new": 7,
-              "inProgress": 2,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-02": {
-              "new": 7,
-              "inProgress": 2,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-Q1": {
-              "new": 10,
-              "inProgress": 2,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-W05": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-01": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 12
-            }
-          },
-          "HG": {
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 11,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 28,
-              "notFixed": 0,
-              "total": 28
-            },
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-06": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 29,
-              "notFixed": 0,
-              "total": 30
-            },
-            "2025-Q2": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 85,
-              "notFixed": 0,
-              "total": 86
-            },
-            "2025-W26": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 32,
-              "notFixed": 0,
-              "total": 32
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 24,
-              "notFixed": 0,
-              "total": 24
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "ENT": {
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            }
-          },
-          "ECHO": {
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-03": {
-              "new": 4,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-Q1": {
-              "new": 20,
-              "inProgress": 0,
-              "resolved": 47,
-              "notFixed": 0,
-              "total": 67
-            },
-            "2025-W10": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-02": {
-              "new": 12,
-              "inProgress": 0,
-              "resolved": 26,
-              "notFixed": 0,
-              "total": 38
-            },
-            "2025-W08": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W07": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W06": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W05": {
-              "new": 11,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 18
-            },
-            "2025-01": {
-              "new": 4,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 18
-            },
-            "2025-W04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2024-W51": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2024-Q4": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2024-W44": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-11": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-W36": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-09": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-Q3": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W23": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 14
-            },
-            "2025-06": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 14
-            },
-            "2025-Q2": {
-              "new": 6,
-              "inProgress": 3,
-              "resolved": 111,
-              "notFixed": 0,
-              "total": 120
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 16,
-              "notFixed": 0,
-              "total": 16
-            },
-            "2025-05": {
-              "new": 4,
-              "inProgress": 0,
-              "resolved": 70,
-              "notFixed": 0,
-              "total": 74
-            },
-            "2025-W21": {
-              "new": 3,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 24
-            },
-            "2025-W20": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 16,
-              "notFixed": 0,
-              "total": 17
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 14
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-04": {
-              "new": 1,
-              "inProgress": 3,
-              "resolved": 28,
-              "notFixed": 0,
-              "total": 32
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 3,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-W14": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W13": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "DAICO": {
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 1,
-              "resolved": 91,
-              "notFixed": 0,
-              "total": 92
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 39,
-              "notFixed": 0,
-              "total": 39
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 17,
-              "notFixed": 0,
-              "total": 17
-            },
-            "2025-W07": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-01": {
-              "new": 0,
-              "inProgress": 1,
-              "resolved": 51,
-              "notFixed": 0,
-              "total": 52
-            },
-            "2025-W03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 24,
-              "notFixed": 0,
-              "total": 24
-            },
-            "2025-W02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W01": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 10,
-              "notFixed": 0,
-              "total": 10
-            },
-            "2024-12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2024-Q4": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W04": {
-              "new": 0,
-              "inProgress": 1,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "CF": {
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 46,
-              "notFixed": 0,
-              "total": 46
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 47,
-              "notFixed": 0,
-              "total": 47
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 6
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W10": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W08": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-Q2": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 18,
-              "notFixed": 0,
-              "total": 19
-            },
-            "2025-W19": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-05": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 14
-            }
-          },
-          "BCP": {
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 32,
-              "notFixed": 0,
-              "total": 32
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 44,
-              "notFixed": 0,
-              "total": 44
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 47,
-              "notFixed": 0,
-              "total": 47
-            },
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W11": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W09": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-02": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-05": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 21,
-              "notFixed": 0,
-              "total": 22
-            },
-            "2025-Q2": {
-              "new": 3,
-              "inProgress": 2,
-              "resolved": 54,
-              "notFixed": 0,
-              "total": 59
-            },
-            "2025-W19": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 14,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W18": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-04": {
-              "new": 2,
-              "inProgress": 2,
-              "resolved": 33,
-              "notFixed": 0,
-              "total": 37
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 2,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 8,
-              "notFixed": 0,
-              "total": 8
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W14": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 16
-            }
-          },
-          "TG": {
-            "2025-W23": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-06": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-Q2": {
-              "new": 2,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W18": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-04": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 0,
-              "notFixed": 0,
-              "total": 1
-            }
-          },
-          "KB": {
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W25": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            }
-          },
-          "IS": {
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 43,
-              "notFixed": 0,
-              "total": 43
-            },
-            "2025-06": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 74,
-              "notFixed": 0,
-              "total": 74
-            },
-            "2025-Q2": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 129,
-              "notFixed": 0,
-              "total": 129
-            },
-            "2025-W24": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 13,
-              "notFixed": 0,
-              "total": 13
-            },
-            "2025-W27": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 1,
-              "notFixed": 0,
-              "total": 1
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 17,
-              "notFixed": 0,
-              "total": 17
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 37,
-              "notFixed": 0,
-              "total": 37
-            },
-            "2025-W21": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W19": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 15
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 18,
-              "notFixed": 0,
-              "total": 18
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            },
-            "2025-W15": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W16": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W14": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W13": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 9,
-              "notFixed": 0,
-              "total": 9
-            },
-            "2025-03": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-Q1": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 12,
-              "notFixed": 0,
-              "total": 12
-            },
-            "2025-W12": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 3
-            }
-          },
-          "DAAI": {
-            "2025-W26": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-06": {
-              "new": 6,
-              "inProgress": 0,
-              "resolved": 15,
-              "notFixed": 0,
-              "total": 21
-            },
-            "2025-Q2": {
-              "new": 6,
-              "inProgress": 0,
-              "resolved": 27,
-              "notFixed": 0,
-              "total": 33
-            },
-            "2025-W25": {
-              "new": 5,
-              "inProgress": 0,
-              "resolved": 6,
-              "notFixed": 0,
-              "total": 11
-            },
-            "2025-W24": {
-              "new": 1,
-              "inProgress": 0,
-              "resolved": 3,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-W23": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W22": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            },
-            "2025-05": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 7,
-              "notFixed": 0,
-              "total": 7
-            },
-            "2025-W20": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-W18": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 2,
-              "notFixed": 0,
-              "total": 2
-            },
-            "2025-04": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 5,
-              "notFixed": 0,
-              "total": 5
-            },
-            "2025-W17": {
-              "new": 0,
-              "inProgress": 0,
-              "resolved": 4,
-              "notFixed": 0,
-              "total": 4
-            }
-          }
-        },
-        "metadata": {
-          "timePeriod": "month",
-          "totalBugs": 2300,
-          "processedAt": "2025-07-29T09:30:19.309Z"
-        }
+  "YUIM": {
+    "week": {
+      "2025-W31": {
+        "created": 13,
+        "resolved": 32,
+        "new": 2,
+        "inProgress": 7,
+        "notFix": 0,
+        "totalTimeSpentHours": 7.5,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.642Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 12,
+        "ImplementationIssue": 7,
+        "Minor": 13,
+        "DataMigration": 1,
+        "Unknown": 5,
+        "UI/UX": 1,
+        "avgResolutionTimeHours": 1182.2,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.6
       },
-      "config": {
-        "timePeriod": "month",
-        "periodKey": "month"
+      "2025-W30": {
+        "created": 24,
+        "resolved": 78,
+        "new": 3,
+        "inProgress": 4,
+        "notFix": 0,
+        "totalTimeSpentHours": 21.166666666666664,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.642Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 22,
+        "Unknown": 8,
+        "Minor": 22,
+        "ImplementationIssue": 14,
+        "Critical": 2,
+        "TestDataIssue": 2,
+        "UI/UX": 2,
+        "avgResolutionTimeHours": 624.6,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.9
+      },
+      "2025-W29": {
+        "created": 51,
+        "resolved": 22,
+        "new": 4,
+        "inProgress": 6,
+        "notFix": 6,
+        "totalTimeSpentHours": 35.333333333333336,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.638Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 37,
+        "DataMigration": 4,
+        "Minor": 48,
+        "ImplementationIssue": 34,
+        "MissedRequirement": 7,
+        "HumanError": 3,
+        "UI/UX": 14,
+        "Critical": 3,
+        "Release/CodeMergeIssue": 1,
+        "EnvironmentIssue": 2,
+        "avgResolutionTimeHours": 82.2,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.7
+      },
+      "2025-W28": {
+        "created": 36,
+        "resolved": 8,
+        "new": 1,
+        "inProgress": 4,
+        "notFix": 3,
+        "totalTimeSpentHours": 29.416666666666664,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.638Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 26,
+        "ImplementationIssue": 24,
+        "Minor": 34,
+        "UI/UX": 9,
+        "Integration": 1,
+        "Critical": 2,
+        "MissedRequirement": 10,
+        "HumanError": 2,
+        "avgResolutionTimeHours": 207.1,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.8
+      },
+      "2025-W27": {
+        "created": 16,
+        "resolved": 9,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 1,
+        "totalTimeSpentHours": 14.75,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.689Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 14,
+        "ImplementationIssue": 13,
+        "Minor": 15,
+        "MissedRequirement": 1,
+        "InfrastructureorDeploymentIssues": 1,
+        "DataMigration": 1,
+        "Critical": 1,
+        "Integration": 1,
+        "UI/UX": 1,
+        "avgResolutionTimeHours": 272.4,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.9
+      },
+      "2025-W26": {
+        "created": 4,
+        "resolved": 4,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 1.6666666666666665,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.641Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "UI/UX": 1,
+        "ImplementationIssue": 3,
+        "Minor": 3,
+        "Functional": 3,
+        "DataMigration": 1,
+        "Critical": 1,
+        "avgResolutionTimeHours": 503.7,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.4
+      },
+      "2025-W25": {
+        "created": 9,
+        "resolved": 13,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 4.5,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.688Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Integration": 2,
+        "DataMigration": 1,
+        "Minor": 9,
+        "Functional": 7,
+        "ImplementationIssue": 7,
+        "TestDataIssue": 1,
+        "avgResolutionTimeHours": 175.3,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.5
+      },
+      "2025-W24": {
+        "created": 10,
+        "resolved": 0,
+        "new": 0,
+        "inProgress": 1,
+        "notFix": 1,
+        "totalTimeSpentHours": 4.083333333333334,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.688Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 9,
+        "ImplementationIssue": 9,
+        "Minor": 8,
+        "UserInputValidationFailure": 1,
+        "Critical": 1,
+        "UI/UX": 1,
+        "Low": 1,
+        "avgResolutionTimeHours": 0,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.4
+      },
+      "2025-W23": {
+        "created": 10,
+        "resolved": 1,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 1.8333333333333333,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.689Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 8,
+        "ImplementationIssue": 9,
+        "Minor": 9,
+        "UserInputValidationFailure": 1,
+        "UI/UX": 2,
+        "Critical": 1,
+        "avgResolutionTimeHours": 139.5,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.2
+      },
+      "2025-W22": {
+        "created": 17,
+        "resolved": 19,
+        "new": 1,
+        "inProgress": 1,
+        "notFix": 4,
+        "totalTimeSpentHours": 2,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 13,
+        "ImplementationIssue": 15,
+        "Critical": 1,
+        "Minor": 12,
+        "UI/UX": 4,
+        "Unknown": 1,
+        "Low": 2,
+        "Major": 2,
+        "UserInputValidationFailure": 1,
+        "avgResolutionTimeHours": 162.8,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.1
+      },
+      "2025-W21": {
+        "created": 31,
+        "resolved": 10,
+        "new": 1,
+        "inProgress": 1,
+        "notFix": 1,
+        "totalTimeSpentHours": 7.75,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 21,
+        "ProcessGaps": 1,
+        "Minor": 22,
+        "TestDataIssue": 1,
+        "Low": 3,
+        "ImplementationIssue": 26,
+        "UI/UX": 6,
+        "Security": 3,
+        "Major": 4,
+        "Unknown": 2,
+        "UserInputValidationFailure": 2,
+        "Critical": 1,
+        "Cosmetic": 1,
+        "avgResolutionTimeHours": 123.8,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.3
+      },
+      "2025-W20": {
+        "created": 28,
+        "resolved": 14,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 10.5,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 22,
+        "Unknown": 7,
+        "Minor": 20,
+        "DataMigration": 2,
+        "ImplementationIssue": 13,
+        "Integration": 2,
+        "Major": 5,
+        "UI/UX": 2,
+        "Cosmetic": 1,
+        "Critical": 2,
+        "UserInputValidationFailure": 7,
+        "ChangeinRequirements": 1,
+        "avgResolutionTimeHours": 173.3,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.4
+      },
+      "2025-W19": {
+        "created": 5,
+        "resolved": 1,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 0,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 3,
+        "ImplementationIssue": 3,
+        "Minor": 4,
+        "Unknown": 2,
+        "Major": 1,
+        "UI/UX": 1,
+        "InadequateRequirementsAnalysis": 1,
+        "avgResolutionTimeHours": 210.5,
+        "reopenRate": 0,
+        "avgTimePerBug": 0
+      },
+      "2025-W18": {
+        "created": 13,
+        "resolved": 4,
+        "new": 0,
+        "inProgress": 1,
+        "notFix": 0,
+        "totalTimeSpentHours": 1,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 11,
+        "UserInputValidationFailure": 4,
+        "Major": 6,
+        "ImplementationIssue": 9,
+        "Minor": 7,
+        "UI/UX": 2,
+        "avgResolutionTimeHours": 60.1,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.1
+      },
+      "2025-W17": {
+        "created": 7,
+        "resolved": 0,
+        "new": 0,
+        "inProgress": 1,
+        "notFix": 1,
+        "totalTimeSpentHours": 1,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 3,
+        "Unknown": 1,
+        "Low": 2,
+        "UI/UX": 3,
+        "ImplementationIssue": 4,
+        "Minor": 3,
+        "Cosmetic": 1,
+        "DataMigration": 2,
+        "Integration": 1,
+        "Major": 1,
+        "avgResolutionTimeHours": 0,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.1
+      },
+      "2025-W16": {
+        "created": 1,
+        "resolved": 6,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 0,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.694Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 1,
+        "DataMigration": 1,
+        "Critical": 1,
+        "avgResolutionTimeHours": 188.5,
+        "reopenRate": 0,
+        "avgTimePerBug": 0
+      },
+      "2025-W15": {
+        "created": 4,
+        "resolved": 0,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 0,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.694Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 1,
+        "ImplementationIssue": 4,
+        "Minor": 1,
+        "UI/UX": 3,
+        "Major": 2,
+        "Cosmetic": 1,
+        "avgResolutionTimeHours": 0,
+        "reopenRate": 0,
+        "avgTimePerBug": 0
+      },
+      "2025-W14": {
+        "created": 2,
+        "resolved": 1,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 0,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.694Z",
+        "periodStart": "2025-01-01",
+        "periodEnd": "2025-01-07",
+        "Functional": 1,
+        "ImplementationIssue": 1,
+        "Minor": 1,
+        "Unknown": 2,
+        "Cosmetic": 1,
+        "avgResolutionTimeHours": 16.9,
+        "reopenRate": 0,
+        "avgTimePerBug": 0
       }
     },
-    "config": {
-      "xAxisKey": "timePeriod",
-      "lines": [
-        "new",
-        "inProgress",
-        "resolved",
-        "notFixed"
-      ],
-      "timePeriod": "month",
-      "colors": {
-        "new": "#1976d2",
-        "inProgress": "#ff9800",
-        "resolved": "#2e7d32",
-        "notFixed": "#d32f2f"
+    "month": {
+      "2025-07": {
+        "created": 131,
+        "resolved": 146,
+        "new": 10,
+        "inProgress": 21,
+        "notFix": 9,
+        "totalTimeSpentHours": 101.75,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.642Z",
+        "periodStart": "2025-07-01",
+        "periodEnd": "2025-07-31",
+        "Functional": 104,
+        "ImplementationIssue": 83,
+        "Minor": 124,
+        "DataMigration": 6,
+        "Unknown": 13,
+        "UI/UX": 26,
+        "Critical": 7,
+        "TestDataIssue": 2,
+        "MissedRequirement": 18,
+        "HumanError": 5,
+        "Release/CodeMergeIssue": 1,
+        "EnvironmentIssue": 2,
+        "Integration": 1,
+        "InfrastructureorDeploymentIssues": 1,
+        "avgResolutionTimeHours": 623.1,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.8
+      },
+      "2025-06": {
+        "created": 42,
+        "resolved": 21,
+        "new": 0,
+        "inProgress": 1,
+        "notFix": 2,
+        "totalTimeSpentHours": 18.5,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.689Z",
+        "periodStart": "2025-06-01",
+        "periodEnd": "2025-06-31",
+        "Functional": 34,
+        "ImplementationIssue": 37,
+        "Minor": 37,
+        "Critical": 4,
+        "Integration": 3,
+        "UI/UX": 5,
+        "DataMigration": 2,
+        "UserInputValidationFailure": 2,
+        "TestDataIssue": 1,
+        "Low": 1,
+        "avgResolutionTimeHours": 282.8,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.4
+      },
+      "2025-05": {
+        "created": 87,
+        "resolved": 45,
+        "new": 2,
+        "inProgress": 2,
+        "notFix": 5,
+        "totalTimeSpentHours": 20.25,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.693Z",
+        "periodStart": "2025-05-01",
+        "periodEnd": "2025-05-31",
+        "Functional": 64,
+        "ImplementationIssue": 60,
+        "Critical": 4,
+        "Minor": 61,
+        "UI/UX": 14,
+        "Unknown": 12,
+        "Low": 5,
+        "Major": 15,
+        "ProcessGaps": 1,
+        "TestDataIssue": 1,
+        "Security": 3,
+        "UserInputValidationFailure": 13,
+        "DataMigration": 2,
+        "Integration": 2,
+        "Cosmetic": 2,
+        "ChangeinRequirements": 1,
+        "InadequateRequirementsAnalysis": 1,
+        "avgResolutionTimeHours": 155.9,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.2
+      },
+      "2025-04": {
+        "created": 20,
+        "resolved": 10,
+        "new": 0,
+        "inProgress": 2,
+        "notFix": 1,
+        "totalTimeSpentHours": 2,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.694Z",
+        "periodStart": "2025-04-01",
+        "periodEnd": "2025-04-31",
+        "Functional": 12,
+        "ImplementationIssue": 15,
+        "Minor": 9,
+        "UserInputValidationFailure": 1,
+        "Major": 6,
+        "Unknown": 1,
+        "Low": 2,
+        "UI/UX": 7,
+        "Cosmetic": 2,
+        "DataMigration": 3,
+        "Integration": 1,
+        "Critical": 1,
+        "avgResolutionTimeHours": 134,
+        "reopenRate": 0,
+        "avgTimePerBug": 0.1
+      },
+      "2025-03": {
+        "created": 1,
+        "resolved": 0,
+        "new": 0,
+        "inProgress": 0,
+        "notFix": 0,
+        "totalTimeSpentHours": 0,
+        "reopenedCount": 0,
+        "overdueCount": 0,
+        "lastUpdated": "2025-07-30T16:15:51.694Z",
+        "periodStart": "2025-03-01",
+        "periodEnd": "2025-03-31",
+        "Unknown": 2,
+        "Cosmetic": 1,
+        "avgResolutionTimeHours": 0,
+        "reopenRate": 0,
+        "avgTimePerBug": 0
       }
     }
   }
-  
+}
