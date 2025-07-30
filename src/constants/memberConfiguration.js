@@ -765,14 +765,14 @@ export const memberConfiguration = {
     },
     STORYPOINT_BASE: {
       middle: {
+        totalPointWeekTarget: 20,
+        totalPointMonthTarget: 80,
+        totalPointQuarterTarget: 240
+      },
+      senior: {
         totalPointWeekTarget: 25,
         totalPointMonthTarget: 100,
         totalPointQuarterTarget: 300
-      },
-      senior: {
-        totalPointWeekTarget: 30,
-        totalPointMonthTarget: 120,
-        totalPointQuarterTarget: 360
       }
     }
   },
