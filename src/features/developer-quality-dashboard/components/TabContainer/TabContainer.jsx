@@ -210,7 +210,8 @@ TabContainer.propTypes = {
     selectedDeveloper: PropTypes.string,
     selectedSingleProject: PropTypes.bool.isRequired,
     performanceControls: PropTypes.object.isRequired,
-    isLoading: PropTypes.bool
+    isLoading: PropTypes.bool,
+    debugOptions: PropTypes.object
   }).isRequired
 }
 

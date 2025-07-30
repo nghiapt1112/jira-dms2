@@ -47,7 +47,7 @@ const TeamTabContent = React.memo(({
   // 1. Extract data and state
   const { filteredData, filters } = dashboardData
   const { onStatusFilterChange } = dashboardActions
-  const { selectedSingleProject, performanceControls } = dashboardState
+  const { selectedSingleProject, performanceControls, debugOptions } = dashboardState
 
   // 2. Get bug analysis data with pre-processed chart data
   const projectKeys = useMemo(() => convertProjectNamesToKeys(filters.projects), [filters.projects])
@@ -70,10 +70,12 @@ const TeamTabContent = React.memo(({
   // 3. Render 2-column responsive layout
   return (
     <Grid container spacing={{ xs: 2, sm: 3 }}>
-      {/* Raw JSON Data Section - Full width */}
-      <Grid item {...gridConfig.fullWidth}>
-        <RawJsonViewer />
-      </Grid>
+      {/* Raw JSON Data Section - Full width - Show only if debug option is enabled */}
+      {debugOptions?.showRawBugAnalysisJson && (
+        <Grid item {...gridConfig.fullWidth}>
+          <RawJsonViewer />
+        </Grid>
+      )}
 
       {/* Left Column: Team Contribution and Period Detail */}
       <Grid item {...gridConfig.leftColumn}>
@@ -196,7 +198,10 @@ TeamTabContent.propTypes = {
       showTargetLines: PropTypes.bool.isRequired,
       performanceFilter: PropTypes.oneOf(['all', 'under', 'over']).isRequired
     }).isRequired,
-    isLoading: PropTypes.bool
+    isLoading: PropTypes.bool,
+    debugOptions: PropTypes.shape({
+      showRawBugAnalysisJson: PropTypes.bool
+    })
   }).isRequired
 }
 

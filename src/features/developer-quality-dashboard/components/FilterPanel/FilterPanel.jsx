@@ -30,7 +30,9 @@ const FilterPanel = React.memo(({
   onTimePeriodChange,
   onStatusFilterChange,
   // Performance controls props
-  onPerformanceControlsChange
+  onPerformanceControlsChange,
+  // Debug options props
+  debugOptions = { showSeverityFilter: false, showRootCauseFilter: false }
 }) => {
   // Single project detection for performance controls (defined early for initial state)
   const isSingleProject = useMemo(() => {
@@ -641,125 +643,129 @@ const FilterPanel = React.memo(({
           }}
         />
         
-        {/* Severity Filter */}
-        <Autocomplete
-          multiple
-          fullWidth
-          disabled={isLoading}
-          freeSolo
-          options={sortedSeverities}
-          value={filters.severities || []}
-          onChange={(event, newValue) => handleFilterChange('severities', newValue)}
-          renderTags={(value, getTagProps) =>
-            value.slice(0, 3).map((option, index) => (
-              <Chip 
-                variant="outlined" 
-                label={option} 
-                size="small"
-                {...getTagProps({ index })}
-                key={option}
-                sx={{
-                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                  height: { xs: 24, sm: 28 },
-                  maxWidth: 120,
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }
-                }}
-              />
-            )).concat(
-              value.length > 3 ? [
+        {/* Severity Filter - Show only if debug option is enabled */}
+        {debugOptions.showSeverityFilter && (
+          <Autocomplete
+            multiple
+            fullWidth
+            disabled={isLoading}
+            freeSolo
+            options={sortedSeverities}
+            value={filters.severities || []}
+            onChange={(event, newValue) => handleFilterChange('severities', newValue)}
+            renderTags={(value, getTagProps) =>
+              value.slice(0, 3).map((option, index) => (
                 <Chip 
-                  key="more" 
-                  label={`+${value.length - 3} more`} 
-                  size="small" 
-                  variant="outlined"
-                  sx={{ 
+                  variant="outlined" 
+                  label={option} 
+                  size="small"
+                  {...getTagProps({ index })}
+                  key={option}
+                  sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     height: { xs: 24, sm: 28 },
-                    color: 'text.secondary',
-                    borderColor: 'text.secondary'
+                    maxWidth: 120,
+                    '& .MuiChip-label': {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }
                   }}
                 />
-              ] : []
-            )
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Severities"
-              placeholder="Type or select severities..."
-              sx={{ minWidth: 180 }}
-            />
-          )}
-          ListboxProps={{
-            style: {
-              maxHeight: 400,
-            },
-          }}
-        />
+              )).concat(
+                value.length > 3 ? [
+                  <Chip 
+                    key="more" 
+                    label={`+${value.length - 3} more`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      height: { xs: 24, sm: 28 },
+                      color: 'text.secondary',
+                      borderColor: 'text.secondary'
+                    }}
+                  />
+                ] : []
+              )
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Severities"
+                placeholder="Type or select severities..."
+                sx={{ minWidth: 180 }}
+              />
+            )}
+            ListboxProps={{
+              style: {
+                maxHeight: 400,
+              },
+            }}
+          />
+        )}
         
-        {/* Root Causes Filter */}
-        <Autocomplete
-          multiple
-          fullWidth
-          disabled={isLoading}
-          freeSolo
-          options={sortedRootCauses}
-          value={filters.rootCauses || []}
-          onChange={(event, newValue) => handleFilterChange('rootCauses', newValue)}
-          renderTags={(value, getTagProps) =>
-            value.slice(0, 3).map((option, index) => (
-              <Chip 
-                variant="outlined" 
-                label={option} 
-                size="small"
-                {...getTagProps({ index })}
-                key={option}
-                sx={{
-                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                  height: { xs: 24, sm: 28 },
-                  maxWidth: 120,
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }
-                }}
-              />
-            )).concat(
-              value.length > 3 ? [
+        {/* Root Causes Filter - Show only if debug option is enabled */}
+        {debugOptions.showRootCauseFilter && (
+          <Autocomplete
+            multiple
+            fullWidth
+            disabled={isLoading}
+            freeSolo
+            options={sortedRootCauses}
+            value={filters.rootCauses || []}
+            onChange={(event, newValue) => handleFilterChange('rootCauses', newValue)}
+            renderTags={(value, getTagProps) =>
+              value.slice(0, 3).map((option, index) => (
                 <Chip 
-                  key="more" 
-                  label={`+${value.length - 3} more`} 
-                  size="small" 
-                  variant="outlined"
-                  sx={{ 
+                  variant="outlined" 
+                  label={option} 
+                  size="small"
+                  {...getTagProps({ index })}
+                  key={option}
+                  sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     height: { xs: 24, sm: 28 },
-                    color: 'text.secondary',
-                    borderColor: 'text.secondary'
+                    maxWidth: 120,
+                    '& .MuiChip-label': {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }
                   }}
                 />
-              ] : []
-            )
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Root Causes"
-              placeholder="Type or select root causes..."
-              sx={{ minWidth: 180 }}
-            />
-          )}
-          ListboxProps={{
-            style: {
-              maxHeight: 400,
-            },
-          }}
-        />
+              )).concat(
+                value.length > 3 ? [
+                  <Chip 
+                    key="more" 
+                    label={`+${value.length - 3} more`} 
+                    size="small" 
+                    variant="outlined"
+                    sx={{ 
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      height: { xs: 24, sm: 28 },
+                      color: 'text.secondary',
+                      borderColor: 'text.secondary'
+                    }}
+                  />
+                ] : []
+              )
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Root Causes"
+                placeholder="Type or select root causes..."
+                sx={{ minWidth: 180 }}
+              />
+            )}
+            ListboxProps={{
+              style: {
+                maxHeight: 400,
+              },
+            }}
+          />
+        )}
         
         {/* Performance Controls - Only show when one project is selected */}
         {isSingleProject && (
@@ -932,7 +938,12 @@ FilterPanel.propTypes = {
   onTimePeriodChange: PropTypes.func,
   onStatusFilterChange: PropTypes.func,
   // Performance controls props
-  onPerformanceControlsChange: PropTypes.func
+  onPerformanceControlsChange: PropTypes.func,
+  // Debug options props
+  debugOptions: PropTypes.shape({
+    showSeverityFilter: PropTypes.bool,
+    showRootCauseFilter: PropTypes.bool
+  })
 }
 
 FilterPanel.displayName = 'FilterPanel'

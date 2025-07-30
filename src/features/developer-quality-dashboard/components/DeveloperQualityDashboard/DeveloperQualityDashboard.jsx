@@ -11,6 +11,7 @@ import { useJiraData } from '../../../jira-data/hooks/useJiraData'
 import DeveloperQualityErrorBoundary from '../ErrorBoundary'
 import FilterPanel from '../FilterPanel'
 import TabContainer from '../TabContainer'
+import DebugPopover from '../DebugPopover'
 import useUrlFilterSync from '../../hooks/useUrlFilterSync'
 
 const DeveloperQualityDashboard = React.memo(() => {
@@ -59,6 +60,13 @@ const DeveloperQualityDashboard = React.memo(() => {
     performanceFilter: 'all'
   })
   
+  // Debug options state - default all to hidden
+  const [debugOptions, setDebugOptions] = useState({
+    showSeverityFilter: false,
+    showRootCauseFilter: false,
+    showRawBugAnalysisJson: false
+  })
+  
   
 
   useEffect(() => {
@@ -101,6 +109,11 @@ const DeveloperQualityDashboard = React.memo(() => {
   // Performance controls callback
   const handlePerformanceControlsChange = useCallback((newControls) => {
     setPerformanceControls(newControls)
+  }, [])
+  
+  // Debug options callback
+  const handleDebugOptionsChange = useCallback((newOptions) => {
+    setDebugOptions(newOptions)
   }, [])
   
   // Tab change callback
@@ -282,6 +295,11 @@ const DeveloperQualityDashboard = React.memo(() => {
             </Typography>
           )}
           
+          <DebugPopover
+            debugOptions={debugOptions}
+            onDebugOptionsChange={handleDebugOptionsChange}
+          />
+          
           <Button
             variant="outlined"
             color="secondary"
@@ -322,6 +340,7 @@ const DeveloperQualityDashboard = React.memo(() => {
           onTimePeriodChange={handleTimePeriodChange}
           onStatusFilterChange={handleStatusFilterChange}
           onPerformanceControlsChange={handlePerformanceControlsChange}
+          debugOptions={debugOptions}
         />
       </Paper>
       
@@ -345,7 +364,8 @@ const DeveloperQualityDashboard = React.memo(() => {
           selectedDeveloper,
           selectedSingleProject,
           performanceControls,
-          isLoading: isFiltersLoading
+          isLoading: isFiltersLoading,
+          debugOptions
         }
         
         return (
