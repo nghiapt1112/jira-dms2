@@ -141,47 +141,6 @@ const FilterPanel = React.memo(({
     })
   }, [onFiltersChange])
   
-  const renderChips = useCallback((selected, maxVisible = 3) => {
-    if (!selected || selected.length === 0) return null
-    
-    const visibleItems = selected.slice(0, maxVisible)
-    const hiddenCount = selected.length - maxVisible
-    
-    return (
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
-        {visibleItems.map((value) => (
-          <Chip 
-            key={value} 
-            label={value} 
-            size="small"
-            sx={{ 
-              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-              height: { xs: 24, sm: 28 },
-              maxWidth: 120,
-              '& .MuiChip-label': {
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }
-            }}
-          />
-        ))}
-        {hiddenCount > 0 && (
-          <Chip 
-            label={`+${hiddenCount} more`}
-            size="small"
-            variant="outlined"
-            sx={{ 
-              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-              height: { xs: 24, sm: 28 },
-              color: 'text.secondary',
-              borderColor: 'text.secondary'
-            }}
-          />
-        )}
-      </Box>
-    )
-  }, [])
   
   // Performance controls callbacks
   const handleShowTargetLinesChange = useCallback((checked) => {
@@ -398,300 +357,381 @@ const FilterPanel = React.memo(({
         </FormControl>
         
         {/* Status Filter */}
-        <FormControl 
+        <Autocomplete
+          multiple
           fullWidth
           disabled={isLoading}
-          sx={{ minWidth: 180 }}
-        >
-          <InputLabel>Statuses</InputLabel>
-          <Select
-            multiple
-            value={filters.statuses || memberConfiguration.filterDefaults.statusFilter || []}
-            onChange={(e) => {
-              handleFilterChange('statuses', e.target.value)
-              if (onStatusFilterChange) {
-                onStatusFilterChange(e.target.value)
-              }
-            }}
-            input={<OutlinedInput label="Statuses" />}
-            renderValue={(selected) => renderChips(selected, 2)}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 400,
-                  width: 'auto',
-                  minWidth: 300,
-                  zIndex: 9999,
-                },
-              },
-              anchorOrigin: {
-                vertical: 'bottom',
-                horizontal: 'left',
-              },
-              transformOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-            }}
-          >
-            {sortedStatuses.length > 0 ? (
-              sortedStatuses.map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>
-                No statuses available
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+          freeSolo
+          options={sortedStatuses}
+          value={filters.statuses || memberConfiguration.filterDefaults.statusFilter || []}
+          onChange={(event, newValue) => {
+            handleFilterChange('statuses', newValue)
+            if (onStatusFilterChange) {
+              onStatusFilterChange(newValue)
+            }
+          }}
+          renderTags={(value, getTagProps) =>
+            value.slice(0, 2).map((option, index) => (
+              <Chip 
+                variant="outlined" 
+                label={option} 
+                size="small"
+                {...getTagProps({ index })}
+                key={option}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 24, sm: 28 },
+                  maxWidth: 120,
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }
+                }}
+              />
+            )).concat(
+              value.length > 2 ? [
+                <Chip 
+                  key="more" 
+                  label={`+${value.length - 2} more`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    height: { xs: 24, sm: 28 },
+                    color: 'text.secondary',
+                    borderColor: 'text.secondary'
+                  }}
+                />
+              ] : []
+            )
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Statuses"
+              placeholder="Type or select statuses..."
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          ListboxProps={{
+            style: {
+              maxHeight: 400,
+            },
+          }}
+        />
         
         {/* Developer Filter */}
-        <FormControl 
+        <Autocomplete
+          multiple
           fullWidth
           disabled={isLoading}
-          sx={{ minWidth: 180 }}
-        >
-          <InputLabel>Developers</InputLabel>
-          <Select
-            multiple
-            value={filters.developers || []}
-            onChange={(e) => handleFilterChange('developers', e.target.value)}
-            input={<OutlinedInput label="Developers" />}
-            renderValue={(selected) => renderChips(selected, 2)}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 400,
-                  width: 'auto',
-                  minWidth: 300,
-                  zIndex: 9999,
-                },
-              },
-              anchorOrigin: {
-                vertical: 'bottom',
-                horizontal: 'left',
-              },
-              transformOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-            }}
-          >
-            {sortedDevelopers.length > 0 ? (
-              sortedDevelopers.map((developer) => (
-                <MenuItem key={developer} value={developer}>
-                  {developer}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>
-                No developers available
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+          freeSolo
+          options={sortedDevelopers}
+          value={filters.developers || []}
+          onChange={(event, newValue) => handleFilterChange('developers', newValue)}
+          renderTags={(value, getTagProps) =>
+            value.slice(0, 2).map((option, index) => (
+              <Chip 
+                variant="outlined" 
+                label={option} 
+                size="small"
+                {...getTagProps({ index })}
+                key={option}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 24, sm: 28 },
+                  maxWidth: 120,
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }
+                }}
+              />
+            )).concat(
+              value.length > 2 ? [
+                <Chip 
+                  key="more" 
+                  label={`+${value.length - 2} more`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    height: { xs: 24, sm: 28 },
+                    color: 'text.secondary',
+                    borderColor: 'text.secondary'
+                  }}
+                />
+              ] : []
+            )
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Developers"
+              placeholder="Type or select developers..."
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          ListboxProps={{
+            style: {
+              maxHeight: 400,
+            },
+          }}
+        />
         
         {/* Project Filter */}
-        <FormControl 
+        <Autocomplete
+          multiple
           fullWidth
           disabled={isLoading}
-          sx={{ minWidth: 180 }}
-        >
-          <InputLabel>Projects</InputLabel>
-          <Select
-            multiple
-            value={filters.projects || []}
-            onChange={(e) => {
-              // Get direct access to the dedicated project filter setter
-              const setProjectFilters = useDeveloperQualityStore.getState().setProjectFilters
-              
-              // Create a new array from the selected values
-              const newProjects = Array.from(e.target.value)
-              
-        
-              
-              // First, update through normal channels for UI consistency
-              handleFilterChange('projects', newProjects)
-              
-              // Use the dedicated project filter setter to ensure change is detected
-        
-              setProjectFilters(newProjects)
-            }}
-            input={<OutlinedInput label="Projects" />}
-            renderValue={(selected) => renderChips(selected, 2)}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 400,
-                  width: 'auto',
-                  minWidth: 300,
-                  zIndex: 9999,
-                },
-              },
-              anchorOrigin: {
-                vertical: 'bottom',
-                horizontal: 'left',
-              },
-              transformOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-            }}
-          >
-            {sortedProjects.length > 0 ? (
-              sortedProjects.map((project) => (
-                <MenuItem key={project} value={project}>
-                  {project}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>
-                No projects available
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+          freeSolo
+          options={sortedProjects}
+          value={filters.projects || []}
+          onChange={(event, newValue) => {
+            // Get direct access to the dedicated project filter setter
+            const setProjectFilters = useDeveloperQualityStore.getState().setProjectFilters
+            
+            // Create a new array from the selected values
+            const newProjects = Array.from(newValue)
+            
+            // First, update through normal channels for UI consistency
+            handleFilterChange('projects', newProjects)
+            
+            // Use the dedicated project filter setter to ensure change is detected
+            setProjectFilters(newProjects)
+          }}
+          renderTags={(value, getTagProps) =>
+            value.slice(0, 2).map((option, index) => (
+              <Chip 
+                variant="outlined" 
+                label={option} 
+                size="small"
+                {...getTagProps({ index })}
+                key={option}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 24, sm: 28 },
+                  maxWidth: 120,
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }
+                }}
+              />
+            )).concat(
+              value.length > 2 ? [
+                <Chip 
+                  key="more" 
+                  label={`+${value.length - 2} more`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    height: { xs: 24, sm: 28 },
+                    color: 'text.secondary',
+                    borderColor: 'text.secondary'
+                  }}
+                />
+              ] : []
+            )
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Projects"
+              placeholder="Type or select projects..."
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          ListboxProps={{
+            style: {
+              maxHeight: 400,
+            },
+          }}
+        />
         
         {/* Issue Type Filter */}
-        <FormControl 
+        <Autocomplete
+          multiple
           fullWidth
           disabled={isLoading}
-          sx={{ minWidth: 180 }}
-        >
-          <InputLabel>Issue Types</InputLabel>
-          <Select
-            multiple
-            value={filters.issueTypes || []}
-            onChange={(e) => handleFilterChange('issueTypes', e.target.value)}
-            input={<OutlinedInput label="Issue Types" />}
-            renderValue={renderChips}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 400,
-                  width: 'auto',
-                  minWidth: 300,
-                  zIndex: 9999,
-                },
-              },
-              anchorOrigin: {
-                vertical: 'bottom',
-                horizontal: 'left',
-              },
-              transformOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-            }}
-          >
-            {sortedIssueTypes.length > 0 ? (
-              sortedIssueTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>
-                No issue types available
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+          freeSolo
+          options={sortedIssueTypes}
+          value={filters.issueTypes || []}
+          onChange={(event, newValue) => handleFilterChange('issueTypes', newValue)}
+          renderTags={(value, getTagProps) =>
+            value.slice(0, 3).map((option, index) => (
+              <Chip 
+                variant="outlined" 
+                label={option} 
+                size="small"
+                {...getTagProps({ index })}
+                key={option}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 24, sm: 28 },
+                  maxWidth: 120,
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }
+                }}
+              />
+            )).concat(
+              value.length > 3 ? [
+                <Chip 
+                  key="more" 
+                  label={`+${value.length - 3} more`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    height: { xs: 24, sm: 28 },
+                    color: 'text.secondary',
+                    borderColor: 'text.secondary'
+                  }}
+                />
+              ] : []
+            )
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Issue Types"
+              placeholder="Type or select issue types..."
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          ListboxProps={{
+            style: {
+              maxHeight: 400,
+            },
+          }}
+        />
         
         {/* Severity Filter */}
-        <FormControl 
+        <Autocomplete
+          multiple
           fullWidth
           disabled={isLoading}
-          sx={{ minWidth: 180 }}
-        >
-          <InputLabel>Severities</InputLabel>
-          <Select
-            multiple
-            value={filters.severities || []}
-            onChange={(e) => handleFilterChange('severities', e.target.value)}
-            input={<OutlinedInput label="Severities" />}
-            renderValue={renderChips}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 400,
-                  width: 'auto',
-                  minWidth: 300,
-                  zIndex: 9999,
-                },
-              },
-              anchorOrigin: {
-                vertical: 'bottom',
-                horizontal: 'left',
-              },
-              transformOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-            }}
-          >
-            {sortedSeverities.length > 0 ? (
-              sortedSeverities.map((severity) => (
-                <MenuItem key={severity} value={severity}>
-                  {severity}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>
-                No severities available
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+          freeSolo
+          options={sortedSeverities}
+          value={filters.severities || []}
+          onChange={(event, newValue) => handleFilterChange('severities', newValue)}
+          renderTags={(value, getTagProps) =>
+            value.slice(0, 3).map((option, index) => (
+              <Chip 
+                variant="outlined" 
+                label={option} 
+                size="small"
+                {...getTagProps({ index })}
+                key={option}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 24, sm: 28 },
+                  maxWidth: 120,
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }
+                }}
+              />
+            )).concat(
+              value.length > 3 ? [
+                <Chip 
+                  key="more" 
+                  label={`+${value.length - 3} more`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    height: { xs: 24, sm: 28 },
+                    color: 'text.secondary',
+                    borderColor: 'text.secondary'
+                  }}
+                />
+              ] : []
+            )
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Severities"
+              placeholder="Type or select severities..."
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          ListboxProps={{
+            style: {
+              maxHeight: 400,
+            },
+          }}
+        />
         
         {/* Root Causes Filter */}
-        <FormControl 
+        <Autocomplete
+          multiple
           fullWidth
           disabled={isLoading}
-          sx={{ minWidth: 180 }}
-        >
-          <InputLabel>Root Causes</InputLabel>
-          <Select
-            multiple
-            value={filters.rootCauses || []}
-            onChange={(e) => handleFilterChange('rootCauses', e.target.value)}
-            input={<OutlinedInput label="Root Causes" />}
-            renderValue={renderChips}
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 400,
-                  width: 'auto',
-                  minWidth: 300,
-                  zIndex: 9999,
-                },
-              },
-              anchorOrigin: {
-                vertical: 'bottom',
-                horizontal: 'left',
-              },
-              transformOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-            }}
-          >
-            {sortedRootCauses.length > 0 ? (
-              sortedRootCauses.map((rootCause) => (
-                <MenuItem key={rootCause} value={rootCause}>
-                  {rootCause}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled>
-                No root causes available
-              </MenuItem>
-            )}
-          </Select>
-        </FormControl>
+          freeSolo
+          options={sortedRootCauses}
+          value={filters.rootCauses || []}
+          onChange={(event, newValue) => handleFilterChange('rootCauses', newValue)}
+          renderTags={(value, getTagProps) =>
+            value.slice(0, 3).map((option, index) => (
+              <Chip 
+                variant="outlined" 
+                label={option} 
+                size="small"
+                {...getTagProps({ index })}
+                key={option}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 24, sm: 28 },
+                  maxWidth: 120,
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }
+                }}
+              />
+            )).concat(
+              value.length > 3 ? [
+                <Chip 
+                  key="more" 
+                  label={`+${value.length - 3} more`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    height: { xs: 24, sm: 28 },
+                    color: 'text.secondary',
+                    borderColor: 'text.secondary'
+                  }}
+                />
+              ] : []
+            )
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Root Causes"
+              placeholder="Type or select root causes..."
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          ListboxProps={{
+            style: {
+              maxHeight: 400,
+            },
+          }}
+        />
         
         {/* Performance Controls - Only show when one project is selected */}
         {isSingleProject && (
