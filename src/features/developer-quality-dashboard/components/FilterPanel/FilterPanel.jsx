@@ -204,15 +204,43 @@ const FilterPanel = React.memo(({
     return getSortedOptions(filterOptions?.statuses, currentSelected, availableStatuses)
   }, [filterOptions?.statuses, filters.statuses, getSortedOptions])
 
-  // Sort developers with unselected on top and selected sorted alphabetically
+  // Sort developers with selected on top and unselected sorted alphabetically
   const sortedDevelopers = useMemo(() => {
-    return getSortedOptions(filterOptions?.developers, filters.developers || [])
-  }, [filterOptions?.developers, filters.developers, getSortedOptions])
+    if (!filterOptions?.developers?.length) return []
+    
+    const allDevelopers = Array.from(filterOptions.developers)
+    const selectedDevelopers = filters.developers || []
+    
+    // Separate selected and unselected
+    const selected = allDevelopers.filter(dev => selectedDevelopers.includes(dev))
+    const unselected = allDevelopers.filter(dev => !selectedDevelopers.includes(dev))
+    
+    // Sort selected A-Z, then unselected A-Z
+    const sortedSelected = selected.sort((a, b) => a.localeCompare(b))
+    const sortedUnselected = unselected.sort((a, b) => a.localeCompare(b))
+    
+    // Return selected on top, then unselected
+    return [...sortedSelected, ...sortedUnselected]
+  }, [filterOptions?.developers, filters.developers])
 
-  // Sort projects with unselected on top and selected sorted alphabetically
+  // Sort projects with selected on top and unselected sorted alphabetically
   const sortedProjects = useMemo(() => {
-    return getSortedOptions(filterOptions?.projects, filters.projects || [])
-  }, [filterOptions?.projects, filters.projects, getSortedOptions])
+    if (!filterOptions?.projects?.length) return []
+    
+    const allProjects = Array.from(filterOptions.projects)
+    const selectedProjects = filters.projects || []
+    
+    // Separate selected and unselected
+    const selected = allProjects.filter(project => selectedProjects.includes(project))
+    const unselected = allProjects.filter(project => !selectedProjects.includes(project))
+    
+    // Sort selected A-Z, then unselected A-Z
+    const sortedSelected = selected.sort((a, b) => a.localeCompare(b))
+    const sortedUnselected = unselected.sort((a, b) => a.localeCompare(b))
+    
+    // Return selected on top, then unselected
+    return [...sortedSelected, ...sortedUnselected]
+  }, [filterOptions?.projects, filters.projects])
 
   // Sort issue types with unselected on top and selected sorted alphabetically
   const sortedIssueTypes = useMemo(() => {
