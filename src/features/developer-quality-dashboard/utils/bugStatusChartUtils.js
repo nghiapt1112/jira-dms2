@@ -98,6 +98,144 @@ export const transformBugStatusDataForChart = (data, filters, timeframe) => {
 }
 
 /**
+ * Transform bug status data for Chart.js stacked bar chart
+ * @param {Object} data - Bug status data from filterService
+ * @param {Object} filters - Current filter state
+ * @param {string} timeframe - Time period ('week', 'month', 'quarter')
+ * @returns {Object|null} Chart.js data structure or null if no data
+ */
+export const transformBugStatusDataForStackedBar = (data, filters, timeframe) => {
+  // Handle nested data structure - data might be data.data.data or data.data
+  const actualData = data?.data?.data || data?.data
+  
+  if (!actualData) {
+    return null
+  }
+  
+  // Apply project filtering
+  const projectFilter = filters?.projects || []
+  const dataToUse = getProjectFilteredData(actualData, projectFilter, timeframe)
+  
+  if (!dataToUse || dataToUse.size === 0) {
+    return null
+  }
+  
+  // Sort time periods chronologically
+  const sortedEntries = Array.from(dataToUse.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+  
+  const labels = sortedEntries.map(([period]) => period)
+  
+  // Transform to Chart.js stacked bar format
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'New',
+        data: sortedEntries.map(([_, values]) => values.new || 0),
+        backgroundColor: '#1976d2',
+        borderColor: '#1976d2',
+        borderWidth: 1,
+        stack: 'Stack 0'
+      },
+      {
+        label: 'In Progress', 
+        data: sortedEntries.map(([_, values]) => values.inProgress || 0),
+        backgroundColor: '#ff9800',
+        borderColor: '#ff9800',
+        borderWidth: 1,
+        stack: 'Stack 0'
+      },
+      {
+        label: 'Resolved',
+        data: sortedEntries.map(([_, values]) => values.resolved || 0), 
+        backgroundColor: '#2e7d32',
+        borderColor: '#2e7d32',
+        borderWidth: 1,
+        stack: 'Stack 0'
+      },
+      {
+        label: 'Not Fixed',
+        data: sortedEntries.map(([_, values]) => values.notFixed || 0),
+        backgroundColor: '#d32f2f',
+        borderColor: '#d32f2f',
+        borderWidth: 1,
+        stack: 'Stack 0'
+      }
+    ]
+  }
+}
+
+/**
+ * Transform bug status data for Chart.js pie chart (total distribution)
+ * @param {Object} data - Bug status data from filterService
+ * @param {Object} filters - Current filter state
+ * @param {string} timeframe - Time period ('week', 'month', 'quarter')
+ * @returns {Object|null} Chart.js data structure or null if no data
+ */
+export const transformBugStatusDataForPieChart = (data, filters, timeframe) => {
+  // Handle nested data structure - data might be data.data.data or data.data
+  const actualData = data?.data?.data || data?.data
+  
+  if (!actualData) {
+    return null
+  }
+  
+  // Apply project filtering
+  const projectFilter = filters?.projects || []
+  const dataToUse = getProjectFilteredData(actualData, projectFilter, timeframe)
+  
+  if (!dataToUse || dataToUse.size === 0) {
+    return null
+  }
+  
+  // Aggregate totals across all time periods
+  const totals = { new: 0, inProgress: 0, resolved: 0, notFixed: 0 }
+  
+  dataToUse.forEach((values) => {
+    totals.new += values.new || 0
+    totals.inProgress += values.inProgress || 0
+    totals.resolved += values.resolved || 0
+    totals.notFixed += values.notFixed || 0
+  })
+  
+  // Check if we have any data
+  const grandTotal = totals.new + totals.inProgress + totals.resolved + totals.notFixed
+  if (grandTotal === 0) {
+    return null
+  }
+  
+  // Transform to Chart.js pie format
+  return {
+    labels: ['New', 'In Progress', 'Resolved', 'Not Fixed'],
+    datasets: [
+      {
+        data: [totals.new, totals.inProgress, totals.resolved, totals.notFixed],
+        backgroundColor: [
+          '#1976d2', // New - Blue
+          '#ff9800', // In Progress - Orange
+          '#2e7d32', // Resolved - Green
+          '#d32f2f'  // Not Fixed - Red
+        ],
+        borderColor: [
+          '#1976d2',
+          '#ff9800',
+          '#2e7d32',
+          '#d32f2f'
+        ],
+        borderWidth: 2,
+        hoverBackgroundColor: [
+          'rgba(25, 118, 210, 0.8)',
+          'rgba(255, 152, 0, 0.8)',
+          'rgba(46, 125, 50, 0.8)',
+          'rgba(211, 47, 47, 0.8)'
+        ]
+      }
+    ]
+  }
+}
+
+/**
  * Get project-filtered data from bug status analysis
  * @param {Object} bugStatusData - Bug status data structure
  * @param {Array} projectFilter - Selected projects
@@ -209,7 +347,7 @@ export const getXAxisLabel = (timeframe) => {
 }
 
 /**
- * Get chart configuration for bug status chart
+ * Get chart configuration for bug status line chart
  * @param {string} timeframe - Time period ('week', 'month', 'quarter')
  * @returns {Object} Chart.js configuration object
  */
@@ -270,6 +408,102 @@ export const getBugStatusChartConfig = (timeframe) => ({
 })
 
 /**
+ * Get chart configuration for bug status stacked bar chart
+ * @param {string} timeframe - Time period ('week', 'month', 'quarter')
+ * @returns {Object} Chart.js configuration object
+ */
+export const getBugStatusStackedBarConfig = (timeframe) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    title: {
+      display: false // Title is handled by MUI Typography
+    },
+    legend: {
+      position: 'top',
+      labels: {
+        usePointStyle: false,
+        padding: 20
+      }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        title: (context) => formatTooltipTitle(context, timeframe),
+        label: (context) => formatStackedTooltipLabel(context)
+      }
+    }
+  },
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: getXAxisLabel(timeframe)
+      },
+      grid: {
+        display: true,
+        color: 'rgba(0, 0, 0, 0.1)'
+      }
+    },
+    y: {
+      title: {
+        display: true,
+        text: 'Number of Bugs'
+      },
+      beginAtZero: true,
+      stacked: true,
+      grid: {
+        display: true,
+        color: 'rgba(0, 0, 0, 0.1)'
+      },
+      ticks: {
+        stepSize: 1 // Ensure integer values for bug counts
+      }
+    }
+  },
+  interaction: {
+    mode: 'nearest',
+    axis: 'x',
+    intersect: false
+  }
+})
+
+/**
+ * Format tooltip label for stacked bar chart
+ * @param {Object} context - Chart.js tooltip context item
+ * @returns {string} Formatted tooltip label
+ */
+export const formatStackedTooltipLabel = (context) => {
+  const { dataset, parsed } = context
+  const value = parsed.y || 0
+  const total = getStackedTotalForPeriod(context)
+  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+  
+  return `${dataset.label}: ${value} bugs (${percentage}%)`
+}
+
+/**
+ * Get total bugs for a specific time period from stacked bar tooltip context
+ * @param {Object} context - Chart.js tooltip context item
+ * @returns {number} Total bugs for the period
+ */
+export const getStackedTotalForPeriod = (context) => {
+  const { chart, dataIndex } = context
+  const datasets = chart.data.datasets
+  
+  let total = 0
+  datasets.forEach(dataset => {
+    if (dataset.stack === 'Stack 0') {
+      const value = dataset.data[dataIndex] || 0
+      total += value
+    }
+  })
+  
+  return total
+}
+
+/**
  * Validate bug status chart data
  * @param {Object} chartData - Chart data to validate
  * @returns {boolean} True if valid
@@ -324,6 +558,127 @@ export const getEmptyBugStatusChartData = () => ({
       backgroundColor: 'rgba(211, 47, 47, 0.1)',
       tension: 0.1,
       fill: false
+    }
+  ]
+}) 
+
+/**
+ * Get empty chart data structure for stacked bar chart
+ * @returns {Object} Empty chart data structure
+ */
+export const getEmptyBugStatusStackedBarData = () => ({
+  labels: [],
+  datasets: [
+    {
+      label: 'New',
+      data: [],
+      backgroundColor: '#1976d2',
+      borderColor: '#1976d2',
+      borderWidth: 1,
+      stack: 'Stack 0'
+    },
+    {
+      label: 'In Progress',
+      data: [],
+      backgroundColor: '#ff9800',
+      borderColor: '#ff9800',
+      borderWidth: 1,
+      stack: 'Stack 0'
+    },
+    {
+      label: 'Resolved',
+      data: [],
+      backgroundColor: '#2e7d32',
+      borderColor: '#2e7d32',
+      borderWidth: 1,
+      stack: 'Stack 0'
+    },
+    {
+      label: 'Not Fixed',
+      data: [],
+      backgroundColor: '#d32f2f',
+      borderColor: '#d32f2f',
+      borderWidth: 1,
+      stack: 'Stack 0'
+    }
+  ]
+}) 
+
+/**
+ * Get chart configuration for bug status pie chart
+ * @returns {Object} Chart.js configuration object
+ */
+export const getBugStatusPieChartConfig = () => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    title: {
+      display: false // Title is handled by MUI Typography
+    },
+    legend: {
+      position: 'right',
+      labels: {
+        usePointStyle: true,
+        padding: 20,
+        font: {
+          size: 14
+        }
+      }
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => formatPieTooltipLabel(context)
+      }
+    }
+  },
+  layout: {
+    padding: {
+      top: 10,
+      bottom: 10,
+      left: 10,
+      right: 10
+    }
+  }
+})
+
+/**
+ * Format tooltip label for pie chart
+ * @param {Object} context - Chart.js tooltip context item
+ * @returns {string} Formatted tooltip label
+ */
+export const formatPieTooltipLabel = (context) => {
+  const { label, parsed, chart } = context
+  const value = parsed || 0
+  
+  // Calculate total from all data points
+  const total = chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0)
+  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+  
+  return `${label}: ${value} bugs (${percentage}%)`
+}
+
+/**
+ * Get empty chart data structure for pie chart
+ * @returns {Object} Empty chart data structure
+ */
+export const getEmptyBugStatusPieChartData = () => ({
+  labels: ['New', 'In Progress', 'Resolved', 'Not Fixed'],
+  datasets: [
+    {
+      data: [0, 0, 0, 0],
+      backgroundColor: [
+        '#1976d2', // New - Blue
+        '#ff9800', // In Progress - Orange
+        '#2e7d32', // Resolved - Green
+        '#d32f2f'  // Not Fixed - Red
+      ],
+      borderColor: [
+        '#1976d2',
+        '#ff9800',
+        '#2e7d32',
+        '#d32f2f'
+      ],
+      borderWidth: 2
     }
   ]
 }) 

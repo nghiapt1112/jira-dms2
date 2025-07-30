@@ -8,6 +8,7 @@ import TeamContributionChart from '../TeamContributionChart'
 import ProjectTeamPerformance from '../ProjectTeamPerformance'
 import BugTrendAnalysis from '../BugTrendAnalysis'
 import BugStatusChart from '../BugStatusChart'
+import BugStatusDistributionChart from '../BugStatusDistributionChart'
 import BugTypeDistributionChart from '../BugTypeDistributionChart'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
@@ -122,6 +123,16 @@ const TeamTabContent = React.memo(({
             </Box>
           )
         })()}
+      </Grid>
+
+      {/* Bug Status Distribution Chart - Team overview */}
+      <Grid item {...gridConfig.supporting}>
+        <BugStatusDistributionChart
+          data={filteredData.filteredChartData.bugStatusChart}
+          filters={filters}
+          height={350}
+          title="Bug Status Distribution"
+        />
       </Grid>
 
       {/* Bug Type Distribution Chart - Project-specific */}

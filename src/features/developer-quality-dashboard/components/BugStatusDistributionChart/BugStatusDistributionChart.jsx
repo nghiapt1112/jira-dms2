@@ -1,21 +1,10 @@
-import React, { useMemo, useState, useCallback } from 'react'
+import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  Alert, 
-  ToggleButton, 
-  ToggleButtonGroup 
-} from '@mui/material'
-import { Line, Bar } from 'react-chartjs-2'
+import { Box, Paper, Typography, Alert } from '@mui/material'
+import { Pie } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -24,36 +13,22 @@ import {
 import { useDeveloperQualityFilters } from '../../hooks/useDeveloperQualityFilters'
 
 import {
-  transformBugStatusDataForChart,
-  transformBugStatusDataForStackedBar,
-  getBugStatusChartConfig,
-  getBugStatusStackedBarConfig,
-  validateBugStatusChartData,
-  getEmptyBugStatusChartData,
-  getEmptyBugStatusStackedBarData
+  transformBugStatusDataForPieChart,
+  getBugStatusPieChartConfig,
+  getEmptyBugStatusPieChartData
 } from '../../utils/bugStatusChartUtils'
 
 // Register Chart.js components (following .cursorrules for tree-shaking)
-ChartJS.register(
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  LineElement, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend
-)
+ChartJS.register(ArcElement, Title, Tooltip, Legend)
 
-const BugStatusChart = React.memo(({
+const BugStatusDistributionChart = React.memo(({
   data,
   filters,
-  height = 400,
-  title = 'Bug Status Trends'
+  height = 350,
+  title = 'Bug Status Distribution'
 }) => {
   // 1. Hooks first
   const { filters: storeFilters } = useDeveloperQualityFilters()
-  const [chartType, setChartType] = useState('stacked-bar')
   
   // 2. Memoized values
   // Use timeframe from store filters or default to month
@@ -61,62 +36,50 @@ const BugStatusChart = React.memo(({
     return storeFilters?.timeframe || filters?.timeframe || 'month'
   }, [storeFilters?.timeframe, filters?.timeframe])
   
-  // Transform data for chart based on chart type
+  // Transform data for pie chart
   const chartData = useMemo(() => {
     if (!data) {
-      return chartType === 'stacked-bar' 
-        ? getEmptyBugStatusStackedBarData() 
-        : getEmptyBugStatusChartData()
+      return getEmptyBugStatusPieChartData()
     }
     
-    const transformedData = chartType === 'stacked-bar'
-      ? transformBugStatusDataForStackedBar(data, filters, timeframe)
-      : transformBugStatusDataForChart(data, filters, timeframe)
+    const transformedData = transformBugStatusDataForPieChart(data, filters, timeframe)
     
-    // Validate the transformed data
-    if (!transformedData || !validateBugStatusChartData(transformedData)) {
-      return chartType === 'stacked-bar' 
-        ? getEmptyBugStatusStackedBarData() 
-        : getEmptyBugStatusChartData()
+    // For pie chart, check if we have valid data
+    if (!transformedData || !transformedData.datasets[0].data.some(val => val > 0)) {
+      return getEmptyBugStatusPieChartData()
     }
     
     return transformedData
-  }, [data, filters, timeframe, chartType])
+  }, [data, filters, timeframe])
   
-  // Chart configuration based on chart type
+  // Chart configuration
   const chartConfig = useMemo(() => {
-    return chartType === 'stacked-bar'
-      ? getBugStatusStackedBarConfig(timeframe)
-      : getBugStatusChartConfig(timeframe)
-  }, [timeframe, chartType])
+    return getBugStatusPieChartConfig()
+  }, [])
   
   // Check if we have data to display
   const hasData = useMemo(() => {
-    const hasLabels = chartData.labels.length > 0
-    const hasValues = chartData.datasets.some(dataset => dataset.data.some(value => value > 0))
-    return hasLabels && hasValues
+    return chartData.datasets[0].data.some(value => value > 0)
   }, [chartData])
   
-  // 3. Callbacks
-  const handleChartTypeChange = useCallback((_event, newChartType) => {
-    if (newChartType !== null) {
-      setChartType(newChartType)
-    }
-  }, [])
+  // Calculate total for display
+  const totalBugs = useMemo(() => {
+    return chartData.datasets[0].data.reduce((sum, value) => sum + value, 0)
+  }, [chartData])
   
-  // 4. Early returns
+  // 3. Early returns
   if (!data) {
     return (
       <Paper elevation={1} sx={{ p: 2, height }}>
         <Typography variant="h6" sx={{ mb: 2 }}>{title}</Typography>
         <Alert severity="error">
-          ❌ Bug Status Chart: No data received from parent component
+          ❌ Bug Status Distribution: No data received from parent component
         </Alert>
       </Paper>
     )
   }
   
-  // 5. Render
+  // 4. Render
   return (
     <Paper elevation={1} sx={{ p: 2, height, width: '100%' }}>
       <Box sx={{ 
@@ -129,48 +92,31 @@ const BugStatusChart = React.memo(({
           {title}
         </Typography>
         
-        <ToggleButtonGroup
-          value={chartType}
-          exclusive
-          onChange={handleChartTypeChange}
-          size="small"
-          sx={{ ml: 2 }}
-        >
-          <ToggleButton value="line" sx={{ px: 2, py: 0.5 }}>
-            Line Chart
-          </ToggleButton>
-          <ToggleButton value="stacked-bar" sx={{ px: 2, py: 0.5 }}>
-            Stacked Bar
-          </ToggleButton>
-        </ToggleButtonGroup>
+        {hasData && (
+          <Typography variant="body2" color="text.secondary">
+            Total: {totalBugs} bugs
+          </Typography>
+        )}
       </Box>
       
       {hasData ? (
         <Box sx={{ 
-          height: height - 120,
+          height: height - 80,
           width: '100%',
           position: 'relative'
         }}>
-          {chartType === 'stacked-bar' ? (
-            <Bar 
-              data={chartData} 
-              options={chartConfig}
-              style={{ width: '100%', height: '100%' }}
-            />
-          ) : (
-            <Line 
-              data={chartData} 
-              options={chartConfig}
-              style={{ width: '100%', height: '100%' }}
-            />
-          )}
+          <Pie 
+            data={chartData} 
+            options={chartConfig}
+            style={{ width: '100%', height: '100%' }}
+          />
         </Box>
       ) : (
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          height: height - 120
+          height: height - 80
         }}>
           {(() => {
             // Check if selected projects are known to have no bug data
@@ -197,9 +143,8 @@ const BugStatusChart = React.memo(({
                   </>
                 ) : (
                   <>
-                    <strong>No bug status data available</strong><br/>
+                    <strong>No bug distribution data available</strong><br/>
                     Current filters: Projects={JSON.stringify(selectedProjects || 'All')}, Timeframe={timeframe}<br/>
-                    Chart data: {chartData.labels.length} labels, {chartData.datasets.length} datasets<br/>
                     Try clearing project filters or selecting a different time period.
                   </>
                 )}
@@ -212,7 +157,7 @@ const BugStatusChart = React.memo(({
   )
 })
 
-BugStatusChart.propTypes = {
+BugStatusDistributionChart.propTypes = {
   data: PropTypes.shape({
     data: PropTypes.shape({
       aggregated: PropTypes.object,
@@ -232,4 +177,4 @@ BugStatusChart.propTypes = {
   title: PropTypes.string
 }
 
-export default BugStatusChart 
+export default BugStatusDistributionChart 
