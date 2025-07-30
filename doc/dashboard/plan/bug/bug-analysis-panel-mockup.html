@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Analysis Panel - MVP Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .json-display {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            background-color: #f8fafc;
+            color: #334155;
+            overflow: auto;
+            max-height: 600px;
+        }
+        
+        .json-key {
+            color: #0969da;
+        }
+        
+        .json-string {
+            color: #032f62;
+        }
+        
+        .json-number {
+            color: #005cc5;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Main Panel -->
+        <div class="card">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Bug Analysis by Project</h2>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 inline-flex items-center">
+                            Show Raw JSON
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 inline-flex items-center">
+                            <i data-lucide="copy" class="w-4 h-4 mr-1"></i>
+                            Copy JSON
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 inline-flex items-center">
+                            <i data-lucide="download" class="w-4 h-4 mr-1"></i>
+                            Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="p-6">
+                <!-- Summary Stats -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold mb-3 text-gray-900">Summary (month)</h4>
+                    <div class="summary-grid text-sm">
+                        <div>
+                            <p class="text-gray-500">Projects</p>
+                            <p class="font-medium text-gray-900 text-lg">3</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Total Bugs</p>
+                            <p class="font-medium text-gray-900 text-lg">856</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Resolved</p>
+                            <p class="font-medium text-gray-900 text-lg">742</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Resolution Rate</p>
+                            <p class="font-medium text-gray-900 text-lg">87%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Raw JSON Display -->
+                <div class="relative">
+                    <pre class="json-display p-4 rounded-lg border border-gray-200"><code>{
+  <span class="json-key">"WON"</span>: {
+    <span class="json-key">"week"</span>: {
+      <span class="json-key">"2025-W01"</span>: {
+        <span class="json-key">"created"</span>: <span class="json-number">45</span>,
+        <span class="json-key">"resolved"</span>: <span class="json-number">38</span>,
+        <span class="json-key">"new"</span>: <span class="json-number">12</span>,
+        <span class="json-key">"inProgress"</span>: <span class="json-number">15</span>,
+        <span class="json-key">"notFix"</span>: <span class="json-number">2</span>,
+        
+        <span class="json-key">"Functional"</span>: <span class="json-number">18</span>,
+        <span class="json-key">"UI"</span>: <span class="json-number">12</span>,
+        <span class="json-key">"Performance"</span>: <span class="json-number">8</span>,
+        <span class="json-key">"Security"</span>: <span class="json-number">2</span>,
+        <span class="json-key">"Integration"</span>: <span class="json-number">5</span>,
+        
+        <span class="json-key">"CodeError"</span>: <span class="json-number">15</span>,
+        <span class="json-key">"DesignIssue"</span>: <span class="json-number">10</span>,
+        <span class="json-key">"RequirementGap"</span>: <span class="json-number">8</span>,
+        <span class="json-key">"Configuration"</span>: <span class="json-number">7</span>,
+        <span class="json-key">"DataIssue"</span>: <span class="json-number">5</span>,
+        
+        <span class="json-key">"Critical"</span>: <span class="json-number">3</span>,
+        <span class="json-key">"Major"</span>: <span class="json-number">12</span>,
+        <span class="json-key">"Minor"</span>: <span class="json-number">25</span>,
+        <span class="json-key">"Trivial"</span>: <span class="json-number">5</span>,
+        
+        <span class="json-key">"avgResolutionTimeHours"</span>: <span class="json-number">28.5</span>,
+        <span class="json-key">"reopenedCount"</span>: <span class="json-number">3</span>,
+        <span class="json-key">"reopenRate"</span>: <span class="json-number">7.9</span>,
+        <span class="json-key">"overdueCount"</span>: <span class="json-number">4</span>,
+        
+        <span class="json-key">"totalTimeSpentHours"</span>: <span class="json-number">245.5</span>,
+        <span class="json-key">"avgTimePerBug"</span>: <span class="json-number">5.5</span>,
+        
+        <span class="json-key">"periodStart"</span>: <span class="json-string">"2025-01-01"</span>,
+        <span class="json-key">"periodEnd"</span>: <span class="json-string">"2025-01-07"</span>,
+        <span class="json-key">"lastUpdated"</span>: <span class="json-string">"2025-01-07T16:30:00Z"</span>
+      },
+      <span class="json-key">"2025-W02"</span>: {
+        <span class="json-key">"created"</span>: <span class="json-number">52</span>,
+        <span class="json-key">"resolved"</span>: <span class="json-number">41</span>,
+        <span class="json-key">"new"</span>: <span class="json-number">15</span>,
+        <span class="json-key">"inProgress"</span>: <span class="json-number">18</span>
+        <span class="text-gray-400">// ... more week data</span>
+      }
+    },
+    <span class="json-key">"month"</span>: {
+      <span class="json-key">"2025-01"</span>: {
+        <span class="json-key">"created"</span>: <span class="json-number">285</span>,
+        <span class="json-key">"resolved"</span>: <span class="json-number">248</span>,
+        <span class="json-key">"new"</span>: <span class="json-number">65</span>,
+        <span class="json-key">"inProgress"</span>: <span class="json-number">72</span>,
+        <span class="json-key">"notFix"</span>: <span class="json-number">8</span>,
+        
+        <span class="json-key">"Functional"</span>: <span class="json-number">95</span>,
+        <span class="json-key">"UI"</span>: <span class="json-number">68</span>,
+        <span class="json-key">"Performance"</span>: <span class="json-number">42</span>,
+        <span class="json-key">"Security"</span>: <span class="json-number">15</span>,
+        <span class="json-key">"Integration"</span>: <span class="json-number">35</span>,
+        <span class="json-key">"Unknown"</span>: <span class="json-number">30</span>
+        <span class="text-gray-400">// ... more month data</span>
+      }
+    }
+  },
+  <span class="json-key">"YUIM"</span>: {
+    <span class="json-key">"week"</span>: {
+      <span class="text-gray-400">// ... week data for YUIM project</span>
+    },
+    <span class="json-key">"month"</span>: {
+      <span class="text-gray-400">// ... month data for YUIM project</span>
+    }
+  },
+  <span class="json-key">"STU"</span>: {
+    <span class="json-key">"week"</span>: {
+      <span class="text-gray-400">// ... week data for STU project</span>
+    },
+    <span class="json-key">"month"</span>: {
+      <span class="text-gray-400">// ... month data for STU project</span>
+    }
+  }
+}</code></pre>
+                </div>
+                
+                <!-- Alternative: Structured View (Hidden by default) -->
+                <div class="space-y-2 mt-4 hidden" id="structured-view">
+                    <!-- Project 1 -->
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <button class="flex items-center justify-between w-full text-left">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                <span class="font-medium">WON</span>
+                            </div>
+                            <span class="text-sm text-gray-500">4 months</span>
+                        </button>
+                        <div class="mt-2 ml-6">
+                            <div class="bg-gray-50 p-3 rounded text-sm">
+                                <p><strong>January 2025:</strong> 285 bugs created, 248 resolved (87% resolution rate)</p>
+                                <p><strong>Top Issue Type:</strong> Functional (95 bugs)</p>
+                                <p><strong>Top Root Cause:</strong> Code Error (80 bugs)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Project 2 -->
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <button class="flex items-center justify-between w-full text-left">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                <span class="font-medium">YUIM</span>
+                            </div>
+                            <span class="text-sm text-gray-500">4 months</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Project 3 -->
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <button class="flex items-center justify-between w-full text-left">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                <span class="font-medium">STU</span>
+                            </div>
+                            <span class="text-sm text-gray-500">3 months</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filter Info -->
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+            <p class="text-sm text-blue-800">
+                <strong>Active Filters:</strong> Projects: WON, YUIM, STU | Time Period: Month | 
+                This data updates based on your Filter.projects selection in the dashboard
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Simulated copy functionality
+        document.querySelector('button:nth-child(2)').addEventListener('click', function() {
+            this.innerHTML = '<i data-lucide="check" class="w-4 h-4 mr-1"></i>Copied!';
+            lucide.createIcons();
+            setTimeout(() => {
+                this.innerHTML = '<i data-lucide="copy" class="w-4 h-4 mr-1"></i>Copy JSON';
+                lucide.createIcons();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

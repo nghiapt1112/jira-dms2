@@ -243,12 +243,40 @@ export const transformBugStatusDataForPieChart = (data, filters, timeframe) => {
  * @returns {Map} Filtered data by time period
  */
 export const getProjectFilteredData = (bugStatusData, projectFilter, timeframe) => {
-  // If no project filter, use aggregated data
-  if (!projectFilter || projectFilter.length === 0) {
-    return bugStatusData.aggregated || new Map()
+  // Get the appropriate time period data based on timeframe
+  const getTimeframedData = (data) => {
+    if (!data) return new Map()
+    
+    // If data has timeframe-specific properties, use them
+    if (timeframe === 'week' && data.byWeek) {
+      return data.byWeek
+    } else if (timeframe === 'month' && data.byMonth) {
+      return data.byMonth
+    } else if (timeframe === 'quarter' && data.byQuarter) {
+      return data.byQuarter
+    }
+    
+    // Otherwise, filter aggregated data by timeframe pattern
+    const aggregatedData = data.aggregated || new Map()
+    const filteredByTimeframe = new Map()
+    
+    // Filter periods that match the timeframe pattern
+    for (const [period, values] of aggregatedData.entries()) {
+      const shouldInclude = isTimeframePeriod(period, timeframe)
+      if (shouldInclude) {
+        filteredByTimeframe.set(period, values)
+      }
+    }
+    
+    return filteredByTimeframe
   }
   
-  // If project filter exists, aggregate selected projects
+  // If no project filter, use timeframe-filtered aggregated data
+  if (!projectFilter || projectFilter.length === 0) {
+    return getTimeframedData(bugStatusData)
+  }
+  
+  // If project filter exists, aggregate selected projects with timeframe filtering
   const filteredData = new Map()
   const projectData = bugStatusData.byProject || new Map()
   
@@ -257,10 +285,14 @@ export const getProjectFilteredData = (bugStatusData, projectFilter, timeframe) 
     let projectKey = projectNameToKeyMap.get(projectDisplayName) || projectDisplayName
     
     const projectTimePeriods = projectData.get(projectKey)
-    if (projectTimePeriods) {
-      
+    if (projectTimePeriods) {      
       let projectTotalBugs = 0
       projectTimePeriods.forEach((periodData, timePeriod) => {
+        // Only include periods that match the selected timeframe
+        if (!isTimeframePeriod(timePeriod, timeframe)) {
+          return
+        }
+        
         if (!filteredData.has(timePeriod)) {
           filteredData.set(timePeriod, {
             new: 0, inProgress: 0, resolved: 0, notFixed: 0, total: 0
@@ -268,7 +300,6 @@ export const getProjectFilteredData = (bugStatusData, projectFilter, timeframe) 
         }
         
         const aggregatedPeriodData = filteredData.get(timePeriod)
-        const beforeValues = { ...aggregatedPeriodData }
         aggregatedPeriodData.new += periodData.new || 0
         aggregatedPeriodData.inProgress += periodData.inProgress || 0
         aggregatedPeriodData.resolved += periodData.resolved || 0
@@ -282,6 +313,30 @@ export const getProjectFilteredData = (bugStatusData, projectFilter, timeframe) 
   })
   
   return filteredData
+}
+
+/**
+ * Check if a time period string matches the specified timeframe
+ * @param {string} period - Time period string (e.g., '2024-11', '2024-W48', '2024-Q4')
+ * @param {string} timeframe - Target timeframe ('week', 'month', 'quarter')
+ * @returns {boolean} True if period matches timeframe
+ */
+const isTimeframePeriod = (period, timeframe) => {
+  if (!period || typeof period !== 'string') return false
+  
+  switch (timeframe) {
+    case 'week':
+      // Week format: 2024-W48, 2024-W01, etc.
+      return /^\d{4}-W\d{1,2}$/.test(period)
+    case 'month':
+      // Month format: 2024-11, 2024-01, etc.
+      return /^\d{4}-\d{1,2}$/.test(period) && !period.includes('W') && !period.includes('Q')
+    case 'quarter':
+      // Quarter format: 2024-Q4, 2024-Q1, etc.
+      return /^\d{4}-Q\d$/.test(period)
+    default:
+      return false
+  }
 }
 
 /**

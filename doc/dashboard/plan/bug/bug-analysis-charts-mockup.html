@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Analysis Dashboard - Visual Charts Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .chart-container.small {
+            height: 250px;
+        }
+        
+        .json-display {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            background-color: #f8fafc;
+            color: #334155;
+            overflow: auto;
+            max-height: 400px;
+        }
+        
+        .json-key {
+            color: #0969da;
+        }
+        
+        .json-string {
+            color: #032f62;
+        }
+        
+        .json-number {
+            color: #005cc5;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Bug Analysis Dashboard</h1>
+            <p class="text-gray-600">Visual representation of bug data from JSON structure</p>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="card p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i data-lucide="bug" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500">Total Bugs</p>
+                        <p class="text-2xl font-semibold text-gray-900">856</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500">Resolved</p>
+                        <p class="text-2xl font-semibold text-gray-900">742</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-orange-100 rounded-lg">
+                        <i data-lucide="clock" class="w-5 h-5 text-orange-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500">In Progress</p>
+                        <p class="text-2xl font-semibold text-gray-900">89</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i data-lucide="percent" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500">Resolution Rate</p>
+                        <p class="text-2xl font-semibold text-gray-900">87%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Line Chart: Created/Resolved Over Time -->
+            <div class="card">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Bugs Created vs Resolved</h3>
+                    <p class="text-sm text-gray-500">Weekly trend from JSON data</p>
+                </div>
+                <div class="p-4">
+                    <div class="chart-container">
+                        <canvas id="createdResolvedChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pie Chart: Bug Status -->
+            <div class="card">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Bug Status Distribution</h3>
+                    <p class="text-sm text-gray-500">Current status breakdown</p>
+                </div>
+                <div class="p-4">
+                    <div class="chart-container small">
+                        <canvas id="statusPieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pie Chart: Bug Types -->
+            <div class="card">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Bug Type Distribution</h3>
+                    <p class="text-sm text-gray-500">Types from customfield_10271</p>
+                </div>
+                <div class="p-4">
+                    <div class="chart-container small">
+                        <canvas id="bugTypePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bar Chart: Root Causes -->
+            <div class="card">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Root Cause Analysis</h3>
+                    <p class="text-sm text-gray-500">From customfield_10272</p>
+                </div>
+                <div class="p-4">
+                    <div class="chart-container small">
+                        <canvas id="rootCauseBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- JSON Data Section -->
+        <div class="card">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Raw JSON Data</h3>
+                        <p class="text-sm text-gray-500">Data structure powering the charts above</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="toggleJson" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Hide JSON
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            <i data-lucide="copy" class="w-4 h-4 mr-1"></i>
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="jsonSection" class="p-4">
+                <pre class="json-display p-4 rounded-lg border border-gray-200"><code>{
+  <span class="json-key">"WON"</span>: {
+    <span class="json-key">"week"</span>: {
+      <span class="json-key">"2025-W01"</span>: {
+        <span class="json-key">"created"</span>: <span class="json-number">45</span>,
+        <span class="json-key">"resolved"</span>: <span class="json-number">38</span>,
+        <span class="json-key">"new"</span>: <span class="json-number">12</span>,
+        <span class="json-key">"inProgress"</span>: <span class="json-number">15</span>,
+        <span class="json-key">"Functional"</span>: <span class="json-number">18</span>,
+        <span class="json-key">"UI"</span>: <span class="json-number">12</span>,
+        <span class="json-key">"Performance"</span>: <span class="json-number">8</span>,
+        <span class="json-key">"CodeError"</span>: <span class="json-number">15</span>,
+        <span class="json-key">"DesignIssue"</span>: <span class="json-number">10</span>,
+        <span class="json-key">"Critical"</span>: <span class="json-number">3</span>,
+        <span class="json-key">"Major"</span>: <span class="json-number">12</span>
+      },
+      <span class="json-key">"2025-W02"</span>: {
+        <span class="json-key">"created"</span>: <span class="json-number">52</span>,
+        <span class="json-key">"resolved"</span>: <span class="json-number">45</span>,
+        <span class="json-key">"Functional"</span>: <span class="json-number">22</span>,
+        <span class="json-key">"UI"</span>: <span class="json-number">15</span>
+      }
+    }
+  }
+}</code></pre>
+            </div>
+        </div>
+        
+        <!-- Data Source Info -->
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+            <p class="text-sm text-blue-800">
+                <strong>Data Flow:</strong> Charts automatically update from cached JSON → Generated once during main processing → 
+                Filtered by Filter.projects → Displays weekly/monthly trends and distributions
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Sample data extracted from JSON structure for charts
+        const sampleData = {
+            weekly: {
+                labels: ['2025-W01', '2025-W02', '2025-W03', '2025-W04'],
+                created: [45, 52, 38, 41],
+                resolved: [38, 45, 35, 39]
+            },
+            status: {
+                labels: ['Resolved', 'In Progress', 'New', 'Not Fix'],
+                data: [742, 89, 68, 15],
+                colors: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444']
+            },
+            bugTypes: {
+                labels: ['Functional', 'UI', 'Performance', 'Security', 'Integration'],
+                data: [285, 180, 125, 85, 95],
+                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            },
+            rootCauses: {
+                labels: ['CodeError', 'DesignIssue', 'Configuration', 'DataIssue', 'RequirementGap'],
+                data: [245, 156, 132, 118, 95],
+                colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6']
+            }
+        };
+        
+        // 1. Line Chart: Created vs Resolved
+        const createdResolvedCtx = document.getElementById('createdResolvedChart').getContext('2d');
+        new Chart(createdResolvedCtx, {
+            type: 'line',
+            data: {
+                labels: sampleData.weekly.labels,
+                datasets: [{
+                    label: 'Created',
+                    data: sampleData.weekly.created,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Resolved',
+                    data: sampleData.weekly.resolved,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#f1f5f9'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 2. Pie Chart: Status Distribution
+        const statusPieCtx = document.getElementById('statusPieChart').getContext('2d');
+        new Chart(statusPieCtx, {
+            type: 'pie',
+            data: {
+                labels: sampleData.status.labels,
+                datasets: [{
+                    data: sampleData.status.data,
+                    backgroundColor: sampleData.status.colors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        
+        // 3. Pie Chart: Bug Types
+        const bugTypePieCtx = document.getElementById('bugTypePieChart').getContext('2d');
+        new Chart(bugTypePieCtx, {
+            type: 'pie',
+            data: {
+                labels: sampleData.bugTypes.labels,
+                datasets: [{
+                    data: sampleData.bugTypes.data,
+                    backgroundColor: sampleData.bugTypes.colors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        
+        // 4. Bar Chart: Root Causes
+        const rootCauseBarCtx = document.getElementById('rootCauseBarChart').getContext('2d');
+        new Chart(rootCauseBarCtx, {
+            type: 'bar',
+            data: {
+                labels: sampleData.rootCauses.labels,
+                datasets: [{
+                    label: 'Bug Count',
+                    data: sampleData.rootCauses.data,
+                    backgroundColor: sampleData.rootCauses.colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Toggle JSON visibility
+        document.getElementById('toggleJson').addEventListener('click', function() {
+            const jsonSection = document.getElementById('jsonSection');
+            const isHidden = jsonSection.style.display === 'none';
+            
+            jsonSection.style.display = isHidden ? 'block' : 'none';
+            this.textContent = isHidden ? 'Hide JSON' : 'Show JSON';
+        });
+    </script>
+</body>
+</html>
