@@ -53,105 +53,110 @@ const TeamTabContent = React.memo(({
   const projectKeys = useMemo(() => convertProjectNamesToKeys(filters.projects), [filters.projects])
   const { chartData: bugChartData, isLoading: bugDataLoading } = useBugAnalysis(projectKeys, filters.timeframe)
 
-  // 2. Memoized grid configurations for consistent responsive design
+  // 2. Memoized grid configurations for 2-column responsive design
   const gridConfig = useMemo(() => ({
-    // Primary team charts - responsive layout
-    primary: { xs: 12, lg: 6,},
-    // Supporting analytics - balanced on medium+ screens
-    supporting: { xs: 12, md: 6 , lg: 3},
+    // Column 1: Team contribution and detail (left column on lg+ screens)
+    leftColumn: { xs: 12, lg: 6 },
+    // Column 2: Bug analysis charts (right column on lg+ screens)  
+    rightColumn: { xs: 12, lg: 6 },
+    // Bug charts within right column (responsive within the column)
+    bugChart: { xs: 12, md: 6 },
     // Full-width components
     fullWidth: { xs: 12 }
   }), [])
 
 
 
-  // 3. Render optimized team layout
+  // 3. Render 2-column responsive layout
   return (
     <Grid container spacing={{ xs: 2, sm: 3 }}>
-      {/* Raw JSON Data Section */}
+      {/* Raw JSON Data Section - Full width */}
       <Grid item {...gridConfig.fullWidth}>
         <RawJsonViewer />
       </Grid>
-      {/* Primary Team Performance Section */}
-      
-      {/* Team Contribution Chart - Always visible, core team metric */}
-      <Grid item {...gridConfig.primary}>
-        <TeamContributionChart
-          data={filteredData.filteredChartData.teamContributionChart}
-          metrics={filteredData.filteredMetrics.teamContribution}
-          statusFilter={filters.statusFilter}
-          onStatusFilterChange={onStatusFilterChange}
-          filters={filters} // Pass complete filters object including projects
-          showTargetLines={performanceControls.showTargetLines}
-          performanceFilter={performanceControls.performanceFilter}
-        />
+
+      {/* Left Column: Team Contribution and Period Detail */}
+      <Grid item {...gridConfig.leftColumn}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
+          {/* Team Contribution Chart - Always visible, core team metric */}
+          <Grid item xs={12}>
+            <TeamContributionChart
+              data={filteredData.filteredChartData.teamContributionChart}
+              metrics={filteredData.filteredMetrics.teamContribution}
+              statusFilter={filters.statusFilter}
+              onStatusFilterChange={onStatusFilterChange}
+              filters={filters} // Pass complete filters object including projects
+              showTargetLines={performanceControls.showTargetLines}
+              performanceFilter={performanceControls.performanceFilter}
+            />
+          </Grid>
+
+          {/* Project Team Performance - Conditional based on single project selection */}
+          {/* TODO: Team lead fixed to hide this chart. */}
+          {false && (
+            <Grid item xs={12}>
+              <ProjectTeamPerformance
+                data={filteredData.filteredChartData.teamContributionChart}
+                metrics={filteredData.filteredMetrics}
+                filters={filters}
+                showTargetLines={performanceControls.showTargetLines}
+                performanceFilter={performanceControls.performanceFilter}
+              />
+            </Grid>
+          )}
+        </Grid>
       </Grid>
 
-      {/* Project Team Performance - Conditional based on single project selection */}
-      {/* {selectedSingleProject && (
-        <Grid item {...gridConfig.primary}>
-          <ProjectTeamPerformance
-            data={filteredData.filteredChartData.teamContributionChart}
-            metrics={filteredData.filteredMetrics}
-            filters={filters}
-            showTargetLines={performanceControls.showTargetLines}
-            performanceFilter={performanceControls.performanceFilter}
-          />
-        </Grid>
-      )} */}
+      {/* Right Column: Bug Analysis Charts */}
+      <Grid item {...gridConfig.rightColumn}>
+        {bugChartData && !bugDataLoading && (
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
+            {/* Line Chart: Created vs Resolved */}
+            <Grid item {...gridConfig.bugChart}>
+              <BugCreatedResolvedChart 
+                chartData={bugChartData.lineChart}
+                timeframe={filters.timeframe}
+                title="Bugs Created vs Resolved"
+              />
+            </Grid>
+            
+            {/* Pie Chart: Status Distribution */}
+            <Grid item {...gridConfig.bugChart}>
+              <BugStatusPieChart 
+                chartData={bugChartData.statusPie}
+                title="Bug Status Distribution"
+              />
+            </Grid>
+            
+            {/* Pie Chart: Bug Type Distribution */}
+            <Grid item {...gridConfig.bugChart}>
+              <BugTypePieChart 
+                chartData={bugChartData.typePie}
+                title="Bug Type Distribution"
+              />
+            </Grid>
+            
+            {/* Bar Chart: Root Cause Analysis */}
+            <Grid item {...gridConfig.bugChart}>
+              <BugRootCauseBarChart 
+                chartData={bugChartData.rootCauseBar}
+                title="Bug Root Cause Analysis"
+              />
+            </Grid>
+          </Grid>
+        )}
+      </Grid>
 
-      {/* Bug Analysis Charts Section - Using pre-processed data */}
-      {bugChartData && !bugDataLoading && (
-        <>
-          {/* Line Chart: Created vs Resolved */}
-          <Grid item {...gridConfig.supporting}>
-            <BugCreatedResolvedChart 
-              chartData={bugChartData.lineChart}
-              timeframe={filters.timeframe}
-              title="Bugs Created vs Resolved"
-            />
-          </Grid>
-          
-          {/* Pie Chart: Status Distribution */}
-          <Grid item {...gridConfig.supporting}>
-            <BugStatusPieChart 
-              chartData={bugChartData.statusPie}
-              title="Bug Status Distribution"
-            />
-          </Grid>
-          
-          {/* Pie Chart: Bug Type Distribution */}
-          <Grid item {...gridConfig.supporting}>
-            <BugTypePieChart 
-              chartData={bugChartData.typePie}
-              title="Bug Type Distribution"
-            />
-          </Grid>
-          
-          {/* Bar Chart: Root Cause Analysis */}
-          <Grid item {...gridConfig.supporting}>
-            <BugRootCauseBarChart 
-              chartData={bugChartData.rootCauseBar}
-              title="Bug Root Cause Analysis"
-            />
-          </Grid>
-        </>
-      )}
-
-      {/* Detailed Team Data Section */}
-      
       {/* Bug Rate Analysis Table - Full width for comprehensive team data */}
       <Grid item {...gridConfig.fullWidth}>
         <BugRateAnalysisTable
           data={filteredData.filteredMetrics.bugRateAnalysis}
           onRowClick={(developer) => {
             // Future enhancement: Could auto-switch to Developer tab
-      
           }}
           context="team"
         />
       </Grid>
-
     </Grid>
   )
 })

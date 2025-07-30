@@ -195,7 +195,8 @@ const TeamContributionChart = React.memo(({
       )}
 
       {/* Project Members Contribution Chart - Only shown when single project is selected and no time period selected */}
-      {isSingleProject && !selectedTimePeriod && (
+      {/* TODO: Team lead fixed to hide this chart. */}
+      {false && !selectedTimePeriod && (
         <Box sx={{ mt: { xs: 2, sm: 3 } }}>
           <ProjectMembersContribution
             data={data}
@@ -208,90 +209,7 @@ const TeamContributionChart = React.memo(({
           />
         </Box>
       )}
-      
-      {/* Metrics Summary */}
-      <Box sx={{ 
-        display: 'grid',
-        gridTemplateColumns: { 
-          xs: '1fr',
-          sm: 'repeat(2, 1fr)',
-          md: 'repeat(3, 1fr)'
-        },
-        gap: { xs: 1, sm: 2 },
-        mb: { xs: 2, sm: 3 }
-      }}>
-        <Box>
-          <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-          >
-            Total Story Points
-          </Typography>
-          <Typography 
-            variant="h6"
-            sx={{ 
-              fontSize: { xs: '1rem', sm: '1.25rem' },
-              fontWeight: 600
-            }}
-          >
-            {metrics?.totalStoryPoints?.toLocaleString() || 0}
-          </Typography>
-        </Box>
-        
-        <Box>
-          <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-          >
-            Average per Developer
-          </Typography>
-          <Typography 
-            variant="h6"
-            sx={{ 
-              fontSize: { xs: '1rem', sm: '1.25rem' },
-              fontWeight: 600
-            }}
-          >
-            {metrics?.averageStoryPoints?.toFixed(1) || '0.0'}
-          </Typography>
-        </Box>
-        
-        <Box sx={{ 
-          gridColumn: { xs: '1', md: '3' }
-        }}>
-          <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ 
-              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-              mb: 1
-            }}
-          >
-            Top Contributors (by Story Points)
-          </Typography>
-          <Box sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            gap: 0.5 
-          }}>
-            {metrics?.topContributors?.slice(0, 3).map((contributor, index) => (
-              <Chip
-                key={contributor.developer}
-                label={`${contributor.developer} (${contributor.storyPoints || 0}pts)`}
-                size="small"
-                variant={index === 0 ? 'filled' : 'outlined'}
-                color={index === 0 ? 'primary' : 'default'}
-                sx={{ 
-                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                  height: { xs: 24, sm: 28 }
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
-      </Box>
+
     </Paper>
   )
 })

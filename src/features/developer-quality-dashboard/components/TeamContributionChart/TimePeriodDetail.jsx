@@ -518,91 +518,9 @@ const TimePeriodDetail = React.memo(({
       </Box>
       
       {/* Chart */}
-      <Box sx={{ height, width: '100%', mb: { xs: 2, sm: 3 } }}>
+      <Box sx={{ height, width: '100%' }}>
         <Bar data={chartData} options={chartOptions} />
       </Box>
-      
-      {/* Target Lines Information */}
-      {showTargetLines && targetValues && targetValues.length > 0 && (
-        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontSize: { xs: '1rem', sm: '1.125rem' },
-              fontWeight: 600,
-              mb: 2
-            }}
-          >
-            Performance Targets
-          </Typography>
-          
-          <Box sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            gap: 1 
-          }}>
-            {targetValues.map((target, index) => (
-              <Chip
-                key={index}
-                label={`${target.label}: ${target.value} pts`}
-                size="small"
-                variant="outlined"
-                sx={{ 
-                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                  height: { xs: 28, sm: 32 },
-                  borderColor: target.config.color,
-                  color: target.config.color,
-                  '& .MuiChip-label': {
-                    color: target.config.color
-                  }
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
-      )}
-
-      {/* Developer breakdown */}
-      {developerStats.sortedData.length > 0 && (
-        <Box>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontSize: { xs: '1rem', sm: '1.125rem' },
-              fontWeight: 600,
-              mb: 2
-            }}
-          >
-            Developer Breakdown
-          </Typography>
-          
-          <Box sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            gap: 1 
-          }}>
-            {developerStats.sortedData.map((dev, index) => {
-              const percentage = developerStats.total > 0 
-                ? ((dev.storyPoints / developerStats.total) * 100).toFixed(1)
-                : '0.0'
-              
-              return (
-                <Chip
-                  key={dev.developer}
-                  label={`${dev.developer}: ${dev.storyPoints} pts (${percentage}%)`}
-                  size="small"
-                  variant={index === 0 ? 'filled' : 'outlined'}
-                  color={index === 0 ? 'primary' : 'default'}
-                  sx={{ 
-                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                    height: { xs: 28, sm: 32 }
-                  }}
-                />
-              )
-            })}
-          </Box>
-        </Box>
-      )}
     </Paper>
   )
 })
