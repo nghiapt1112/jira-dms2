@@ -144,6 +144,7 @@ const TabContainer = React.memo(({
     )
   }, [dashboardData, dashboardActions, dashboardState])
 
+
   // 6. Render
   return (
     <Box sx={{ width: '100%' }}>

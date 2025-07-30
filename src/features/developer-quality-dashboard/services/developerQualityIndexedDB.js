@@ -6,7 +6,7 @@
 // Database configuration
 // Using 'indexed-' prefix to clearly distinguish from other storage mechanisms
 const DB_NAME = 'indexed-developer-quality-dashboard'
-const DB_VERSION = 1
+const DB_VERSION = 2 // Incremented for bug analysis store
 
 // Object store names
 const STORES = {
@@ -15,7 +15,8 @@ const STORES = {
   INDICES: 'indices',
   FILTER_OPTIONS: 'filter_options',
   MINIMAL_ISSUES: 'minimal_issues',
-  METADATA: 'metadata'
+  METADATA: 'metadata',
+  BUG_ANALYSIS: 'bug_analysis'
 }
 
 // Cache keys for different data types
@@ -142,6 +143,14 @@ class DeveloperQualityIndexedDB {
           
           const metadataStore = db.createObjectStore(STORES.METADATA, { keyPath: 'key' })
           metadataStore.createIndex('timestamp', 'timestamp', { unique: false })
+        }
+        
+        // Create bug analysis store
+        if (!db.objectStoreNames.contains(STORES.BUG_ANALYSIS)) {
+          
+          const bugAnalysisStore = db.createObjectStore(STORES.BUG_ANALYSIS, { keyPath: 'key' })
+          bugAnalysisStore.createIndex('timestamp', 'timestamp', { unique: false })
+          bugAnalysisStore.createIndex('version', 'version', { unique: false })
         }
         
         
@@ -465,6 +474,18 @@ class DeveloperQualityIndexedDB {
       console.error('❌ Failed to clear data:', error)
       return false
     }
+  }
+
+  // NEW METHODS: Bug analysis storage and retrieval
+  async saveBugAnalysis(bugAnalysisData) {
+    return this.storeData(STORES.BUG_ANALYSIS, 'current', bugAnalysisData, {
+      type: 'bug_analysis',
+      version: '1.0'
+    })
+  }
+
+  async getBugAnalysis() {
+    return this.getData(STORES.BUG_ANALYSIS, 'current')
   }
 
   // Get cache statistics

@@ -43,6 +43,8 @@ import {
   calculateDeveloperTimeEfficiency
 } from '../utils/metricCalculations'
 
+import { generateBugAnalysisJSON } from './bugAnalysisProcessor.js'
+
 import { 
   processBugForTrendAnalysis, 
   getInitialBugTrendData,
@@ -83,6 +85,7 @@ export const developerQualityService = {
         indices: developerQualityService.initializeIndices(),
         filterOptions: developerQualityService.initializeFilterOptions(),
         minimalIssues: [],
+        bugAnalysis: generateBugAnalysisJSON.initialize(), // NEW: Initialize bug analysis
         performanceMetadata: {
           // Performance metadata by project -> developer -> period -> {actualPoints, target, performance}
           projectPerformance: new Map(), // projectKey -> Map(developerName -> Map(periodKey -> {actualPoints, target, performance}))
@@ -178,6 +181,9 @@ export const developerQualityService = {
       
       // Build indices for instant filtering
       developerQualityService.buildFilterIndices(issue, index, developerQualityData.indices)
+      
+      // NEW: Process bug analysis
+      generateBugAnalysisJSON.processBug(issue, developerQualityData.bugAnalysis)
       
       // PERFORMANCE METADATA COLLECTION
       // Note: assignee and projectKey already defined above
@@ -311,6 +317,9 @@ export const developerQualityService = {
     
     developerQualityService.finalizeFilterOptions(developerQualityData.filterOptions, developerQualityData.indices)
     
+    // NEW: Finalize bug analysis
+    developerQualityData.bugAnalysis = generateBugAnalysisJSON.finalize(developerQualityData.bugAnalysis)
+    
     const processingTime = performance.now() - startTime
     
 
@@ -394,6 +403,12 @@ export const developerQualityService = {
   
       
       const cacheSuccess = await developerQualityService.cacheProcessedData(finalData)
+      
+      // NEW: Cache bug analysis separately
+      if (finalData.bugAnalysis) {
+        const { developerQualityIndexedDB } = await import('./developerQualityIndexedDB')
+        await developerQualityIndexedDB.saveBugAnalysis(finalData.bugAnalysis)
+      }
 
     } catch (error) {
       console.error('Failed to cache processed developer quality data:', error)

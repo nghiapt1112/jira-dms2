@@ -73,6 +73,11 @@ export const useDeveloperQualityStore = create(
       filteredData: null,
       filterAppliedAt: null,
       
+      // NEW: Bug analysis state
+      bugAnalysis: null,
+      bugAnalysisLoading: false,
+      bugAnalysisError: null,
+      
       // Actions
       setData: (data) => {
         const now = new Date().toISOString()
@@ -317,7 +322,31 @@ export const useDeveloperQualityStore = create(
       getChartData: () => {
         const filteredData = get().getFilteredData()
         return filteredData?.chartData || null
-      }
+      },
+      
+      // NEW: Bug analysis actions
+      loadBugAnalysis: async () => {
+        set({ bugAnalysisLoading: true, bugAnalysisError: null })
+        try {
+          const { developerQualityIndexedDB } = await import('../services/developerQualityIndexedDB')
+          const data = await developerQualityIndexedDB.getBugAnalysis()
+          set({ 
+            bugAnalysis: data, 
+            bugAnalysisLoading: false 
+          })
+        } catch (error) {
+          set({ 
+            bugAnalysis: null, 
+            bugAnalysisLoading: false,
+            bugAnalysisError: error.message 
+          })
+        }
+      },
+      
+      clearBugAnalysis: () => set({ 
+        bugAnalysis: null, 
+        bugAnalysisError: null 
+      })
       }),
       {
         name: 'developer-quality-store'

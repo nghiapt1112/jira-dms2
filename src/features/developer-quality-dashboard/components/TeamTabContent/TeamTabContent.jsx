@@ -12,6 +12,7 @@ import BugStatusDistributionChart from '../BugStatusDistributionChart'
 import BugTypeDistributionChart from '../BugTypeDistributionChart'
 import RootCauseAnalysis from '../RootCauseAnalysis'
 import BugRateAnalysisTable from '../BugRateAnalysisTable'
+import RawJsonViewer from '../RawJsonViewer'
 
 /**
  * TeamTabContent - Team-focused dashboard layout
@@ -171,6 +172,11 @@ const TeamTabContent = React.memo(({
           }}
           context="team"
         />
+      </Grid>
+
+      {/* Raw JSON Data Section */}
+      <Grid item {...gridConfig.fullWidth}>
+        <RawJsonViewer />
       </Grid>
     </Grid>
   )
