@@ -36,6 +36,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 // Import centralized time utilities to fix data alignment issues
 import { getTimePeriodKey } from '../../../../shared/utils/timeUtils.js'
 import { useDeveloperQualityStore } from '../../store/developerQualityStore'
+import DebugDataViewer from './DebugDataViewer'
 
 // Register Chart.js components
 ChartJS.register(
@@ -557,6 +558,14 @@ const EffortEffectivenessChart = ({
           
           
         </Box>
+
+        {/* Debug Data Viewer */}
+        <DebugDataViewer 
+          developerData={developerData}
+          selectedDeveloper={selectedDeveloper}
+          filteredData={filteredData}
+          metrics={metrics}
+        />
       </CardContent>
     </Card>
   )
