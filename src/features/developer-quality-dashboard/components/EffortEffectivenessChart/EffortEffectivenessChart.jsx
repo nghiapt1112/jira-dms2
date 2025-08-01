@@ -34,7 +34,10 @@ import {
   CardContent, 
   Grid, 
   Chip, 
-  Paper
+  Paper,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip as MuiTooltip
 } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
@@ -45,6 +48,12 @@ import VerifiedIcon from '@mui/icons-material/Verified'
 import { getTimePeriodKey } from '../../../../shared/utils/timeUtils.js'
 import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 import DebugDataViewer from './DebugDataViewer'
+import DeveloperTimePeriodTable from './DeveloperTimePeriodTable'
+import { 
+  filterIssuesByDeveloperResponsibility,
+  isBugIssue,
+  getBugCausedBy
+} from '../../../../shared/utils/bugAttributionUtils'
 
 // Register Chart.js components
 ChartJS.register(
@@ -67,6 +76,20 @@ const EffortEffectivenessChart = ({
   projectData = null,  // New prop for project-level severity calculations
   filteredData = null  // CRITICAL: Add filteredData prop to respect filter state
 }) => {
+  // Use Zustand for bug attribution mode instead of local useState
+  const bugAttributionMode = useDeveloperQualityStore((state) => state.bugAttributionMode)
+  const setBugAttributionMode = useDeveloperQualityStore((state) => state.setBugAttributionMode)
+  
+  // Filter issues based on attribution mode
+  const filterIssuesByAttributionMode = (issues, developer, mode) => {
+    if (mode === 'assignee') {
+      // Legacy mode: use assignee for all issues including bugs
+      return issues.filter(issue => issue.assignee === developer)
+    } else {
+      // Enhanced mode: use custom fields for bugs, assignee for others
+      return filterIssuesByDeveloperResponsibility(issues, developer)
+    }
+  }
 
   // Using centralized severity utilities from shared/utils/severityCalculations.js
   
@@ -100,15 +123,16 @@ const EffortEffectivenessChart = ({
     
     if (filteredData && filteredData.filteredIssues) {
       // Use filtered data that respects all current filter options
-      issuesToProcess = filteredData.filteredIssues.filter(issue => issue.assignee === selectedDeveloper)
+      // ENHANCED: Use attribution mode for bug filtering
+      issuesToProcess = filterIssuesByAttributionMode(filteredData.filteredIssues, selectedDeveloper, bugAttributionMode)
     } else if (developerData && developerData.timeTrackingIssues) {
       // Fallback to developer data if no filtered data available
-      issuesToProcess = developerData.timeTrackingIssues.filter(issue => issue.assignee === selectedDeveloper)
+      issuesToProcess = filterIssuesByAttributionMode(developerData.timeTrackingIssues, selectedDeveloper, bugAttributionMode)
     } else {
       // Final fallback to store data
       const { data } = useDeveloperQualityStore()
       const storeIssues = data?.minimalIssues || []
-      issuesToProcess = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
+      issuesToProcess = filterIssuesByAttributionMode(storeIssues, selectedDeveloper, bugAttributionMode)
     }
     
     // CRITICAL: Ensure issuesToProcess is always defined
@@ -203,15 +227,16 @@ const EffortEffectivenessChart = ({
     
     if (filteredData && filteredData.filteredIssues) {
       // Use filtered data that respects all current filter options
-      issuesToProcess = filteredData.filteredIssues.filter(issue => issue.assignee === selectedDeveloper)
+      // ENHANCED: Use attribution mode for bug filtering
+      issuesToProcess = filterIssuesByAttributionMode(filteredData.filteredIssues, selectedDeveloper, bugAttributionMode)
     } else if (developerData && developerData.timeTrackingIssues) {
       // Fallback to developer data if no filtered data available
-      issuesToProcess = developerData.timeTrackingIssues.filter(issue => issue.assignee === selectedDeveloper)
+      issuesToProcess = filterIssuesByAttributionMode(developerData.timeTrackingIssues, selectedDeveloper, bugAttributionMode)
     } else {
       // Final fallback to store data
       const { data } = useDeveloperQualityStore()
       const storeIssues = data?.minimalIssues || []
-      issuesToProcess = storeIssues.filter(issue => issue.assignee === selectedDeveloper)
+      issuesToProcess = filterIssuesByAttributionMode(storeIssues, selectedDeveloper, bugAttributionMode)
     }
     
     if (!issuesToProcess || issuesToProcess.length === 0) {
@@ -224,6 +249,7 @@ const EffortEffectivenessChart = ({
     // Group issues by time period for the velocity trends chart with EE metrics
     const timeGroups = new Map()
     
+    // First, group delivered work (stories/tasks) by delivered date for productivity metrics
     deliveredIssues.forEach(issue => {
       // Use IssueUtils.getDeliveredDate for consistent date logic
       const deliveredDate = IssueUtils.getDeliveredDate(issue)
@@ -237,7 +263,8 @@ const EffortEffectivenessChart = ({
             timeSpent: 0,
             bugs: 0,
             totalIssues: 0,
-            issues: []
+            issues: [],
+            bugsByCreatedDate: []
           })
         }
         const group = timeGroups.get(periodKey)
@@ -245,13 +272,73 @@ const EffortEffectivenessChart = ({
         group.timeSpent += issue.timeSpentHours || 0
         group.totalIssues += 1
         group.issues.push(issue)
+      }
+    })
+
+    // Second, count bugs by their CREATED date (not delivered date)
+    // This ensures bugs are counted in the period they were introduced, not when resolved
+    issuesToProcess.forEach(issue => {
+      // Only count bugs
+      if (issue.issueType === 'Bug' || issue.fields?.issuetype?.name?.toLowerCase() === 'bug') {
+        // Try multiple possible created date fields
+        const createdDate = issue.created || 
+                           issue.fields?.created || 
+                           issue.fields?.Created || 
+                           issue.createdDate ||
+                           issue.dateCreated
         
-        // Count bugs for EE Quality calculation
-        if (issue.issueType === 'Bug' || issue.fields?.issuetype?.name?.toLowerCase() === 'bug') {
+        if (createdDate) {
+          const periodKey = getTimePeriodKey(createdDate, timeframe)
+          
+          // Create period if it doesn't exist (in case bug period differs from delivery period)
+          if (!timeGroups.has(periodKey)) {
+            timeGroups.set(periodKey, {
+              period: periodKey,
+              storyPoints: 0,
+              timeSpent: 0,
+              bugs: 0,
+              totalIssues: 0,
+              issues: [],
+              bugsByCreatedDate: []
+            })
+          }
+          
+          const group = timeGroups.get(periodKey)
           group.bugs += 1
+          group.bugsByCreatedDate.push(issue)
+        } else {
+          // Log missing created date for debugging
+          console.warn(`Bug ${issue.key} missing created date. Available fields:`, Object.keys(issue))
         }
       }
     })
+
+    // FALLBACK: If no bugs found by created date but we had bugs before, 
+    // try using delivered date as backup (with a warning)
+    const totalBugsByCreatedDate = Array.from(timeGroups.values()).reduce((sum, group) => sum + group.bugs, 0)
+    if (totalBugsByCreatedDate === 0) {
+      // Check if there are bugs in delivered issues that we might have missed
+      const bugsInDeliveredIssues = deliveredIssues.filter(issue => 
+        issue.issueType === 'Bug' || issue.fields?.issuetype?.name?.toLowerCase() === 'bug'
+      )
+      
+      if (bugsInDeliveredIssues.length > 0) {
+        console.warn(`Found ${bugsInDeliveredIssues.length} bugs in delivered issues but 0 by created date. Using delivered date as fallback.`)
+        
+        // Use delivered date as fallback for bug counting
+        bugsInDeliveredIssues.forEach(issue => {
+          const deliveredDate = IssueUtils.getDeliveredDate(issue)
+          if (deliveredDate) {
+            const periodKey = getTimePeriodKey(deliveredDate, timeframe)
+            if (timeGroups.has(periodKey)) {
+              const group = timeGroups.get(periodKey)
+              group.bugs += 1
+              group.bugsByCreatedDate.push(issue)
+            }
+          }
+        })
+      }
+    }
 
     // Sort periods chronologically and calculate EE metrics for each period
     const sortedPeriods = Array.from(timeGroups.values())
@@ -261,11 +348,8 @@ const EffortEffectivenessChart = ({
         const effortEfficiency = period.timeSpent > 0 ? (period.storyPoints / period.timeSpent) * 100 : 0
         
         // Calculate proper EE Quality using weighted bug rate with severity weights
-        // First, extract bugs from the issues in this period
-        const periodBugs = period.issues.filter(issue => 
-          issue.issueType === 'Bug' || 
-          issue.fields?.issuetype?.name?.toLowerCase() === 'bug'
-        )
+        // Use bugs counted by created date (not delivered date)
+        const periodBugs = period.bugsByCreatedDate || []
         
         // Calculate weighted bug rate and EE Quality using existing functions
         const projectKey = selectedDeveloper?.projectKey || null
@@ -532,7 +616,7 @@ const EffortEffectivenessChart = ({
         }
       }
     }
-  }, [selectedDeveloper, timeframe])
+  }, [selectedDeveloper, timeframe, timeBasedData])
 
   // EE (Effort Efficiency) Chart data configuration
   const eeChartData = useMemo(() => {
@@ -715,7 +799,7 @@ const EffortEffectivenessChart = ({
         },
         title: {
           display: true,
-          text: `Quality Efficiency (EE Quality) - ${selectedDeveloper} (by ${timeframe})`,
+          text: `Quality Efficiency (EE Quality) - ${selectedDeveloper} (by ${timeframe}) ${bugAttributionMode === 'assignee' ? '[By Assignee]' : '[By Bug Caused By]'}`,
           font: {
             size: 16,
             weight: 'bold'
@@ -977,9 +1061,32 @@ const EffortEffectivenessChart = ({
 
         {/* EE Quality Chart */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'medium' }}>
-            Quality Efficiency (EE Quality) Trends by {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+              Quality Efficiency (EE Quality) Trends by {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
+            </Typography>
+            
+            <MuiTooltip title="Choose how bugs are attributed to developers">
+              <ToggleButtonGroup
+                value={bugAttributionMode}
+                exclusive
+                onChange={(event, newMode) => {
+                  if (newMode !== null) {
+                    setBugAttributionMode(newMode)
+                  }
+                }}
+                size="small"
+                sx={{ height: 32 }}
+              >
+                <ToggleButton value="assignee" sx={{ px: 2, fontSize: '0.75rem' }}>
+                  By Assignee
+                </ToggleButton>
+                <ToggleButton value="causedBy" sx={{ px: 2, fontSize: '0.75rem' }}>
+                  By Bug Caused By
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </MuiTooltip>
+          </Box>
           <Box sx={{ height: 400 }}>
             {timeBasedData.eeTimeBasedData && timeBasedData.eeTimeBasedData.length > 0 ? (
               <Line data={eeQualityChartData} options={eeQualityChartOptions} />
@@ -1047,6 +1154,13 @@ const EffortEffectivenessChart = ({
           
           
         </Box>
+
+        {/* Time Period Detail Table */}
+        <DeveloperTimePeriodTable 
+          eeTimeBasedData={timeBasedData.eeTimeBasedData}
+          selectedDeveloper={selectedDeveloper}
+          timeframe={timeframe}
+        />
 
         {/* Debug Data Viewer */}
         <DebugDataViewer 

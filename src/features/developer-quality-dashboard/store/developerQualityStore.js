@@ -69,6 +69,9 @@ export const useDeveloperQualityStore = create(
         showTargetLines: true
       },
       
+      // Bug attribution mode for quality metrics
+      bugAttributionMode: 'causedBy', // 'assignee' | 'causedBy'
+      
       // Filtered data cache
       filteredData: null,
       filterAppliedAt: null,
@@ -346,7 +349,15 @@ export const useDeveloperQualityStore = create(
       clearBugAnalysis: () => set({ 
         bugAnalysis: null, 
         bugAnalysisError: null 
-      })
+      }),
+      
+      // Bug attribution mode actions
+      setBugAttributionMode: (mode) => {
+        console.log('🔄 Zustand: Setting bug attribution mode to:', mode)
+        set({ bugAttributionMode: mode })
+      },
+      
+      getBugAttributionMode: () => get().bugAttributionMode
       }),
       {
         name: 'developer-quality-store'
@@ -358,6 +369,7 @@ export const useDeveloperQualityStore = create(
       // Only persist user preferences, not cache metadata
       partialize: (state) => ({
         filters: state.filters,
+        bugAttributionMode: state.bugAttributionMode,
         // Don't persist data, lastUpdated, or cache metadata
         // We'll always process from JIRA data on load
       })

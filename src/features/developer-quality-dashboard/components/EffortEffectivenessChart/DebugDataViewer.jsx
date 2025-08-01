@@ -5,6 +5,12 @@
 
 import React, { useState } from 'react'
 import PropTypes from 'prop-types'
+import { 
+  getBugAttributionStats, 
+  getBugAttributionDetails,
+  isBugIssue
+} from '../../../../shared/utils/bugAttributionUtils'
+import { useDeveloperQualityStore } from '../../store/developerQualityStore'
 import {
   Box,
   Typography,
@@ -26,21 +32,40 @@ const DebugDataViewer = ({
   developerData, 
   selectedDeveloper, 
   filteredData, 
-  metrics 
+  metrics
 }) => {
+  // Get bug attribution mode from Zustand store
+  const bugAttributionMode = useDeveloperQualityStore((state) => state.bugAttributionMode)
   const [expanded, setExpanded] = useState(false)
 
   // Collect all the data that's passed to the chart
-  const relevantIssues = filteredData?.filteredIssues?.filter(issue => issue.assignee === selectedDeveloper) || []
+  // NOTE: This now uses proper bug attribution based on selected mode
+  const relevantIssues = filteredData?.filteredIssues?.filter(issue => {
+    if (bugAttributionMode === 'assignee') {
+      // Legacy mode: use assignee for all issues including bugs
+      return issue.assignee === selectedDeveloper
+    } else {
+      // Enhanced mode: For bugs, check custom fields; for others, use assignee
+      if (isBugIssue(issue)) {
+        const causedBy = issue.fields?.customfield_10636 || 
+                        issue.fields?.customfield_10002 || 
+                        issue.assignee
+        return causedBy === selectedDeveloper
+      }
+      return issue.assignee === selectedDeveloper
+    }
+  }) || []
   
   // Separate bugs from all issues for EE Quality calculations
-  const bugs = relevantIssues.filter(issue => 
-    issue.issueType === 'Bug' || 
-    issue.fields?.issuetype?.name?.toLowerCase() === 'bug'
-  )
+  const bugs = relevantIssues.filter(isBugIssue)
+  
+  // Get bug attribution statistics for monitoring custom field usage
+  const bugAttributionStats = getBugAttributionStats(bugs)
+  const bugAttributionDetails = getBugAttributionDetails(bugs)
 
   const debugData = {
     selectedDeveloper,
+    bugAttributionMode,
     timestamp: new Date().toISOString(),
     dataSource: {
       developerData: developerData || null,
@@ -71,6 +96,35 @@ const DebugDataViewer = ({
       qualityEfficiencyApprox: bugs.length > 0 && relevantIssues.length > 0 ? 
         Math.max(0, 100 - ((bugs.length / relevantIssues.length) * 100)) : 100,
       bugDensity: relevantIssues.length > 0 ? (bugs.length / relevantIssues.length) * 100 : 0
+    },
+    bugDebugging: {
+      bugsWithCreatedDate: bugs.filter(bug => bug.created || bug.fields?.created).map(bug => ({
+        key: bug.key,
+        issueType: bug.issueType,
+        created: bug.created || bug.fields?.created,
+        assignee: bug.assignee
+      })),
+      bugsWithoutCreatedDate: bugs.filter(bug => !(bug.created || bug.fields?.created)).map(bug => ({
+        key: bug.key,
+        issueType: bug.issueType,
+        assignee: bug.assignee,
+        availableFields: Object.keys(bug)
+      })),
+      totalBugsInData: bugs.length,
+      totalIssuesInData: relevantIssues.length,
+      sampleIssueFields: relevantIssues.length > 0 ? Object.keys(relevantIssues[0]) : []
+    },
+    bugAttribution: {
+      stats: bugAttributionStats,
+      details: bugAttributionDetails,
+      customFieldsUsed: {
+        'customfield_10636': bugs.filter(bug => bug.fields?.customfield_10636).length,
+        'customfield_10002': bugs.filter(bug => bug.fields?.customfield_10002).length,
+        'assigneeOnly': bugs.filter(bug => 
+          !bug.fields?.customfield_10636 && 
+          !bug.fields?.customfield_10002
+        ).length
+      }
     }
   }
 
@@ -110,6 +164,20 @@ const DebugDataViewer = ({
               size="small" 
               color="success" 
               variant="outlined"
+              sx={{ ml: 1 }}
+            />
+            <Chip 
+              label={`Custom Fields: ${Math.round(bugAttributionStats.customFieldUsageRate)}%`} 
+              size="small" 
+              color="info" 
+              variant="outlined"
+              sx={{ ml: 1 }}
+            />
+            <Chip 
+              label={`Mode: ${bugAttributionMode === 'assignee' ? 'Assignee' : 'Bug Caused By'}`} 
+              size="small" 
+              color={bugAttributionMode === 'assignee' ? 'warning' : 'success'} 
+              variant="filled"
               sx={{ ml: 1 }}
             />
           </Box>
@@ -153,7 +221,9 @@ const DebugDataViewer = ({
         {!expanded && (
           <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
             Click "Show Raw Data" to see the complete JSON structure used by the Effort Effectiveness chart.
-            Data includes filtered issues, EE metrics, EE Quality calculations, and bug analysis for developer: <strong>{selectedDeveloper}</strong>
+            Data includes filtered issues, EE metrics, EE Quality calculations, bug attribution via custom fields, and detailed analysis for developer: <strong>{selectedDeveloper}</strong>
+            <br />
+            <strong>Current Attribution Mode:</strong> {bugAttributionMode === 'assignee' ? 'By Assignee (Legacy)' : 'By Bug Caused By (Enhanced)'} - affects bug counting and quality metrics.
           </Typography>
         )}
       </CardContent>
