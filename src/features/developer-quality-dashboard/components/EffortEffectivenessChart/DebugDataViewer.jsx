@@ -31,20 +31,46 @@ const DebugDataViewer = ({
   const [expanded, setExpanded] = useState(false)
 
   // Collect all the data that's passed to the chart
+  const relevantIssues = filteredData?.filteredIssues?.filter(issue => issue.assignee === selectedDeveloper) || []
+  
+  // Separate bugs from all issues for EE Quality calculations
+  const bugs = relevantIssues.filter(issue => 
+    issue.issueType === 'Bug' || 
+    issue.fields?.issuetype?.name?.toLowerCase() === 'bug'
+  )
+
   const debugData = {
     selectedDeveloper,
     timestamp: new Date().toISOString(),
     dataSource: {
       developerData: developerData || null,
       filteredData: {
-        filteredIssues: filteredData?.filteredIssues?.filter(issue => issue.assignee === selectedDeveloper) || [],
+        filteredIssues: relevantIssues,
         totalFilteredIssues: filteredData?.filteredIssues?.length || 0
       },
       metrics: metrics || null
     },
     processedData: {
-      relevantIssues: filteredData?.filteredIssues?.filter(issue => issue.assignee === selectedDeveloper) || [],
-      issueCount: filteredData?.filteredIssues?.filter(issue => issue.assignee === selectedDeveloper)?.length || 0
+      relevantIssues,
+      issueCount: relevantIssues.length,
+      bugCount: bugs.length,
+      totalStoryPoints: relevantIssues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0),
+      totalTimeSpent: relevantIssues.reduce((sum, issue) => sum + (issue.timeSpentHours || 0), 0),
+      bugs: bugs.map(bug => ({
+        key: bug.key,
+        issueType: bug.issueType,
+        storyPoints: bug.storyPoints,
+        timeSpentHours: bug.timeSpentHours,
+        status: bug.status
+      }))
+    },
+    eeMetricsPreview: {
+      effortEfficiency: relevantIssues.length > 0 ? 
+        ((relevantIssues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0) / 
+          Math.max(relevantIssues.reduce((sum, issue) => sum + (issue.timeSpentHours || 0), 0), 0.1)) * 100) : 0,
+      qualityEfficiencyApprox: bugs.length > 0 && relevantIssues.length > 0 ? 
+        Math.max(0, 100 - ((bugs.length / relevantIssues.length) * 100)) : 100,
+      bugDensity: relevantIssues.length > 0 ? (bugs.length / relevantIssues.length) * 100 : 0
     }
   }
 
@@ -71,6 +97,20 @@ const DebugDataViewer = ({
               size="small" 
               color="warning" 
               variant="outlined" 
+            />
+            <Chip 
+              label={`${debugData.processedData.bugCount} bugs`} 
+              size="small" 
+              color="error" 
+              variant="outlined"
+              sx={{ ml: 1 }}
+            />
+            <Chip 
+              label={`EE: ${Math.round(debugData.eeMetricsPreview.effortEfficiency)}%`} 
+              size="small" 
+              color="success" 
+              variant="outlined"
+              sx={{ ml: 1 }}
             />
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -113,7 +153,7 @@ const DebugDataViewer = ({
         {!expanded && (
           <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
             Click "Show Raw Data" to see the complete JSON structure used by the Effort Effectiveness chart.
-            Data includes filtered issues, metrics, and processed calculations for developer: <strong>{selectedDeveloper}</strong>
+            Data includes filtered issues, EE metrics, EE Quality calculations, and bug analysis for developer: <strong>{selectedDeveloper}</strong>
           </Typography>
         )}
       </CardContent>

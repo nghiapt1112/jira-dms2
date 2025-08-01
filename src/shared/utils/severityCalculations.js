@@ -95,6 +95,98 @@ export const calculateQualityEfficiency = (bugs, totalIssues, projectKey = null)
 }
 
 /**
+ * Calculate Effort Efficiency (EE) percentage
+ * EE (%) = (Total Story Points Completed / Total Logged Hours) × 100
+ * @param {number} storyPoints - Total story points completed
+ * @param {number} loggedHours - Total logged hours
+ * @returns {number} - Effort efficiency percentage (story points per hour × 100)
+ */
+export const calculateEffortEfficiency = (storyPoints, loggedHours) => {
+  if (!loggedHours || loggedHours <= 0) {
+    return 0
+  }
+  
+  if (!storyPoints || storyPoints <= 0) {
+    return 0
+  }
+  
+  return (storyPoints / loggedHours) * 100
+}
+
+/**
+ * Calculate comprehensive effort metrics including EE and EE Quality
+ * @param {Array} issues - Array of all issues (including bugs and stories)
+ * @param {string|null} projectKey - Project key for project-specific configuration (optional)
+ * @returns {Object} - Comprehensive effort metrics
+ */
+export const calculateEffortMetrics = (issues, projectKey = null) => {
+  if (!Array.isArray(issues) || issues.length === 0) {
+    return {
+      storyPoints: 0,
+      loggedHours: 0,
+      totalIssues: 0,
+      bugs: [],
+      effortEfficiency: 0,
+      qualityEfficiency: 100,
+      weightedBugRate: 0,
+      simpleBugRate: 0,
+      projectKey
+    }
+  }
+
+  try {
+    // Separate bugs from all issues
+    const bugs = issues.filter(issue => 
+      issue.issueType === 'Bug' || 
+      issue.fields?.issuetype?.name?.toLowerCase() === 'bug'
+    )
+    
+    // Calculate story points and logged hours
+    const storyPoints = issues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0)
+    const loggedHours = issues.reduce((sum, issue) => sum + (issue.timeSpentHours || 0), 0)
+    
+    // Calculate EE metrics
+    const effortEfficiency = calculateEffortEfficiency(storyPoints, loggedHours)
+    const qualityEfficiency = calculateQualityEfficiency(bugs, issues.length, projectKey)
+    const weightedBugRate = calculateWeightedBugRate(bugs, issues.length, projectKey)
+    const simpleBugRate = calculateSimpleBugRate(bugs, issues.length)
+
+    return {
+      storyPoints,
+      loggedHours,
+      totalIssues: issues.length,
+      totalBugs: bugs.length,
+      bugs,
+      effortEfficiency,
+      qualityEfficiency,
+      weightedBugRate,
+      simpleBugRate,
+      projectKey,
+      // Additional derived metrics
+      storyPointsPerHour: loggedHours > 0 ? storyPoints / loggedHours : 0,
+      hoursPerStoryPoint: storyPoints > 0 ? loggedHours / storyPoints : 0,
+      bugDensity: issues.length > 0 ? (bugs.length / issues.length) * 100 : 0
+    }
+
+  } catch (error) {
+    console.warn('Effort metrics calculation failed:', error)
+    return {
+      storyPoints: 0,
+      loggedHours: 0,
+      totalIssues: issues.length,
+      totalBugs: 0,
+      bugs: [],
+      effortEfficiency: 0,
+      qualityEfficiency: 100,
+      weightedBugRate: 0,
+      simpleBugRate: 0,
+      projectKey,
+      error: error.message
+    }
+  }
+}
+
+/**
  * Calculate comprehensive bug rate metrics
  * @param {Array} bugs - Array of JIRA bug objects
  * @param {number} totalIssues - Total number of issues
